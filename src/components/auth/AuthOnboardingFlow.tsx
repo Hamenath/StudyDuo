@@ -158,18 +158,18 @@ export const AuthScreen: React.FC = () => {
     }
   };
 
-  // 1. LIQUID GLASS LOGO INTRO ANIMATION SCREEN
+  // 1. LIQUID GLASS LOGO INTRO ANIMATION SCREEN (LIGHT THEME)
   if (introState === 'splash') {
     return (
-      <div className="fixed inset-0 z-50 bg-[#0B0C10] flex flex-col items-center justify-center p-6 select-none overflow-hidden">
-        {/* Full WebGL Liquid Glass Shader Animation */}
+      <div className="fixed inset-0 z-50 bg-[#F8F5FF] flex flex-col items-center justify-center p-6 select-none overflow-hidden">
+        {/* Full WebGL Liquid Glass Shader Animation on pastel light background */}
         <div className="relative w-full max-w-md h-[340px] sm:h-[400px] flex items-center justify-center">
           <GlassIconReveal
             logo={owlDuoMasterImg}
             label="StudyDuo Logo"
-            look="dark"
-            background="#0B0C10"
-            plateColor="#161822"
+            look="light"
+            background="#F8F5FF"
+            plateColor="#FFFFFF"
             logoColor="#7651E8"
             originalColors={true}
             tileSize={260}
@@ -189,12 +189,12 @@ export const AuthScreen: React.FC = () => {
           className="flex flex-col items-center text-center mt-3 z-10"
         >
           <div className="flex items-center gap-2 mb-1.5">
-            <span className="font-display text-3xl sm:text-4xl font-black tracking-tight text-white">
-              Study<span className="text-[#9D78FF]">Duo</span>
+            <span className="font-display text-3xl sm:text-4xl font-black tracking-tight text-[#111827]">
+              Study<span className="text-[#7651E8]">Duo</span>
             </span>
           </div>
 
-          <p className="text-xs sm:text-[13px] font-semibold text-[#8B8A99] tracking-widest uppercase">
+          <p className="text-xs sm:text-[13px] font-semibold text-[#6B7280] tracking-widest uppercase">
             Learn &bull; Connect &bull; Level Up Together
           </p>
         </motion.div>
@@ -203,7 +203,7 @@ export const AuthScreen: React.FC = () => {
         <button
           type="button"
           onClick={() => setIntroState('walkthrough')}
-          className="absolute bottom-6 right-6 text-xs font-bold text-[#8B8A99] hover:text-white px-4 py-2 rounded-full border border-white/10 hover:border-white/20 transition-all cursor-pointer"
+          className="absolute bottom-6 right-6 text-xs font-bold text-[#6B7280] hover:text-[#111827] bg-white/80 hover:bg-white px-4 py-2 rounded-full border border-[#E4D8FF] shadow-xs hover:shadow-sm transition-all cursor-pointer"
         >
           Skip Intro &rarr;
         </button>

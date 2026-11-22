@@ -1699,24 +1699,31 @@ export const StudyDuoProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       }
 
       try {
-        await setDoc(doc(db, 'goals', goalId), {
-          ...newGoal,
-          createdAt: serverTimestamp(),
-          updatedAt: serverTimestamp(),
-        });
-        await setDoc(doc(db, 'goals', goalId, 'participants', currentUser.uid), {
-          ...ownerParticipant,
-          joinedAt: serverTimestamp(),
-        });
-        await setDoc(doc(db, 'goals', goalId, 'days', day1Id), {
-          ...day1,
-          createdAt: serverTimestamp(),
-          updatedAt: serverTimestamp(),
-        });
         setLiveGoals((prev) => [newGoal, ...prev.filter((g) => g.id !== goalId)]);
         setSelectedGoalId(goalId);
         setShowWelcomeChoice(false);
         showToast(`Created goal "${newGoal.title}"!`);
+
+        // Perform Firestore writes with a 3.5s timeout so sluggish network never stalls the UI
+        const syncPromise = Promise.all([
+          setDoc(doc(db, 'goals', goalId), {
+            ...newGoal,
+            createdAt: serverTimestamp(),
+            updatedAt: serverTimestamp(),
+          }),
+          setDoc(doc(db, 'goals', goalId, 'participants', currentUser.uid), {
+            ...ownerParticipant,
+            joinedAt: serverTimestamp(),
+          }),
+          setDoc(doc(db, 'goals', goalId, 'days', day1Id), {
+            ...day1,
+            createdAt: serverTimestamp(),
+            updatedAt: serverTimestamp(),
+          }),
+        ]);
+
+        const timeoutPromise = new Promise((resolve) => setTimeout(resolve, 3500));
+        await Promise.race([syncPromise, timeoutPromise]);
         return goalId;
       } catch (err) {
         console.warn('Firestore sync deferred, creating goal locally:', err);

@@ -213,6 +213,8 @@ export const GoalsPage: React.FC = () => {
       return;
     }
     setSavingGoal(true);
+    // Automatically dismiss modal immediately so the user is never stuck on "Saving..."
+    setShowCreateGoal(false);
     try {
       if (editingGoal) {
         const targetDate = addDaysToDateKey(parsed.data.startDate, Math.max(0, parsed.data.durationDays - 1));
@@ -229,13 +231,13 @@ export const GoalsPage: React.FC = () => {
           dailyTargetMinutes: parsed.data.dailyTargetMinutes,
           groupName: parsed.data.groupName.trim() || `${parsed.data.title.trim()} Duo`,
         });
-        setShowCreateGoal(false);
         setEditingGoal(null);
       } else {
-        const createdId = await createGoal(parsed.data);
-        setShowCreateGoal(false);
+        await createGoal(parsed.data);
         setGoalForm({ ...goalForm, title: '', description: '', groupName: '' });
       }
+    } catch {
+      // In case of error, error toast will display
     } finally {
       setSavingGoal(false);
     }
