@@ -103,7 +103,14 @@ export const ChecklistPage: React.FC = () => {
   const tz = activeGoal?.timezone || currentUser?.timezone || 'UTC';
   const todayKey = getDateKeyInTimezone(new Date(), tz);
 
-  const [selectedDayId, setSelectedDayId] = useState<string>('');
+  const [selectedDayId, setSelectedDayId] = useState<string>(() => {
+    try {
+      const saved = localStorage.getItem('studyduo_selected_day_id');
+      return saved || '';
+    } catch {
+      return '';
+    }
+  });
   const [showAddDayModal, setShowAddDayModal] = useState(false);
   const [newDayTitle, setNewDayTitle] = useState('');
   const [showRenameDayModal, setShowRenameDayModal] = useState(false);
@@ -138,10 +145,29 @@ export const ChecklistPage: React.FC = () => {
       setSelectedDayId('');
       return;
     }
-    if (!selectedDayId || !days.some((d) => d.id === selectedDayId)) {
-      const todayMatch = days.find((d) => d.date === todayKey);
-      setSelectedDayId(todayMatch ? todayMatch.id : days[days.length - 1].id);
+    const savedDayId = (() => {
+      try {
+        return localStorage.getItem('studyduo_selected_day_id');
+      } catch {
+        return null;
+      }
+    })();
+    if (selectedDayId && days.some((d) => d.id === selectedDayId)) {
+      try {
+        localStorage.setItem('studyduo_selected_day_id', selectedDayId);
+      } catch {}
+      return;
     }
+    if (savedDayId && days.some((d) => d.id === savedDayId)) {
+      setSelectedDayId(savedDayId);
+      return;
+    }
+    const todayMatch = days.find((d) => d.date === todayKey);
+    const fallbackId = todayMatch ? todayMatch.id : days[days.length - 1].id;
+    setSelectedDayId(fallbackId);
+    try {
+      localStorage.setItem('studyduo_selected_day_id', fallbackId);
+    } catch {}
   }, [days, selectedDayId, todayKey]);
 
   const activeDay = useMemo(

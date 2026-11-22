@@ -271,9 +271,41 @@ export const StudyDuoProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     };
   }, []);
 
-  const [mode, setMode] = useState<'live' | 'preview'>(initialParams.autostart ? 'preview' : 'live');
-  const [previewPersona, setPreviewPersona] = useState<'owner' | 'partner'>('owner');
-  const [previewState, setPreviewState] = useState(() => createPreviewSeedState());
+  const [mode, setMode] = useState<'live' | 'preview'>(() => {
+    if (initialParams.autostart) return 'preview';
+    try {
+      const savedMode = localStorage.getItem('studyduo_mode');
+      if (savedMode === 'preview' || savedMode === 'live') return savedMode;
+    } catch {
+      // fallback
+    }
+    return 'live';
+  });
+
+  const [previewPersona, setPreviewPersona] = useState<'owner' | 'partner'>(() => {
+    try {
+      const saved = localStorage.getItem('studyduo_preview_persona');
+      if (saved === 'owner' || saved === 'partner') return saved;
+    } catch {
+      // fallback
+    }
+    return 'owner';
+  });
+
+  const [previewState, setPreviewState] = useState(() => {
+    try {
+      const saved = localStorage.getItem('studyduo_preview_state_v1');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed && Array.isArray(parsed.goals) && parsed.goals.length > 0) {
+          return parsed;
+        }
+      }
+    } catch {
+      // fallback
+    }
+    return createPreviewSeedState();
+  });
 
   const [authLoading, setAuthLoading] = useState(!initialParams.autostart);
   const [firebaseUser, setFirebaseUser] = useState<FirebaseUser | null>(null);
@@ -281,15 +313,48 @@ export const StudyDuoProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const [livePrivate, setLivePrivate] = useState<UserPrivateSettings | null>(null);
   const [showWelcomeChoice, setShowWelcomeChoice] = useState(false);
 
-  const [activePage, setActivePage] = useState<NavPage>(
-    initialParams.inviteCode ? 'groups' : 'dashboard'
-  );
-  const [selectedGoalId, setSelectedGoalId] = useState<string | null>(
-    initialParams.autostart ? 'goal_python_60' : null
-  );
+  const [activePage, setActivePage] = useState<NavPage>(() => {
+    if (initialParams.inviteCode) return 'groups';
+    try {
+      const savedPage = localStorage.getItem('studyduo_active_page') as NavPage | null;
+      if (savedPage) return savedPage;
+    } catch {
+      // fallback
+    }
+    return 'dashboard';
+  });
+
+  const [selectedGoalId, setSelectedGoalId] = useState<string | null>(() => {
+    if (initialParams.autostart) return 'goal_python_60';
+    try {
+      const saved = localStorage.getItem('studyduo_selected_goal_id');
+      if (saved) return saved;
+    } catch {
+      // fallback
+    }
+    return null;
+  });
+
   const [pendingInviteCodeFromUrl, setPendingInviteCodeFromUrl] = useState<string | null>(
     initialParams.inviteCode
   );
+
+  // Automatically persist navigation and active selections
+  useEffect(() => {
+    try {
+      localStorage.setItem('studyduo_mode', mode);
+      localStorage.setItem('studyduo_preview_persona', previewPersona);
+      localStorage.setItem('studyduo_active_page', activePage);
+      if (selectedGoalId) {
+        localStorage.setItem('studyduo_selected_goal_id', selectedGoalId);
+      }
+      if (mode === 'preview') {
+        localStorage.setItem('studyduo_preview_state_v1', JSON.stringify(previewState));
+      }
+    } catch {
+      // ignore quota / private mode storage errors
+    }
+  }, [mode, previewPersona, activePage, selectedGoalId, previewState]);
 
   // Live Firestore synced slices
   const [liveGoals, setLiveGoals] = useState<Goal[]>([]);
@@ -533,7 +598,15 @@ export const StudyDuoProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           });
           setLiveGoals(list);
           setSelectedGoalId((prev) => {
+            const saved = (() => {
+              try {
+                return localStorage.getItem('studyduo_selected_goal_id');
+              } catch {
+                return null;
+              }
+            })();
             if (prev && list.some((g) => g.id === prev)) return prev;
+            if (saved && list.some((g) => g.id === saved)) return saved;
             return list[0]?.id ?? null;
           });
         },
