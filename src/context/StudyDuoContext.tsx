@@ -1223,7 +1223,9 @@ export const StudyDuoProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       if (mode === 'preview' || !firebaseUser) return;
       const uid = firebaseUser.uid;
       try {
-        await updateDoc(doc(db, 'users', uid), {
+        const userRef = doc(db, 'users', uid);
+        const snap = await getDoc(userRef);
+        const updatePayload = {
           fullName: data.fullName.trim(),
           username: data.username.trim(),
           bio: data.bio.trim(),
@@ -1233,7 +1235,40 @@ export const StudyDuoProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           avatarInitials: getInitials(data.fullName),
           onboardingCompleted: true,
           updatedAt: serverTimestamp(),
-        });
+        };
+
+        if (!snap.exists()) {
+          const batch = writeBatch(db);
+          batch.set(userRef, {
+            uid,
+            ...updatePayload,
+            avatarConfig: getDefaultAvatarConfig(uid),
+            photoURL: firebaseUser.photoURL || '',
+            totalXp: 0,
+            level: 1,
+            currentStreak: 0,
+            longestStreak: 0,
+            completedTasksCount: 0,
+            completedGoalsCount: 0,
+            createdAt: serverTimestamp(),
+          });
+          batch.set(doc(db, 'users', uid, 'private', 'settings'), {
+            uid,
+            email: firebaseUser.email || 'user@studyduo.app',
+            notifyInvites: true,
+            notifyPartnerActivity: true,
+            notifyDailyWinner: true,
+            notifyAchievements: true,
+            notifyWeeklySummary: true,
+            shareProgressWithPartner: true,
+            allowAiJournalContext: false,
+            updatedAt: serverTimestamp(),
+          });
+          await batch.commit();
+        } else {
+          await updateDoc(userRef, updatePayload);
+        }
+
         setShowWelcomeChoice(true);
         showToast('Profile ready! Welcome to StudyDuo.');
       } catch (err) {

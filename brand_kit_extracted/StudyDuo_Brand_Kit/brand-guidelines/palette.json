@@ -1,0 +1,43 @@
+{
+  "brand": "StudyDuo",
+  "colors": [
+    {
+      "name": "Primary Purple",
+      "hex": "#7651E8",
+      "usage": "Primary brand, buttons, key actions"
+    },
+    {
+      "name": "Soft Lavender",
+      "hex": "#A78BFA",
+      "usage": "Secondary brand, highlights, supporting surfaces"
+    },
+    {
+      "name": "Golden Accent",
+      "hex": "#FFC857",
+      "usage": "XP, achievement, progress, celebratory details"
+    },
+    {
+      "name": "Background",
+      "hex": "#F8F5FF",
+      "usage": "Main app and web backgrounds"
+    },
+    {
+      "name": "White",
+      "hex": "#FFFFFF",
+      "usage": "Cards, contrast areas, mascot face details"
+    }
+  ],
+  "typography": {
+    "recommended_family": "Plus Jakarta Sans",
+    "fallbacks": [
+      "Inter",
+      "system-ui",
+      "sans-serif"
+    ],
+    "weights": {
+      "headings": 700,
+      "body": 400,
+      "buttons": 600
+    }
+  }
+}

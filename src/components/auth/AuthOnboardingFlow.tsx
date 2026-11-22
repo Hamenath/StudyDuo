@@ -12,7 +12,7 @@ import { sendEmailVerification } from 'firebase/auth';
 import { useStudyDuo } from '../../context/StudyDuoContext';
 import { extractInviteCode } from '../../lib/inviteShare';
 import { onboardingSchema, inviteCodeSchema } from '../../lib/validation';
-import { MascotImage, StudyDuoOwlMark } from '../ui/MascotArtwork';
+import { MascotImage, StudyDuoOwlMark, owlDuoMasterImg } from '../ui/MascotArtwork';
 import { Button, ToastStack } from '../ui/Primitives';
 
 const AVATAR_COLORS = ['#7651E8', '#2FB368', '#E59A18', '#E05288', '#6B8AFD', '#38A89D'];
@@ -91,14 +91,12 @@ export const AuthScreen: React.FC = () => {
         {/* Left Reference Hero Card — Pastel Lavender Brain Mascot + Curved White Bottom Sheet */}
         <div className="lg:col-span-6">
           <div className="mx-auto max-w-md lg:max-w-none overflow-hidden rounded-[36px] bg-[#E9DFFF] border border-[#E4D8FF] shadow-[0_18px_40px_-20px_rgba(118,81,232,0.22)]">
-            {/* Full-Bleed Lavender Illustration Stage (matches reference Left Screen) */}
-            <div className="relative h-72 sm:h-80 w-full overflow-hidden bg-[#E9DFFF]">
-              <MascotImage
-                mascot="brain"
-                alt="StudyDuo friendly pink brain mascot wearing glasses and graduation cap sitting on colorful books"
-                className="h-full w-full object-cover object-center"
-                rounded="rounded-none"
-                seamless={false}
+            {/* Full-Bleed Lavender Illustration Stage (matches brand paired owl duo) */}
+            <div className="relative h-72 sm:h-80 w-full overflow-hidden bg-[#E9DFFF] flex items-center justify-center p-4">
+              <img
+                src={owlDuoMasterImg}
+                alt="StudyDuo paired owl mascots with open book and gold achievement star"
+                className="h-full w-full object-contain max-h-72 drop-shadow-md select-none"
               />
             </div>
 
@@ -442,6 +440,9 @@ export const OnboardingFlow: React.FC = () => {
         timezone: parsed.data.timezone,
         avatarColor: parsed.data.avatarColor,
       });
+    } catch (err) {
+      console.error('Error submitting profile:', err);
+      setError(err instanceof Error ? err.message : 'Failed to save profile. Please try again.');
     } finally {
       setSaving(false);
     }

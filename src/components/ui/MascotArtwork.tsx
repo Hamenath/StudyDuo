@@ -220,32 +220,18 @@ export const SubjectCardMotif: React.FC<{ themeId: SubjectPastelTheme['id'] }> =
   );
 };
 
-/** Cute StudyDuo Owl Brand Mark inspired by the reference logo lockup (branded exclusively as StudyDuo). */
-export const StudyDuoOwlMark: React.FC<{ size?: number }> = ({ size = 34 }) => (
-  <svg
+import owlDuoMasterImg from '../../assets/images/studyduo-owl-duo-master.png';
+
+export { owlDuoMasterImg };
+
+/** Cute StudyDuo Owl Brand Mark directly rendered using the brand kit paired owl mascots with open book & gold star. */
+export const StudyDuoOwlMark: React.FC<{ size?: number; className?: string }> = ({ size = 34, className = '' }) => (
+  <img
+    src={owlDuoMasterImg}
+    alt="StudyDuo Mascot"
     width={size}
     height={size}
-    viewBox="0 0 40 40"
-    fill="none"
-    xmlns="http://www.w3.org/2000/svg"
-    aria-hidden="true"
-    className="shrink-0"
-  >
-    {/* Graduation Cap */}
-    <path d="M20 4L35 10.5L20 17L5 10.5L20 4Z" fill="#7651E8" />
-    <path d="M32 12V19.5" stroke="#FFC857" strokeWidth="2.2" strokeLinecap="round" />
-    <circle cx="32" cy="20.5" r="2" fill="#FFC857" />
-    {/* Cute Round Owl Body */}
-    <circle cx="20" cy="24" r="12" fill="#8C6AF0" />
-    <ellipse cx="20" cy="28" rx="7.5" ry="6" fill="#E9DFFF" />
-    {/* Big Friendly Eyes */}
-    <circle cx="15.2" cy="22.5" r="4.3" fill="#FFFFFF" />
-    <circle cx="24.8" cy="22.5" r="4.3" fill="#FFFFFF" />
-    <circle cx="15.8" cy="22.5" r="2.2" fill="#20202A" />
-    <circle cx="24.2" cy="22.5" r="2.2" fill="#20202A" />
-    <circle cx="16.5" cy="21.7" r="0.8" fill="#FFFFFF" />
-    <circle cx="24.9" cy="21.7" r="0.8" fill="#FFFFFF" />
-    {/* Little Beak */}
-    <path d="M18 25.5L20 28.2L22 25.5H18Z" fill="#FFC857" />
-  </svg>
+    className={`shrink-0 object-contain rounded-xl select-none ${className}`}
+    style={{ width: `${size}px`, height: `${size}px` }}
+  />
 );
