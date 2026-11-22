@@ -1,0 +1,1400 @@
+# MASTER PROMPT: BUILD STUDYDUO — COMPLETE GAMIFIED COLLABORATIVE STUDY WEB APPLICATION
+
+Act as a senior full-stack software engineer, product architect, UI/UX designer, Firebase expert, database architect, and AI application developer.
+
+Your task is to DESIGN, DEVELOP, IMPLEMENT, AND COMPLETE a production-quality collaborative study-tracking web application named **StudyDuo**.
+
+Do not just create a prototype, landing page, or static dashboard.
+
+Build the actual working application with functional navigation, authentication, database integration, backend logic, real-time updates, permissions, gamification, and AI features.
+
+Do not stop after creating the first screen. Implement the complete application from beginning to end.
+
+==================================================
+1. PRODUCT IDENTITY
+==================================================
+
+Application name: StudyDuo
+
+Tagline: Learn Together. Grow Together.
+
+Product concept:
+
+StudyDuo is a collaborative gamified learning platform where two people can create learning goals, organize daily learning checklists, track individual study progress, compete through XP and points, maintain streaks, earn achievements, and motivate each other.
+
+The application is primarily designed for two people studying together.
+
+Example:
+
+Person A wants to become a Python developer.
+
+Person A creates a learning goal:
+
+"Become a Python Developer in 60 Days."
+
+Person A invites Person B.
+
+Person A creates a complete learning roadmap and manually creates the daily checklists.
+
+Day 1:
+- Introduction to Python.
+- Install Python and VS Code.
+- Learn variables.
+- Learn data types.
+- Complete practice exercises.
+
+Day 2:
+- Python operators.
+- Conditional statements.
+- Practical exercises.
+
+Person A owns and manages the official roadmap and daily checklist.
+
+Person B can view the official checklist, study the material, and independently mark each task as completed.
+
+Both participants have independent completion statuses, points, XP, progress, and streaks.
+
+The application automatically calculates their scores and displays daily winners.
+
+The owner controls the official learning roadmap. Participants cannot modify each other's progress.
+
+IMPORTANT:
+The application must work for real registered users, not just simulated users.
+
+==================================================
+2. TECHNOLOGY STACK
+==================================================
+
+Use the following stack wherever supported by the Google AI Studio environment.
+
+Frontend:
+- React with TypeScript or Next.js with TypeScript, depending on the supported project scaffold.
+- Tailwind CSS.
+- Component-based architecture.
+- Lucide icons.
+- Framer Motion for subtle animations.
+- Recharts for analytics.
+- React Hook Form.
+- Zod validation.
+
+Backend:
+- Firebase Authentication.
+- Cloud Firestore.
+- Firebase Storage.
+- Firebase Cloud Functions for scheduled and event-driven operations.
+- Secure server-side API routes or server functions.
+
+AI:
+- Gemini API.
+- Use secure server-side calls.
+- Never expose private API keys in client-side code.
+
+Deployment:
+- Make the project compatible with the available Google AI Studio deployment and Firebase deployment workflows.
+- Provide clear Firebase setup instructions.
+- Provide environment variable documentation.
+- Ensure production build compatibility.
+
+If the environment does not support Next.js directly, use the closest supported React and TypeScript architecture without sacrificing functionality.
+
+Do not replace Firebase with localStorage as the permanent database.
+
+==================================================
+3. DESIGN PHILOSOPHY — EXTREMELY IMPORTANT
+==================================================
+
+The application is MOBILE-FIRST.
+
+Most users will use this application on smartphones.
+
+Design the mobile experience first and then adapt it for tablets and desktops.
+
+DESIGN STYLE:
+
+- Modern minimal SaaS.
+- Clean educational productivity interface.
+- Premium, friendly, playful appearance.
+- Spacious layouts.
+- Generous padding.
+- Large readable typography.
+- Beautiful rounded cards.
+- Soft shadows.
+- Subtle borders.
+- Minimal gradients.
+- Smooth transitions.
+- Clear visual hierarchy.
+- Plenty of whitespace.
+
+LIGHT THEME ONLY.
+
+Do not implement dark mode or a dark theme toggle.
+
+COLOR PALETTE:
+
+Primary purple: #7956D8
+Light purple: #F0EBFF
+Background: #F8F9FC
+Card background: #FFFFFF
+Primary text: #242337
+Secondary text: #88899B
+Border: #E9EAF0
+Success green: #38A879
+Light green: #E7F6EE
+Warning yellow: #F3BD59
+Light yellow: #FFF6E5
+Danger red: #E66F77
+
+Use purple as the main brand color.
+
+MOBILE DESIGN RULES:
+
+- Main mobile content should have approximately 20px horizontal padding.
+- Cards should have generous internal padding.
+- Avoid cramped layouts.
+- Use minimum 44px touch targets.
+- Prefer bottom navigation over a desktop sidebar on mobile.
+- Use bottom sheets for mobile forms when appropriate.
+- Use full-screen mobile forms for complex editing.
+- Use responsive grids.
+- Avoid horizontal scrolling.
+- Use sticky headers only where useful.
+- Account for mobile safe areas.
+- Avoid tiny text.
+- Keep the most important action easily accessible.
+- Avoid unnecessary information density.
+
+DESKTOP DESIGN:
+
+- Sidebar navigation.
+- Maximum readable content width.
+- Two-column dashboards when useful.
+- Centered content.
+- Keep the same visual identity.
+
+TYPOGRAPHY:
+
+Use Inter or Geist.
+
+The interface should feel like a combination of Duolingo, Notion, Linear, and a modern productivity dashboard, without copying their exact designs.
+
+==================================================
+4. APPLICATION NAVIGATION
+==================================================
+
+Create these main pages:
+
+1. Dashboard.
+2. My Goals.
+3. Daily Checklist.
+4. Leaderboard.
+5. Study Groups.
+6. Analytics.
+7. Learning Journal.
+8. AI Study Assistant.
+9. Achievements.
+10. Notifications.
+11. Profile.
+12. Settings.
+
+MOBILE NAVIGATION:
+
+Use a fixed bottom navigation bar with five main destinations:
+
+- Home.
+- Goals.
+- Checklist.
+- Leaderboard.
+- Profile.
+
+Use icons with short labels.
+
+Other pages should be accessible through the Profile menu, dashboard shortcuts, or relevant page actions.
+
+Make sure the bottom navigation does not cover page content.
+
+==================================================
+5. AUTHENTICATION AND ONBOARDING
+==================================================
+
+Build a complete authentication system using Firebase Authentication.
+
+Features:
+
+- Google sign-in.
+- Email and password registration.
+- Login.
+- Logout.
+- Forgot password.
+- Password reset.
+- Authentication persistence.
+- User profile creation.
+- Protected routes.
+- User-friendly errors.
+
+ONBOARDING:
+
+After registration, ask the user to create their profile.
+
+Fields:
+
+- Full name.
+- Unique username.
+- Profile picture or avatar.
+- Short bio.
+- Preferred learning category.
+- Timezone.
+
+After onboarding, show a welcome screen.
+
+Offer two options:
+
+1. Create a new study goal.
+2. Join a study goal using an invitation link or code.
+
+Users should be able to access the application without immediately joining a group.
+
+==================================================
+6. DASHBOARD
+==================================================
+
+Build a beautiful personalized dashboard.
+
+Header:
+
+"Good morning, [User Name]"
+
+Subheading:
+
+"Ready to make today count?"
+
+Display:
+
+- User avatar.
+- Notifications.
+- Current level.
+- Total XP.
+- Current streak.
+- Active goals.
+
+Dashboard cards:
+
+A. TODAY'S PROGRESS
+
+Display:
+- Completed tasks.
+- Total tasks.
+- Completion percentage.
+- Progress bar.
+
+B. ACTIVE GOALS
+
+Each card should show:
+- Goal title.
+- Subject.
+- Partner avatar.
+- Days completed.
+- Total days.
+- Overall progress.
+- Today's checklist shortcut.
+
+C. DAILY COMPETITION
+
+Display:
+- My daily points.
+- Partner's daily points.
+- Current leader.
+- Visual comparison bar.
+
+D. STREAK CARD
+
+Display:
+- Current streak.
+- Longest streak.
+- Weekly activity indicators.
+
+E. UPCOMING TASKS
+
+Show upcoming learning activities.
+
+F. RECENT ACTIVITY
+
+Show recent completed tasks, achievements, and group activity.
+
+G. QUICK ACTIONS
+
+- Create goal.
+- Open today's checklist.
+- View leaderboard.
+- Ask AI.
+
+Use attractive but minimal cards.
+
+==================================================
+7. GOAL CREATION SYSTEM
+==================================================
+
+Build a complete goal creation workflow.
+
+Only the goal owner can create the official goal.
+
+Goal creation fields:
+
+- Goal title.
+- Description.
+- Subject/category.
+- Cover icon or image.
+- Start date.
+- Duration in days.
+- Target completion date.
+- Difficulty.
+- Goal timezone.
+- Daily target.
+- Optional learning description.
+
+Example:
+
+Goal: Become a Python Developer.
+
+Category: Programming.
+
+Duration: 60 days.
+
+Difficulty: Intermediate.
+
+Start date: User-selected.
+
+Allow the user to create the goal and then invite another person.
+
+A goal should support a configurable maximum of two participants in the initial release.
+
+Design the database to support multiple members in future versions.
+
+==================================================
+8. INVITATION SYSTEM
+==================================================
+
+The goal owner can invite another registered or unregistered user.
+
+Implement:
+
+- Unique invitation code.
+- Shareable invitation URL.
+- Invitation expiration.
+- Invitation status.
+- Accept invitation.
+- Reject invitation.
+- Cancel invitation.
+- Prevent duplicate membership.
+- Prevent unauthorized invitations.
+- Display invited participant.
+
+After the invitation is accepted, both participants can access the shared goal.
+
+Only the owner can manage the official learning roadmap.
+
+==================================================
+9. GOAL ROADMAP
+==================================================
+
+Build a visual roadmap page.
+
+The owner should be able to organize the learning goal into phases.
+
+Example Python roadmap:
+
+Phase 1: Python Fundamentals.
+Phase 2: Data Structures.
+Phase 3: Functions and OOP.
+Phase 4: Python Libraries.
+Phase 5: APIs and Backend.
+Phase 6: Final Project.
+
+Each phase supports:
+
+- Phase title.
+- Description.
+- Start day.
+- End day.
+- Learning objectives.
+- Completion status.
+- Associated daily tasks.
+
+Allow the owner to:
+
+- Add phase.
+- Edit phase.
+- Delete phase.
+- Reorder phases.
+- Add milestones.
+- Mark phase as published.
+
+The collaborator can view the roadmap but cannot edit it.
+
+==================================================
+10. DAILY CHECKLIST SYSTEM — CORE FEATURE
+==================================================
+
+This is the most important feature of StudyDuo.
+
+Create a dedicated daily checklist experience.
+
+Each learning goal has a sequence of days.
+
+For example:
+
+Day 01.
+Day 02.
+Day 03.
+Day 04.
+
+Each day has its own manually created checklist.
+
+IMPORTANT:
+
+Do not automatically create the official daily tasks without the owner's approval.
+
+The owner creates the daily checklist manually.
+
+DAILY CHECKLIST PAGE:
+
+Header:
+
+"Today's Learning"
+
+Display:
+
+- Goal name.
+- Day number.
+- Date.
+- Daily progress.
+- Number of tasks.
+- Available XP.
+- Partner progress.
+
+Each task card should support:
+
+1. Task title.
+2. Short description.
+3. Detailed instructions.
+4. Learning notes.
+5. YouTube link.
+6. ChatGPT conversation link.
+7. Other external resource links.
+8. Estimated completion time.
+9. XP reward.
+10. Priority.
+11. Task order.
+12. Published status.
+
+OWNER CONTROLS:
+
+The owner should see an "Add Task" button.
+
+On clicking it, open a clean mobile-friendly task editor.
+
+TASK EDITOR FIELDS:
+
+- Task title.
+- Short description.
+- Detailed description.
+- Rich text notes.
+- YouTube URL.
+- ChatGPT URL.
+- Additional resource URLs.
+- Estimated minutes.
+- XP reward.
+- Priority.
+- Save draft.
+- Publish task.
+
+Owner actions:
+
+- Add task.
+- Edit task.
+- Delete task.
+- Duplicate task.
+- Reorder task.
+- Archive task.
+- Publish checklist.
+- Unpublish checklist where safe.
+
+Only the owner can modify official task content.
+
+COLLABORATOR EXPERIENCE:
+
+The collaborator sees the same official task content.
+
+The collaborator can:
+
+- View task.
+- Read notes.
+- Open YouTube link.
+- Open ChatGPT link.
+- Open other resources.
+- Mark their own task complete.
+- Add private personal notes.
+- View earned XP.
+
+The collaborator cannot:
+
+- Edit official task title.
+- Change official task notes.
+- Change task XP.
+- Delete official tasks.
+- Mark the owner's tasks complete.
+- Change the owner's progress.
+
+TASK COMPLETION:
+
+Each user has an independent completion record.
+
+Example:
+
+Task: Learn Python Variables.
+
+Person A: Completed.
+
+Person B: Pending.
+
+If Person B completes it later, only Person B's status changes.
+
+Use a checkbox or large completion button.
+
+After successful completion:
+
+- Update the UI immediately.
+- Persist the completion to Firestore.
+- Award XP through trusted backend logic.
+- Update the user's daily score.
+- Update the leaderboard.
+- Update progress analytics.
+- Record the completion timestamp.
+
+Use optimistic UI only with proper rollback on failure.
+
+Prevent duplicate XP awards.
+
+TASK DETAILS:
+
+When clicking a task, open a detailed view or mobile bottom sheet.
+
+Display all task notes and learning resources.
+
+Use recognizable resource icons.
+
+External links must open safely.
+
+Support YouTube, ChatGPT, documentation, PDFs, and normal websites.
+
+==================================================
+11. POINTS AND XP SYSTEM
+==================================================
+
+Implement two separate scoring systems.
+
+A. LIFETIME XP
+
+XP is accumulated across the user's entire account.
+
+B. DAILY POINTS
+
+Daily points are calculated separately for each goal and date.
+
+Suggested default XP:
+
+Small task: 10 XP.
+
+Normal task: 20 XP.
+
+Difficult task: 40 XP.
+
+Major task: 60 XP.
+
+Daily checklist completion bonus: 30 XP.
+
+Weekly milestone completion: 100 XP.
+
+The owner can configure individual task XP.
+
+IMPORTANT SCORING RULES:
+
+- Only completed tasks receive task XP.
+- Each task can award XP once per user.
+- Duplicate requests must not create duplicate rewards.
+- XP is calculated by the backend.
+- Daily points and lifetime XP are stored separately.
+- Changes to task rewards after completion must not silently rewrite historical scores.
+- Store XP transactions for auditing.
+
+==================================================
+12. LEADERBOARD
+==================================================
+
+Create a beautiful competitive leaderboard.
+
+Display:
+
+- First place.
+- Second place.
+- Participant avatars.
+- Daily points.
+- Weekly points.
+- Total XP.
+- Current level.
+
+Include tabs:
+
+- Today.
+- This week.
+- Overall.
+
+Display the daily winner after the scoring day closes.
+
+Create a fun visual winner indicator.
+
+Keep competition friendly and encouraging.
+
+Support ties.
+
+Do not award automatic unfair bonus XP simply for winning.
+
+==================================================
+13. LEVELS AND ACHIEVEMENTS
+==================================================
+
+Create a level progression system.
+
+Suggested levels:
+
+Level 1: Beginner.
+Level 2: Explorer.
+Level 3: Learner.
+Level 4: Achiever.
+Level 5: Knowledge Seeker.
+Level 6: Expert.
+Level 7: Master.
+
+Use XP thresholds that can be configured.
+
+ACHIEVEMENTS:
+
+- First Task.
+- First Learning Day.
+- Three-Day Streak.
+- Seven-Day Streak.
+- Ten-Day Challenge.
+- 50 Tasks Completed.
+- 100 Tasks Completed.
+- Perfect Week.
+- Goal Completed.
+- Study Champion.
+
+Display unlocked achievements in the profile.
+
+Use attractive badge illustrations.
+
+==================================================
+14. STREAK SYSTEM
+==================================================
+
+Implement individual and group streaks.
+
+Individual streak:
+
+A user maintains a streak by completing at least one eligible learning task on an active study day.
+
+Group streak:
+
+Both participants complete at least one task on the same active study day.
+
+Display:
+
+- Current streak.
+- Longest streak.
+- Weekly activity.
+- Group streak.
+
+Support planned rest days.
+
+Use the goal timezone for date calculations.
+
+Do not accidentally reset streaks due to UTC conversion or daylight-saving changes.
+
+==================================================
+15. STUDY GROUPS
+==================================================
+
+Build a study group page.
+
+Initially, each goal supports two participants.
+
+Features:
+
+- Group profile.
+- Group name.
+- Group members.
+- Shared goals.
+- Group progress.
+- Shared achievements.
+- Activity feed.
+- Invitation management.
+
+Keep the architecture expandable to larger groups.
+
+==================================================
+16. ANALYTICS
+==================================================
+
+Create an analytics page with responsive Recharts visualizations.
+
+Display:
+
+- Daily task completion.
+- Weekly progress.
+- Monthly progress.
+- XP growth.
+- Study time.
+- Consistency.
+- Goal completion percentage.
+- Partner comparison.
+
+Use clean charts with readable labels.
+
+Provide date filters.
+
+Do not display fabricated analytics when there is no data.
+
+Show useful empty states.
+
+==================================================
+17. LEARNING JOURNAL
+==================================================
+
+Create a personal learning journal.
+
+Users can create private journal entries.
+
+Fields:
+
+- Title.
+- Date.
+- Learning topic.
+- Notes.
+- What I learned.
+- Questions.
+- Challenges.
+- Resources.
+
+Allow:
+
+- Create.
+- Edit.
+- Delete.
+- Search.
+- Filter by goal.
+- Filter by date.
+
+Journal entries are private by default.
+
+Provide optional sharing with the goal owner only after explicit user permission.
+
+==================================================
+18. AI STUDY ASSISTANT — GEMINI INTEGRATION
+==================================================
+
+Integrate Gemini AI through secure server-side API calls.
+
+Create a dedicated AI assistant page.
+
+The AI assistant should understand:
+
+- The selected goal.
+- Current roadmap.
+- Current day.
+- Published tasks.
+- User's completed tasks.
+- Learning journal entries when authorized.
+
+AI FEATURES:
+
+A. AI STUDY PLANNER
+
+User request:
+
+"I want to become a Python developer in 60 days."
+
+Generate a suggested roadmap with:
+
+- Learning phases.
+- Daily topics.
+- Estimated study time.
+- Learning milestones.
+- Revision sessions.
+- Practice recommendations.
+
+Do not automatically publish AI-generated tasks.
+
+The goal owner must review and approve the suggested plan.
+
+B. AI EXPLANATION
+
+Allow the user to ask:
+
+- Explain this topic.
+- Explain like a beginner.
+- Give examples.
+- Explain difficult concepts.
+- Create practical examples.
+
+C. AI QUIZ GENERATOR
+
+Generate quizzes based on completed topics.
+
+Support:
+
+- Multiple choice.
+- True or false.
+- Short answer.
+- Coding questions.
+
+Display results and explanations.
+
+Prevent unlimited repeat quiz attempts from generating unlimited XP.
+
+D. AI NOTES ASSISTANT
+
+- Summarize notes.
+- Organize notes.
+- Generate flashcards.
+- Create revision sheets.
+- Generate practice questions.
+
+E. AI PROGRESS ANALYZER
+
+Analyze study history and provide supportive insights.
+
+F. AI ROADMAP ADVISOR
+
+Suggest improvements to future learning topics.
+
+The owner must approve official roadmap modifications.
+
+G. AI RESOURCE SUGGESTIONS
+
+Suggest useful documentation and learning resources.
+
+Do not invent resource URLs.
+
+H. AI STUDY COACH
+
+Answer questions such as:
+
+- What should I study today?
+- What did I complete this week?
+- Which topics should I revise?
+- What is my next milestone?
+
+I. AI PARTNER INSIGHTS
+
+Compare study consistency and progress constructively.
+
+Respect user privacy and group permissions.
+
+AI SECURITY:
+
+- Keep API keys on the server.
+- Validate AI inputs.
+- Rate-limit requests.
+- Limit unnecessary context.
+- Do not send private journal content without permission.
+- Handle API failures gracefully.
+- Display loading states.
+
+==================================================
+19. NOTIFICATIONS
+==================================================
+
+Create an in-app notification system.
+
+Notification types:
+
+- Invitation received.
+- Invitation accepted.
+- Partner completed a task.
+- Partner completed the daily checklist.
+- Daily winner announced.
+- Achievement unlocked.
+- Goal milestone reached.
+- Weekly summary available.
+
+Add notification read/unread status.
+
+Allow notification preferences in Settings.
+
+Support browser push notifications as an optional future enhancement.
+
+==================================================
+20. PROFILE AND SETTINGS
+==================================================
+
+PROFILE:
+
+- Avatar.
+- Name.
+- Username.
+- Bio.
+- Total XP.
+- Level.
+- Achievements.
+- Current streak.
+- Completed goals.
+- Account creation date.
+
+SETTINGS:
+
+- Edit profile.
+- Change avatar.
+- Timezone.
+- Notification preferences.
+- Privacy settings.
+- Connected accounts.
+- Account deletion.
+- Logout.
+
+Keep the application light-theme-only.
+
+==================================================
+21. FIREBASE DATABASE ARCHITECTURE
+==================================================
+
+Use Cloud Firestore with a well-structured data model.
+
+Suggested collections:
+
+users/{userId}
+
+users/{userId}/stats
+
+goals/{goalId}
+
+goals/{goalId}/participants/{userId}
+
+goals/{goalId}/phases/{phaseId}
+
+goals/{goalId}/days/{dayId}
+
+goals/{goalId}/days/{dayId}/tasks/{taskId}
+
+goals/{goalId}/days/{dayId}/tasks/{taskId}/completions/{userId}
+
+goals/{goalId}/days/{dayId}/tasks/{taskId}/personalNotes/{userId}
+
+goals/{goalId}/dailyResults/{date}
+
+goals/{goalId}/activity/{activityId}
+
+invitations/{invitationId}
+
+xpTransactions/{transactionId}
+
+achievements/{achievementId}
+
+notifications/{notificationId}
+
+journalEntries/{entryId}
+
+aiConversations/{conversationId}
+
+Use server timestamps.
+
+Use stable document IDs.
+
+Use appropriate Firestore indexes.
+
+Avoid unnecessarily deep and expensive queries.
+
+Use pagination for large collections.
+
+Use transactions or idempotent backend operations for critical scoring logic.
+
+==================================================
+22. FIREBASE SECURITY
+==================================================
+
+Security is mandatory.
+
+Implement Firestore Security Rules.
+
+Implement Storage Security Rules.
+
+Rules must enforce:
+
+- Authenticated access.
+- Goal membership.
+- Owner-only roadmap management.
+- Owner-only task creation and editing.
+- Individual completion ownership.
+- Individual private journal ownership.
+- Invitation validation.
+- XP transaction integrity.
+- No client-side modification of trusted scores.
+- No unauthorized access to another user's private data.
+
+Use Firebase Admin SDK on trusted backend operations.
+
+Verify authentication tokens.
+
+Never trust user IDs supplied by the frontend without verification.
+
+Never let clients directly award themselves XP.
+
+==================================================
+23. BACKEND API
+==================================================
+
+Create functional backend operations.
+
+Suggested endpoints:
+
+POST /api/goals
+
+GET /api/goals
+
+GET /api/goals/[goalId]
+
+PATCH /api/goals/[goalId]
+
+POST /api/goals/[goalId]/invite
+
+POST /api/invitations/[id]/accept
+
+POST /api/invitations/[id]/reject
+
+POST /api/goals/[goalId]/phases
+
+POST /api/goals/[goalId]/days
+
+POST /api/tasks
+
+PATCH /api/tasks/[taskId]
+
+DELETE /api/tasks/[taskId]
+
+POST /api/tasks/[taskId]/complete
+
+GET /api/leaderboard
+
+GET /api/analytics
+
+POST /api/ai/plan
+
+POST /api/ai/explain
+
+POST /api/ai/quiz
+
+POST /api/ai/coach
+
+GET /api/notifications
+
+Use proper HTTP methods, validation, permission checks, error responses, and consistent response formats.
+
+==================================================
+24. REAL-TIME FUNCTIONALITY
+==================================================
+
+Use Firestore real-time listeners where appropriate.
+
+Both users should see updates when:
+
+- A task is completed.
+- A new task is published.
+- A checklist is updated.
+- A participant joins.
+- Daily scores change.
+- An achievement is unlocked.
+- A new notification arrives.
+
+Avoid unnecessary real-time subscriptions.
+
+Clean up listeners when components unmount.
+
+==================================================
+25. MOBILE EXPERIENCE
+==================================================
+
+This is a mobile-first product.
+
+Test the layout at:
+
+- 320px.
+- 360px.
+- 375px.
+- 390px.
+- 430px.
+- Tablet.
+- Desktop.
+
+Mobile checklist:
+
+- Large task cards.
+- Clear checkboxes.
+- Easy access to task details.
+- Bottom navigation.
+- Smooth scrolling.
+- Sticky day selector where useful.
+- Clear progress indicator.
+- Easy resource opening.
+- No horizontal overflow.
+
+Use bottom sheets for quick interactions.
+
+Use full-screen pages for larger editing workflows.
+
+Make the mobile dashboard feel like a polished native application.
+
+Support installation as a PWA where the platform permits.
+
+==================================================
+26. APPLICATION STATES
+==================================================
+
+Every major page must support:
+
+- Loading state.
+- Empty state.
+- Error state.
+- Success state.
+- Unauthorized state.
+- Offline or connection error state where applicable.
+
+Never leave a button nonfunctional.
+
+Every form must validate inputs.
+
+Every save operation must provide feedback.
+
+Use confirmation dialogs for destructive actions.
+
+Add skeleton loaders where appropriate.
+
+==================================================
+27. PERFORMANCE
+==================================================
+
+Optimize for mobile networks and mobile devices.
+
+Requirements:
+
+- Lazy load heavy components.
+- Optimize images.
+- Avoid unnecessary re-renders.
+- Use pagination.
+- Use efficient Firestore queries.
+- Avoid excessive listeners.
+- Minimize bundle size.
+- Use server-side rendering where appropriate.
+- Cache appropriate data.
+- Keep animations subtle.
+
+==================================================
+28. TESTING
+==================================================
+
+Test the important user journeys.
+
+TEST 1:
+
+User A registers.
+
+User A creates a Python learning goal.
+
+User A creates Day 1.
+
+User A creates five tasks.
+
+User A publishes the checklist.
+
+TEST 2:
+
+User A invites User B.
+
+User B accepts the invitation.
+
+User B can access the goal.
+
+TEST 3:
+
+User A completes Task 1.
+
+User A receives the correct XP.
+
+User B's completion status remains unchanged.
+
+TEST 4:
+
+User B completes Task 1.
+
+User B receives their own XP.
+
+The leaderboard updates.
+
+TEST 5:
+
+User B attempts to edit the official task.
+
+The application denies the operation.
+
+TEST 6:
+
+User A edits the task.
+
+The application accepts the edit.
+
+TEST 7:
+
+AI generates a learning plan.
+
+The owner can review and approve it.
+
+TEST 8:
+
+A duplicate completion request is submitted.
+
+No duplicate XP is awarded.
+
+TEST 9:
+
+Test streak calculation across date boundaries.
+
+TEST 10:
+
+Test mobile layouts and navigation.
+
+==================================================
+29. IMPLEMENTATION RULES
+==================================================
+
+These instructions are critical.
+
+1. Build the complete application, not just the landing page.
+
+2. Implement real Firebase integration.
+
+3. Do not use fake static dashboard data as the final implementation.
+
+4. Do not use localStorage as a substitute for Firestore.
+
+5. If Firebase configuration is missing, create a clear configuration flow and environment variable template.
+
+6. Keep components reusable.
+
+7. Keep business logic separate from UI components.
+
+8. Use TypeScript types.
+
+9. Use Zod validation.
+
+10. Implement backend permission checks.
+
+11. Ensure every major button has a working action.
+
+12. Ensure navigation works.
+
+13. Avoid duplicate code.
+
+14. Build mobile-first.
+
+15. Use a consistent design system.
+
+16. Use accessible components.
+
+17. Never expose API secrets.
+
+18. Use transactions for critical scoring operations.
+
+19. Provide meaningful error messages.
+
+20. Do not silently ignore failed operations.
+
+21. Do not claim a backend integration is complete if it has not actually been configured.
+
+22. Do not create placeholder functionality for core features.
+
+23. Use realistic empty states instead of fake activity.
+
+24. If an external service requires credentials, clearly identify the missing configuration.
+
+25. Do not stop after implementing the frontend.
+
+==================================================
+30. FINAL DELIVERY REQUIREMENTS
+==================================================
+
+Deliver the completed StudyDuo application with:
+
+- Fully implemented responsive UI.
+- Light theme only.
+- Firebase authentication.
+- User profiles.
+- Goal creation.
+- Partner invitations.
+- Goal roadmap.
+- Owner-controlled daily checklist.
+- Individual task completion.
+- Notes and resource links.
+- XP system.
+- Daily points.
+- Leaderboard.
+- Levels.
+- Achievements.
+- Streaks.
+- Analytics.
+- Learning journal.
+- Gemini AI integration.
+- Notifications.
+- Settings.
+- Backend APIs.
+- Firestore database structure.
+- Firestore security rules.
+- Storage rules.
+- Error handling.
+- Loading states.
+- Mobile optimization.
+- PWA support where possible.
+
+Also provide:
+
+1. Complete source code.
+2. Project folder structure.
+3. Firebase configuration instructions.
+4. Environment variable example.
+5. Database schema documentation.
+6. Deployment instructions.
+7. Testing checklist.
+8. List of features requiring external credentials.
+
+FINAL EXECUTION INSTRUCTION:
+
+Start by creating the actual application.
+
+First establish the project architecture and design system.
+
+Then implement the authentication and Firebase integration.
+
+Next implement the complete goal, invitation, checklist, scoring, and leaderboard systems.
+
+Then implement analytics, achievements, journal, notifications, and AI.
+
+Finally test the entire application and fix integration errors.
+
+Do not stop at a design mockup.
+
+Do not merely describe what you would build.
+
+Actually build as much of the complete, working application as the available environment allows.
+
+Prioritize a functional mobile-first experience over decorative complexity.
+
+The finished product should feel like a polished, premium, modern study companion that two people can genuinely use every day.
+
+**StudyDuo — Learn Together. Grow Together.**

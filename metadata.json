@@ -1,0 +1,6 @@
+{
+  "name": "StudyDuo",
+  "description": "Collaborative gamified study tracker where two learners build roadmaps, complete daily checklists, earn XP, keep streaks, and learn together with an AI study assistant.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

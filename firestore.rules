@@ -1,0 +1,793 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Pillar 0: Global Default-Deny Safety Net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // ==================== GLOBAL PRIMITIVES ====================
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isVerified() {
+      return isSignedIn() && request.auth.token.email_verified == true;
+    }
+
+    function isSelf(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 160 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isOptionalString(data, key, maxLen) {
+      return !(key in data) || (data[key] is string && data[key].size() <= maxLen);
+    }
+
+    function isNonEmptyString(val, minLen, maxLen) {
+      return val is string && val.size() >= minLen && val.size() <= maxLen;
+    }
+
+    function getGoal(goalId) {
+      return get(/databases/$(database)/documents/goals/$(goalId)).data;
+    }
+
+    function goalExists(goalId) {
+      return exists(/databases/$(database)/documents/goals/$(goalId));
+    }
+
+    function isGoalMember(goalId) {
+      return isSignedIn() && goalExists(goalId) && request.auth.uid in getGoal(goalId).participantIds;
+    }
+
+    function isGoalOwner(goalId) {
+      return isSignedIn() && goalExists(goalId) && getGoal(goalId).ownerId == request.auth.uid;
+    }
+
+    // ==================== ENTITY VALIDATION BLUEPRINTS ====================
+
+    function isValidUserPublic(data, userId) {
+      return data.keys().hasAll([
+          'uid', 'fullName', 'username', 'timezone',
+          'totalXp', 'level', 'currentStreak', 'longestStreak',
+          'completedTasksCount', 'completedGoalsCount', 'onboardingCompleted',
+          'createdAt', 'updatedAt'
+        ])
+        && data.keys().hasOnly([
+          'uid', 'fullName', 'username', 'avatarColor', 'avatarInitials',
+          'photoURL', 'bio', 'preferredCategory', 'timezone',
+          'totalXp', 'level', 'currentStreak', 'longestStreak',
+          'completedTasksCount', 'completedGoalsCount', 'lastActiveDate',
+          'onboardingCompleted', 'createdAt', 'updatedAt'
+        ])
+        && data.uid == userId
+        && isValidId(data.uid)
+        && isNonEmptyString(data.fullName, 1, 80)
+        && data.username is string && data.username.size() >= 2 && data.username.size() <= 32 && data.username.matches('^[a-zA-Z0-9_]+$')
+        && isOptionalString(data, 'avatarColor', 24)
+        && isOptionalString(data, 'avatarInitials', 4)
+        && isOptionalString(data, 'photoURL', 500)
+        && isOptionalString(data, 'bio', 280)
+        && isOptionalString(data, 'preferredCategory', 60)
+        && isNonEmptyString(data.timezone, 1, 64)
+        && isOptionalString(data, 'lastActiveDate', 16)
+        && data.totalXp is number && data.totalXp >= 0 && data.totalXp <= 10000000
+        && data.level is number && data.level >= 1 && data.level <= 50
+        && data.currentStreak is number && data.currentStreak >= 0 && data.currentStreak <= 10000
+        && data.longestStreak is number && data.longestStreak >= 0 && data.longestStreak <= 10000
+        && data.completedTasksCount is number && data.completedTasksCount >= 0 && data.completedTasksCount <= 1000000
+        && data.completedGoalsCount is number && data.completedGoalsCount >= 0 && data.completedGoalsCount <= 10000
+        && data.onboardingCompleted is bool
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidUserPrivate(data, userId) {
+      return data.keys().hasAll([
+          'uid', 'email', 'notifyInvites', 'notifyPartnerActivity',
+          'notifyDailyWinner', 'notifyAchievements', 'notifyWeeklySummary',
+          'shareProgressWithPartner', 'allowAiJournalContext', 'updatedAt'
+        ])
+        && data.keys().hasOnly([
+          'uid', 'email', 'notifyInvites', 'notifyPartnerActivity',
+          'notifyDailyWinner', 'notifyAchievements', 'notifyWeeklySummary',
+          'shareProgressWithPartner', 'allowAiJournalContext', 'updatedAt'
+        ])
+        && data.uid == userId
+        && isValidId(data.uid)
+        && isNonEmptyString(data.email, 3, 254)
+        && data.notifyInvites is bool
+        && data.notifyPartnerActivity is bool
+        && data.notifyDailyWinner is bool
+        && data.notifyAchievements is bool
+        && data.notifyWeeklySummary is bool
+        && data.shareProgressWithPartner is bool
+        && data.allowAiJournalContext is bool
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidGoal(data, goalId) {
+      return data.keys().hasAll([
+          'id', 'ownerId', 'participantIds', 'title', 'description',
+          'category', 'startDate', 'durationDays', 'targetDate',
+          'difficulty', 'timezone', 'dailyTargetMinutes', 'maxParticipants',
+          'status', 'createdAt', 'updatedAt'
+        ])
+        && data.keys().hasOnly([
+          'id', 'ownerId', 'participantIds', 'title', 'description',
+          'category', 'icon', 'startDate', 'durationDays', 'targetDate',
+          'difficulty', 'timezone', 'dailyTargetMinutes', 'maxParticipants',
+          'groupName', 'groupStreak', 'longestGroupStreak', 'restDays',
+          'status', 'createdAt', 'updatedAt'
+        ])
+        && data.id == goalId
+        && isValidId(data.id)
+        && isValidId(data.ownerId)
+        && data.participantIds is list && data.participantIds.size() >= 1 && data.participantIds.size() <= 10 && data.participantIds[0] is string
+        && isNonEmptyString(data.title, 2, 120)
+        && data.description is string && data.description.size() <= 600
+        && isNonEmptyString(data.category, 1, 50)
+        && isOptionalString(data, 'icon', 32)
+        && isNonEmptyString(data.startDate, 8, 16)
+        && data.durationDays is number && data.durationDays >= 1 && data.durationDays <= 365
+        && isNonEmptyString(data.targetDate, 8, 16)
+        && data.difficulty in ['Beginner', 'Intermediate', 'Advanced']
+        && isNonEmptyString(data.timezone, 1, 64)
+        && data.dailyTargetMinutes is number && data.dailyTargetMinutes >= 5 && data.dailyTargetMinutes <= 720
+        && data.maxParticipants is number && data.maxParticipants >= 1 && data.maxParticipants <= 10
+        && isOptionalString(data, 'groupName', 80)
+        && (!('groupStreak' in data) || (data.groupStreak is number && data.groupStreak >= 0))
+        && (!('longestGroupStreak' in data) || (data.longestGroupStreak is number && data.longestGroupStreak >= 0))
+        && (!('restDays' in data) || (data.restDays is list && data.restDays.size() <= 30 && (data.restDays.size() == 0 || data.restDays[0] is string)))
+        && data.status in ['active', 'completed', 'archived']
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidParticipant(data, goalId, userId) {
+      return data.keys().hasAll([
+          'uid', 'goalId', 'role', 'displayName', 'username',
+          'goalXp', 'completedTasksCount', 'daysCompleted',
+          'currentStreak', 'longestStreak', 'joinedAt'
+        ])
+        && data.keys().hasOnly([
+          'uid', 'goalId', 'role', 'displayName', 'username',
+          'avatarColor', 'avatarInitials', 'goalXp', 'completedTasksCount',
+          'daysCompleted', 'currentStreak', 'longestStreak', 'joinedAt'
+        ])
+        && data.uid == userId
+        && data.goalId == goalId
+        && data.role in ['owner', 'collaborator']
+        && isNonEmptyString(data.displayName, 1, 80)
+        && isNonEmptyString(data.username, 2, 32)
+        && isOptionalString(data, 'avatarColor', 24)
+        && isOptionalString(data, 'avatarInitials', 4)
+        && data.goalXp is number && data.goalXp >= 0 && data.goalXp <= 10000000
+        && data.completedTasksCount is number && data.completedTasksCount >= 0
+        && data.daysCompleted is number && data.daysCompleted >= 0
+        && data.currentStreak is number && data.currentStreak >= 0
+        && data.longestStreak is number && data.longestStreak >= 0
+        && data.joinedAt is timestamp;
+    }
+
+    function isValidPhase(data, goalId, phaseId) {
+      return data.keys().hasAll([
+          'id', 'goalId', 'ownerId', 'title', 'startDay', 'endDay',
+          'order', 'isPublished', 'createdAt', 'updatedAt'
+        ])
+        && data.keys().hasOnly([
+          'id', 'goalId', 'ownerId', 'title', 'description', 'startDay', 'endDay',
+          'order', 'objectives', 'milestoneTitle', 'isPublished', 'createdAt', 'updatedAt'
+        ])
+        && data.id == phaseId
+        && data.goalId == goalId
+        && data.ownerId == request.auth.uid
+        && isNonEmptyString(data.title, 2, 120)
+        && isOptionalString(data, 'description', 500)
+        && data.startDay is number && data.startDay >= 1 && data.startDay <= 365
+        && data.endDay is number && data.endDay >= data.startDay && data.endDay <= 365
+        && data.order is number && data.order >= 0 && data.order <= 100
+        && (!('objectives' in data) || (data.objectives is list && data.objectives.size() <= 10 && (data.objectives.size() == 0 || data.objectives[0] is string)))
+        && isOptionalString(data, 'milestoneTitle', 120)
+        && data.isPublished is bool
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidDay(data, goalId, dayId) {
+      return data.keys().hasAll([
+          'id', 'goalId', 'ownerId', 'dayNumber', 'date', 'title',
+          'isPublished', 'createdAt', 'updatedAt'
+        ])
+        && data.keys().hasOnly([
+          'id', 'goalId', 'ownerId', 'dayNumber', 'date', 'title',
+          'phaseId', 'isPublished', 'isRestDay', 'createdAt', 'updatedAt'
+        ])
+        && data.id == dayId
+        && data.goalId == goalId
+        && data.ownerId == request.auth.uid
+        && data.dayNumber is number && data.dayNumber >= 1 && data.dayNumber <= 365
+        && isNonEmptyString(data.date, 8, 16)
+        && isNonEmptyString(data.title, 1, 120)
+        && isOptionalString(data, 'phaseId', 128)
+        && data.isPublished is bool
+        && (!('isRestDay' in data) || data.isRestDay is bool)
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidTask(data, goalId, dayId, taskId) {
+      return data.keys().hasAll([
+          'id', 'goalId', 'dayId', 'dayNumber', 'ownerId', 'title',
+          'estimatedMinutes', 'xpReward', 'priority', 'order',
+          'isPublished', 'isArchived', 'createdAt', 'updatedAt'
+        ])
+        && data.keys().hasOnly([
+          'id', 'goalId', 'dayId', 'dayNumber', 'ownerId', 'title',
+          'shortDescription', 'detailedInstructions', 'learningNotes',
+          'youtubeUrl', 'chatgptUrl', 'resourceLinks', 'estimatedMinutes',
+          'xpReward', 'priority', 'order', 'isPublished', 'isArchived',
+          'createdAt', 'updatedAt'
+        ])
+        && data.id == taskId
+        && data.goalId == goalId
+        && data.dayId == dayId
+        && data.ownerId == request.auth.uid
+        && data.dayNumber is number && data.dayNumber >= 1 && data.dayNumber <= 365
+        && isNonEmptyString(data.title, 2, 140)
+        && isOptionalString(data, 'shortDescription', 280)
+        && isOptionalString(data, 'detailedInstructions', 3000)
+        && isOptionalString(data, 'learningNotes', 4000)
+        && isOptionalString(data, 'youtubeUrl', 500)
+        && isOptionalString(data, 'chatgptUrl', 500)
+        && (!('resourceLinks' in data) || (data.resourceLinks is list && data.resourceLinks.size() <= 8 && (data.resourceLinks.size() == 0 || data.resourceLinks[0] is map)))
+        && data.estimatedMinutes is number && data.estimatedMinutes >= 1 && data.estimatedMinutes <= 600
+        && data.xpReward is number && data.xpReward >= 5 && data.xpReward <= 200
+        && data.priority in ['low', 'medium', 'high']
+        && data.order is number && data.order >= 0 && data.order <= 200
+        && data.isPublished is bool
+        && data.isArchived is bool
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidCompletion(data, goalId, completionId) {
+      return data.keys().hasAll([
+          'id', 'goalId', 'dayId', 'taskId', 'userId', 'dateKey',
+          'xpAwarded', 'estimatedMinutes', 'completedAt'
+        ])
+        && data.keys().hasOnly([
+          'id', 'goalId', 'dayId', 'taskId', 'userId', 'dateKey',
+          'xpAwarded', 'estimatedMinutes', 'completedAt'
+        ])
+        && data.id == completionId
+        && data.goalId == goalId
+        && isValidId(data.dayId)
+        && isValidId(data.taskId)
+        && data.userId == request.auth.uid
+        && completionId == data.taskId + '_' + request.auth.uid
+        && isNonEmptyString(data.dateKey, 8, 16)
+        && data.xpAwarded is number && data.xpAwarded >= 5 && data.xpAwarded <= 200
+        && data.estimatedMinutes is number && data.estimatedMinutes >= 0 && data.estimatedMinutes <= 600
+        && data.completedAt == request.time;
+    }
+
+    function isValidPersonalNote(data, noteId) {
+      return data.keys().hasAll(['userId', 'taskId', 'content', 'updatedAt'])
+        && data.keys().hasOnly(['userId', 'taskId', 'content', 'updatedAt'])
+        && data.userId == request.auth.uid
+        && isValidId(data.taskId)
+        && noteId == data.taskId + '_' + request.auth.uid
+        && data.content is string && data.content.size() <= 3000
+        && data.updatedAt == request.time;
+    }
+
+    function isValidInvitation(data, invitationId) {
+      return data.keys().hasAll([
+          'id', 'code', 'goalId', 'goalTitle', 'inviterId', 'inviterName',
+          'status', 'expiresAt', 'createdAt', 'updatedAt'
+        ])
+        && data.keys().hasOnly([
+          'id', 'code', 'goalId', 'goalTitle', 'inviterId', 'inviterName',
+          'inviteeEmail', 'acceptedBy', 'status', 'expiresAt', 'createdAt', 'updatedAt'
+        ])
+        && data.id == invitationId
+        && data.code is string && data.code.size() >= 6 && data.code.size() <= 24 && data.code.matches('^[A-Z0-9\\-]+$')
+        && isValidId(data.goalId)
+        && isNonEmptyString(data.goalTitle, 2, 120)
+        && isValidId(data.inviterId)
+        && isNonEmptyString(data.inviterName, 1, 80)
+        && isOptionalString(data, 'inviteeEmail', 254)
+        && isOptionalString(data, 'acceptedBy', 128)
+        && data.status in ['pending', 'accepted', 'rejected', 'cancelled', 'expired']
+        && data.expiresAt is timestamp
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidXpTransaction(data, txId) {
+      return data.keys().hasAll([
+          'id', 'userId', 'goalId', 'sourceType', 'sourceId',
+          'xpAmount', 'dateKey', 'label', 'createdAt'
+        ])
+        && data.keys().hasOnly([
+          'id', 'userId', 'goalId', 'sourceType', 'sourceId',
+          'xpAmount', 'dateKey', 'label', 'createdAt'
+        ])
+        && data.id == txId
+        && data.userId == request.auth.uid
+        && txId == request.auth.uid + '_' + data.sourceType + '_' + data.sourceId
+        && isValidId(data.goalId)
+        && data.sourceType in ['task', 'daily_bonus', 'milestone', 'quiz']
+        && isValidId(data.sourceId)
+        && data.xpAmount is number && data.xpAmount >= 5 && data.xpAmount <= 200
+        && isNonEmptyString(data.dateKey, 8, 16)
+        && isNonEmptyString(data.label, 1, 160)
+        && data.createdAt == request.time;
+    }
+
+    function isValidDailyResult(data, goalId, dateKey) {
+      return data.keys().hasAll(['dateKey', 'goalId', 'scores', 'winnerIds', 'isTie', 'isClosed', 'updatedAt'])
+        && data.keys().hasOnly(['dateKey', 'goalId', 'scores', 'winnerIds', 'isTie', 'isClosed', 'updatedAt'])
+        && data.dateKey == dateKey
+        && data.goalId == goalId
+        && data.scores is map
+        && data.winnerIds is list && data.winnerIds.size() <= 10 && (data.winnerIds.size() == 0 || data.winnerIds[0] is string)
+        && data.isTie is bool
+        && data.isClosed is bool
+        && data.updatedAt == request.time;
+    }
+
+    function isValidActivity(data, goalId, activityId) {
+      return data.keys().hasAll(['id', 'goalId', 'actorId', 'actorName', 'type', 'message', 'createdAt'])
+        && data.keys().hasOnly(['id', 'goalId', 'actorId', 'actorName', 'type', 'message', 'xpDelta', 'createdAt'])
+        && data.id == activityId
+        && data.goalId == goalId
+        && data.actorId == request.auth.uid
+        && isNonEmptyString(data.actorName, 1, 80)
+        && data.type in ['task_completed', 'day_completed', 'task_published', 'partner_joined', 'achievement_unlocked', 'milestone_reached']
+        && isNonEmptyString(data.message, 1, 240)
+        && (!('xpDelta' in data) || (data.xpDelta is number && data.xpDelta >= 0 && data.xpDelta <= 500))
+        && data.createdAt == request.time;
+    }
+
+    function isValidJournalEntry(data, entryId) {
+      return data.keys().hasAll([
+          'id', 'userId', 'isSharedWithOwner', 'title', 'date', 'topic',
+          'notes', 'createdAt', 'updatedAt'
+        ])
+        && data.keys().hasOnly([
+          'id', 'userId', 'goalId', 'sharedWithOwnerId', 'isSharedWithOwner',
+          'title', 'date', 'topic', 'notes', 'whatILearned', 'questions',
+          'challenges', 'resources', 'createdAt', 'updatedAt'
+        ])
+        && data.id == entryId
+        && data.userId == request.auth.uid
+        && isOptionalString(data, 'goalId', 128)
+        && isOptionalString(data, 'sharedWithOwnerId', 128)
+        && data.isSharedWithOwner is bool
+        && isNonEmptyString(data.title, 1, 140)
+        && isNonEmptyString(data.date, 8, 16)
+        && data.topic is string && data.topic.size() <= 120
+        && data.notes is string && data.notes.size() <= 4000
+        && isOptionalString(data, 'whatILearned', 2000)
+        && isOptionalString(data, 'questions', 2000)
+        && isOptionalString(data, 'challenges', 2000)
+        && isOptionalString(data, 'resources', 1500)
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidNotification(data, notifId) {
+      return data.keys().hasAll(['id', 'recipientId', 'senderId', 'type', 'title', 'body', 'isRead', 'createdAt'])
+        && data.keys().hasOnly(['id', 'recipientId', 'senderId', 'goalId', 'type', 'title', 'body', 'isRead', 'createdAt'])
+        && data.id == notifId
+        && isValidId(data.recipientId)
+        && isValidId(data.senderId)
+        && isOptionalString(data, 'goalId', 128)
+        && data.type in [
+          'invitation_received', 'invitation_accepted', 'partner_completed_task',
+          'partner_completed_checklist', 'daily_winner', 'achievement_unlocked',
+          'milestone_reached', 'weekly_summary'
+        ]
+        && isNonEmptyString(data.title, 1, 120)
+        && isNonEmptyString(data.body, 1, 300)
+        && data.isRead is bool
+        && data.createdAt is timestamp;
+    }
+
+    function isValidAchievement(data, achId) {
+      return data.keys().hasAll(['id', 'userId', 'achievementKey', 'unlockedAt'])
+        && data.keys().hasOnly(['id', 'userId', 'achievementKey', 'unlockedAt'])
+        && data.id == achId
+        && data.userId == request.auth.uid
+        && achId == request.auth.uid + '_' + data.achievementKey
+        && isNonEmptyString(data.achievementKey, 2, 64)
+        && data.unlockedAt == request.time;
+    }
+
+    // ==================== COLLECTION RULES ====================
+
+    // 1. Public User Profiles (Strictly No PII)
+    match /users/{userId} {
+      allow get: if isSignedIn() && isValidId(userId);
+      allow list: if isSignedIn() && resource.data.uid == request.auth.uid;
+      allow create: if isVerified() && isValidId(userId) && isSelf(userId)
+        && isValidUserPublic(incoming(), userId)
+        && incoming().totalXp == 0
+        && incoming().level == 1
+        && incoming().currentStreak == 0
+        && incoming().longestStreak == 0
+        && incoming().completedTasksCount == 0
+        && incoming().completedGoalsCount == 0
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time;
+      allow update: if isVerified() && isValidId(userId) && isSelf(userId)
+        && isValidUserPublic(incoming(), userId)
+        && incoming().uid == existing().uid
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && (
+          // Action 1: Edit profile & onboarding
+          incoming().diff(existing()).affectedKeys().hasOnly([
+            'fullName', 'username', 'avatarColor', 'avatarInitials', 'photoURL',
+            'bio', 'preferredCategory', 'timezone', 'onboardingCompleted', 'updatedAt'
+          ]) ||
+          // Action 2: Bounded XP / streak progression update
+          (
+            incoming().diff(existing()).affectedKeys().hasOnly([
+              'totalXp', 'level', 'currentStreak', 'longestStreak',
+              'completedTasksCount', 'completedGoalsCount', 'lastActiveDate', 'updatedAt'
+            ])
+            && incoming().totalXp >= existing().totalXp
+            && incoming().totalXp <= existing().totalXp + 300
+            && incoming().completedTasksCount >= existing().completedTasksCount
+            && incoming().completedTasksCount <= existing().completedTasksCount + 1
+          )
+        );
+      allow delete: if isVerified() && isValidId(userId) && isSelf(userId);
+
+      // Private PII & Settings Subcollection (Strictly owner-only)
+      match /private/{docId} {
+        allow get: if isSignedIn() && isValidId(userId) && isValidId(docId) && isSelf(userId);
+        allow list: if false;
+        allow create: if isVerified() && isValidId(userId) && isValidId(docId) && isSelf(userId)
+          && isValidUserPrivate(incoming(), userId)
+          && incoming().updatedAt == request.time;
+        allow update: if isVerified() && isValidId(userId) && isValidId(docId) && isSelf(userId)
+          && isValidUserPrivate(incoming(), userId)
+          && incoming().uid == existing().uid
+          && incoming().updatedAt == request.time
+          && incoming().diff(existing()).affectedKeys().hasOnly([
+            'email', 'notifyInvites', 'notifyPartnerActivity', 'notifyDailyWinner',
+            'notifyAchievements', 'notifyWeeklySummary', 'shareProgressWithPartner',
+            'allowAiJournalContext', 'updatedAt'
+          ]);
+        allow delete: if isVerified() && isValidId(userId) && isValidId(docId) && isSelf(userId);
+      }
+    }
+
+    // 2. Goals & Subcollections (Master Gate via parent goal membership)
+    match /goals/{goalId} {
+      allow get: if isSignedIn() && isValidId(goalId) && request.auth.uid in existing().participantIds;
+      allow list: if isSignedIn() && request.auth.uid in resource.data.participantIds;
+      allow create: if isVerified() && isValidId(goalId)
+        && isValidGoal(incoming(), goalId)
+        && incoming().ownerId == request.auth.uid
+        && incoming().participantIds.size() == 1
+        && incoming().participantIds[0] == request.auth.uid
+        && incoming().status == 'active'
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time;
+      allow update: if isVerified() && isValidId(goalId)
+        && isValidGoal(incoming(), goalId)
+        && incoming().id == existing().id
+        && incoming().ownerId == existing().ownerId
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && existing().status != 'archived'
+        && (
+          // Action 1: Owner edits goal metadata
+          (
+            existing().ownerId == request.auth.uid
+            && incoming().diff(existing()).affectedKeys().hasOnly([
+              'title', 'description', 'category', 'icon', 'startDate', 'durationDays',
+              'targetDate', 'difficulty', 'timezone', 'dailyTargetMinutes',
+              'groupName', 'restDays', 'status', 'updatedAt'
+            ])
+          ) ||
+          // Action 2: Invited partner joins goal (append self only, respecting maxParticipants)
+          (
+            !(request.auth.uid in existing().participantIds)
+            && existing().participantIds.size() < existing().maxParticipants
+            && incoming().participantIds.size() == existing().participantIds.size() + 1
+            && incoming().participantIds.hasAll(existing().participantIds)
+            && request.auth.uid in incoming().participantIds
+            && incoming().diff(existing()).affectedKeys().hasOnly(['participantIds', 'updatedAt'])
+          ) ||
+          // Action 3: Member updates group streak counters
+          (
+            request.auth.uid in existing().participantIds
+            && incoming().diff(existing()).affectedKeys().hasOnly(['groupStreak', 'longestGroupStreak', 'updatedAt'])
+          )
+        );
+      allow delete: if isVerified() && isValidId(goalId) && existing().ownerId == request.auth.uid;
+
+      // Participants
+      match /participants/{userId} {
+        allow get: if isSignedIn() && isValidId(goalId) && isValidId(userId) && isGoalMember(goalId);
+        allow list: if isSignedIn() && isGoalMember(goalId) && resource.data.goalId == goalId;
+        allow create: if isVerified() && isValidId(goalId) && isValidId(userId)
+          && isSelf(userId)
+          && isValidParticipant(incoming(), goalId, userId)
+          && incoming().joinedAt == request.time
+          && (
+            (incoming().role == 'owner' && isGoalOwner(goalId)) ||
+            (incoming().role == 'collaborator' && isGoalMember(goalId))
+          );
+        allow update: if isVerified() && isValidId(goalId) && isValidId(userId)
+          && isSelf(userId)
+          && isValidParticipant(incoming(), goalId, userId)
+          && isGoalMember(goalId)
+          && incoming().uid == existing().uid
+          && incoming().goalId == existing().goalId
+          && incoming().role == existing().role
+          && incoming().joinedAt == existing().joinedAt
+          && incoming().diff(existing()).affectedKeys().hasOnly([
+            'displayName', 'username', 'avatarColor', 'avatarInitials',
+            'goalXp', 'completedTasksCount', 'daysCompleted', 'currentStreak', 'longestStreak'
+          ])
+          && incoming().goalXp >= existing().goalXp
+          && incoming().goalXp <= existing().goalXp + 300;
+        allow delete: if isVerified() && isValidId(goalId) && isValidId(userId) && (isGoalOwner(goalId) || isSelf(userId));
+      }
+
+      // Phases (Owner-Only Writes)
+      match /phases/{phaseId} {
+        allow get: if isSignedIn() && isValidId(goalId) && isValidId(phaseId) && isGoalMember(goalId)
+          && (existing().isPublished == true || existing().ownerId == request.auth.uid);
+        allow list: if isSignedIn() && isGoalMember(goalId) && resource.data.goalId == goalId
+          && (resource.data.isPublished == true || resource.data.ownerId == request.auth.uid);
+        allow create: if isVerified() && isValidId(goalId) && isValidId(phaseId)
+          && isValidPhase(incoming(), goalId, phaseId)
+          && incoming().createdAt == request.time
+          && incoming().updatedAt == request.time
+          && isGoalOwner(goalId);
+        allow update: if isVerified() && isValidId(goalId) && isValidId(phaseId)
+          && isValidPhase(incoming(), goalId, phaseId)
+          && incoming().id == existing().id
+          && incoming().goalId == existing().goalId
+          && incoming().ownerId == existing().ownerId
+          && incoming().createdAt == existing().createdAt
+          && incoming().updatedAt == request.time
+          && incoming().diff(existing()).affectedKeys().hasOnly([
+            'title', 'description', 'startDay', 'endDay', 'order',
+            'objectives', 'milestoneTitle', 'isPublished', 'updatedAt'
+          ])
+          && isGoalOwner(goalId);
+        allow delete: if isVerified() && isValidId(goalId) && isValidId(phaseId) && isGoalOwner(goalId);
+      }
+
+      // Days (Owner-Only Writes)
+      match /days/{dayId} {
+        allow get: if isSignedIn() && isValidId(goalId) && isValidId(dayId) && isGoalMember(goalId)
+          && (existing().isPublished == true || existing().ownerId == request.auth.uid);
+        allow list: if isSignedIn() && isGoalMember(goalId) && resource.data.goalId == goalId
+          && (resource.data.isPublished == true || resource.data.ownerId == request.auth.uid);
+        allow create: if isVerified() && isValidId(goalId) && isValidId(dayId)
+          && isValidDay(incoming(), goalId, dayId)
+          && incoming().createdAt == request.time
+          && incoming().updatedAt == request.time
+          && isGoalOwner(goalId);
+        allow update: if isVerified() && isValidId(goalId) && isValidId(dayId)
+          && isValidDay(incoming(), goalId, dayId)
+          && incoming().id == existing().id
+          && incoming().goalId == existing().goalId
+          && incoming().ownerId == existing().ownerId
+          && incoming().createdAt == existing().createdAt
+          && incoming().updatedAt == request.time
+          && incoming().diff(existing()).affectedKeys().hasOnly([
+            'title', 'date', 'phaseId', 'isPublished', 'isRestDay', 'updatedAt'
+          ])
+          && isGoalOwner(goalId);
+        allow delete: if isVerified() && isValidId(goalId) && isValidId(dayId) && isGoalOwner(goalId);
+
+        // Tasks (Owner-Only Writes)
+        match /tasks/{taskId} {
+          allow get: if isSignedIn() && isValidId(goalId) && isValidId(dayId) && isValidId(taskId)
+            && isGoalMember(goalId)
+            && (existing().isPublished == true || existing().ownerId == request.auth.uid);
+          allow list: if isSignedIn() && isGoalMember(goalId) && resource.data.goalId == goalId && resource.data.dayId == dayId
+            && (resource.data.isPublished == true || resource.data.ownerId == request.auth.uid);
+          allow create: if isVerified() && isValidId(goalId) && isValidId(dayId) && isValidId(taskId)
+            && isValidTask(incoming(), goalId, dayId, taskId)
+            && incoming().createdAt == request.time
+            && incoming().updatedAt == request.time
+            && isGoalOwner(goalId);
+          allow update: if isVerified() && isValidId(goalId) && isValidId(dayId) && isValidId(taskId)
+            && isValidTask(incoming(), goalId, dayId, taskId)
+            && incoming().id == existing().id
+            && incoming().goalId == existing().goalId
+            && incoming().dayId == existing().dayId
+            && incoming().ownerId == existing().ownerId
+            && incoming().createdAt == existing().createdAt
+            && incoming().updatedAt == request.time
+            && incoming().diff(existing()).affectedKeys().hasOnly([
+              'title', 'shortDescription', 'detailedInstructions', 'learningNotes',
+              'youtubeUrl', 'chatgptUrl', 'resourceLinks', 'estimatedMinutes',
+              'xpReward', 'priority', 'order', 'isPublished', 'isArchived', 'updatedAt'
+            ])
+            && isGoalOwner(goalId);
+          allow delete: if isVerified() && isValidId(goalId) && isValidId(dayId) && isValidId(taskId) && isGoalOwner(goalId);
+        }
+      }
+
+      // Independent Task Completions (Idempotent Create, Immutable History)
+      match /completions/{completionId} {
+        allow get: if isSignedIn() && isValidId(goalId) && isValidId(completionId) && isGoalMember(goalId);
+        allow list: if isSignedIn() && isGoalMember(goalId) && resource.data.goalId == goalId;
+        allow create: if isVerified() && isValidId(goalId) && isValidId(completionId)
+          && isValidCompletion(incoming(), goalId, completionId)
+          && isGoalMember(goalId);
+        allow update, delete: if false;
+      }
+
+      // Private Personal Notes on Tasks (Strictly owner of the note)
+      match /personalNotes/{noteId} {
+        allow get: if isSignedIn() && isValidId(goalId) && isValidId(noteId) && existing().userId == request.auth.uid;
+        allow list: if isSignedIn() && resource.data.userId == request.auth.uid;
+        allow create: if isVerified() && isValidId(goalId) && isValidId(noteId)
+          && isValidPersonalNote(incoming(), noteId)
+          && isGoalMember(goalId);
+        allow update: if isVerified() && isValidId(goalId) && isValidId(noteId)
+          && isValidPersonalNote(incoming(), noteId)
+          && existing().userId == request.auth.uid
+          && incoming().diff(existing()).affectedKeys().hasOnly(['content', 'updatedAt'])
+          && isGoalMember(goalId);
+        allow delete: if isVerified() && isValidId(goalId) && isValidId(noteId) && existing().userId == request.auth.uid;
+      }
+
+      // Daily Results & Winner Board
+      match /dailyResults/{dateKey} {
+        allow get: if isSignedIn() && isValidId(goalId) && isValidId(dateKey) && isGoalMember(goalId);
+        allow list: if isSignedIn() && isGoalMember(goalId) && resource.data.goalId == goalId;
+        allow create: if isVerified() && isValidId(goalId) && isValidId(dateKey)
+          && isValidDailyResult(incoming(), goalId, dateKey)
+          && isGoalMember(goalId);
+        allow update: if isVerified() && isValidId(goalId) && isValidId(dateKey)
+          && isValidDailyResult(incoming(), goalId, dateKey)
+          && existing().isClosed == false
+          && incoming().diff(existing()).affectedKeys().hasOnly(['scores', 'winnerIds', 'isTie', 'isClosed', 'updatedAt'])
+          && isGoalMember(goalId);
+        allow delete: if false;
+      }
+
+      // Activity Feed
+      match /activity/{activityId} {
+        allow get: if isSignedIn() && isValidId(goalId) && isValidId(activityId) && isGoalMember(goalId);
+        allow list: if isSignedIn() && isGoalMember(goalId) && resource.data.goalId == goalId;
+        allow create: if isVerified() && isValidId(goalId) && isValidId(activityId)
+          && isValidActivity(incoming(), goalId, activityId)
+          && isGoalMember(goalId);
+        allow update, delete: if false;
+      }
+    }
+
+    // 3. Invitations (Keyed by Invite Code)
+    match /invitations/{invitationId} {
+      allow get: if isSignedIn() && isValidId(invitationId);
+      allow list: if isSignedIn() && (resource.data.inviterId == request.auth.uid || resource.data.acceptedBy == request.auth.uid);
+      allow create: if isVerified() && isValidId(invitationId)
+        && isValidInvitation(incoming(), invitationId)
+        && incoming().inviterId == request.auth.uid
+        && incoming().status == 'pending'
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time
+        && isGoalOwner(incoming().goalId);
+      allow update: if isVerified() && isValidId(invitationId)
+        && isValidInvitation(incoming(), invitationId)
+        && existing().status == 'pending'
+        && incoming().id == existing().id
+        && incoming().code == existing().code
+        && incoming().goalId == existing().goalId
+        && incoming().inviterId == existing().inviterId
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && (
+          // Action: Owner cancels invitation
+          (
+            existing().inviterId == request.auth.uid
+            && incoming().status == 'cancelled'
+            && incoming().diff(existing()).affectedKeys().hasOnly(['status', 'updatedAt'])
+          ) ||
+          // Action: Partner accepts or rejects invitation
+          (
+            existing().inviterId != request.auth.uid
+            && incoming().status in ['accepted', 'rejected']
+            && incoming().acceptedBy == request.auth.uid
+            && incoming().diff(existing()).affectedKeys().hasOnly(['status', 'acceptedBy', 'updatedAt'])
+          )
+        );
+      allow delete: if isVerified() && isValidId(invitationId) && existing().inviterId == request.auth.uid;
+    }
+
+    // 4. Immutable XP Audit Ledger
+    match /xpTransactions/{txId} {
+      allow get: if isSignedIn() && isValidId(txId) && existing().userId == request.auth.uid;
+      allow list: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow create: if isVerified() && isValidId(txId)
+        && isValidXpTransaction(incoming(), txId)
+        && isGoalMember(incoming().goalId);
+      allow update, delete: if false;
+    }
+
+    // 5. Achievements Unlocked
+    match /achievements/{achId} {
+      allow get: if isSignedIn() && isValidId(achId) && existing().userId == request.auth.uid;
+      allow list: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow create: if isVerified() && isValidId(achId) && isValidAchievement(incoming(), achId);
+      allow update, delete: if false;
+    }
+
+    // 6. Notifications
+    match /notifications/{notifId} {
+      allow get: if isSignedIn() && isValidId(notifId) && existing().recipientId == request.auth.uid;
+      allow list: if isSignedIn() && resource.data.recipientId == request.auth.uid;
+      allow create: if isVerified() && isValidId(notifId)
+        && isValidNotification(incoming(), notifId)
+        && incoming().senderId == request.auth.uid
+        && incoming().isRead == false
+        && incoming().createdAt == request.time;
+      allow update: if isVerified() && isValidId(notifId)
+        && isValidNotification(incoming(), notifId)
+        && existing().recipientId == request.auth.uid
+        && incoming().id == existing().id
+        && incoming().recipientId == existing().recipientId
+        && incoming().senderId == existing().senderId
+        && incoming().createdAt == existing().createdAt
+        && incoming().diff(existing()).affectedKeys().hasOnly(['isRead']);
+      allow delete: if isVerified() && isValidId(notifId) && existing().recipientId == request.auth.uid;
+    }
+
+    // 7. Personal Learning Journal (Private by Default, Explicit Owner Sharing)
+    match /journalEntries/{entryId} {
+      allow get: if isSignedIn() && isValidId(entryId) && (
+        existing().userId == request.auth.uid ||
+        (existing().isSharedWithOwner == true && existing().sharedWithOwnerId == request.auth.uid)
+      );
+      allow list: if isSignedIn() && (
+        resource.data.userId == request.auth.uid ||
+        (resource.data.isSharedWithOwner == true && resource.data.sharedWithOwnerId == request.auth.uid)
+      );
+      allow create: if isVerified() && isValidId(entryId)
+        && isValidJournalEntry(incoming(), entryId)
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time;
+      allow update: if isVerified() && isValidId(entryId)
+        && isValidJournalEntry(incoming(), entryId)
+        && existing().userId == request.auth.uid
+        && incoming().id == existing().id
+        && incoming().userId == existing().userId
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && incoming().diff(existing()).affectedKeys().hasOnly([
+          'goalId', 'sharedWithOwnerId', 'isSharedWithOwner', 'title', 'date',
+          'topic', 'notes', 'whatILearned', 'questions', 'challenges',
+          'resources', 'updatedAt'
+        ]);
+      allow delete: if isVerified() && isValidId(entryId) && existing().userId == request.auth.uid;
+    }
+  }
+}

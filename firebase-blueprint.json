@@ -1,0 +1,451 @@
+{
+  "entities": {
+    "UserPublicProfile": {
+      "title": "UserPublicProfile",
+      "description": "Public study profile visible to authenticated study partners without exposing private PII.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "fullName": { "type": "string", "minLength": 1, "maxLength": 80 },
+        "username": { "type": "string", "minLength": 2, "maxLength": 32, "pattern": "^[a-zA-Z0-9_]+$" },
+        "avatarColor": { "type": "string", "maxLength": 24 },
+        "avatarInitials": { "type": "string", "maxLength": 4 },
+        "photoURL": { "type": "string", "maxLength": 500 },
+        "bio": { "type": "string", "maxLength": 280 },
+        "preferredCategory": { "type": "string", "maxLength": 60 },
+        "timezone": { "type": "string", "maxLength": 64 },
+        "totalXp": { "type": "number" },
+        "level": { "type": "number" },
+        "currentStreak": { "type": "number" },
+        "longestStreak": { "type": "number" },
+        "completedTasksCount": { "type": "number" },
+        "completedGoalsCount": { "type": "number" },
+        "lastActiveDate": { "type": "string", "maxLength": 16 },
+        "onboardingCompleted": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": [
+        "uid",
+        "fullName",
+        "username",
+        "timezone",
+        "totalXp",
+        "level",
+        "currentStreak",
+        "longestStreak",
+        "completedTasksCount",
+        "completedGoalsCount",
+        "onboardingCompleted",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "UserPrivateSettings": {
+      "title": "UserPrivateSettings",
+      "description": "Private PII and notification/privacy settings strictly accessible only to the owning user.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "email": { "type": "string", "maxLength": 254 },
+        "notifyInvites": { "type": "boolean" },
+        "notifyPartnerActivity": { "type": "boolean" },
+        "notifyDailyWinner": { "type": "boolean" },
+        "notifyAchievements": { "type": "boolean" },
+        "notifyWeeklySummary": { "type": "boolean" },
+        "shareProgressWithPartner": { "type": "boolean" },
+        "allowAiJournalContext": { "type": "boolean" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": [
+        "uid",
+        "email",
+        "notifyInvites",
+        "notifyPartnerActivity",
+        "notifyDailyWinner",
+        "notifyAchievements",
+        "notifyWeeklySummary",
+        "shareProgressWithPartner",
+        "allowAiJournalContext",
+        "updatedAt"
+      ]
+    },
+    "Goal": {
+      "title": "Goal",
+      "description": "A shared collaborative learning goal managed by an owner with up to maxParticipants learners.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "ownerId": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "participantIds": { "type": "array", "description": "Bounded array of member UIDs (max 10; 2 in duo mode)." },
+        "title": { "type": "string", "minLength": 2, "maxLength": 120 },
+        "description": { "type": "string", "maxLength": 600 },
+        "category": { "type": "string", "maxLength": 50 },
+        "icon": { "type": "string", "maxLength": 32 },
+        "startDate": { "type": "string", "maxLength": 16 },
+        "durationDays": { "type": "number" },
+        "targetDate": { "type": "string", "maxLength": 16 },
+        "difficulty": { "type": "string", "enum": ["Beginner", "Intermediate", "Advanced"] },
+        "timezone": { "type": "string", "maxLength": 64 },
+        "dailyTargetMinutes": { "type": "number" },
+        "maxParticipants": { "type": "number" },
+        "groupName": { "type": "string", "maxLength": 80 },
+        "groupStreak": { "type": "number" },
+        "longestGroupStreak": { "type": "number" },
+        "restDays": { "type": "array", "description": "Bounded array of planned rest day ISO dates (max 30)." },
+        "status": { "type": "string", "enum": ["active", "completed", "archived"] },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": [
+        "id",
+        "ownerId",
+        "participantIds",
+        "title",
+        "description",
+        "category",
+        "startDate",
+        "durationDays",
+        "targetDate",
+        "difficulty",
+        "timezone",
+        "dailyTargetMinutes",
+        "maxParticipants",
+        "status",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "Participant": {
+      "title": "Participant",
+      "description": "Goal membership record storing role and per-goal summary metrics.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "goalId": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "role": { "type": "string", "enum": ["owner", "collaborator"] },
+        "displayName": { "type": "string", "maxLength": 80 },
+        "username": { "type": "string", "maxLength": 32 },
+        "avatarColor": { "type": "string", "maxLength": 24 },
+        "avatarInitials": { "type": "string", "maxLength": 4 },
+        "goalXp": { "type": "number" },
+        "completedTasksCount": { "type": "number" },
+        "daysCompleted": { "type": "number" },
+        "currentStreak": { "type": "number" },
+        "longestStreak": { "type": "number" },
+        "joinedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "goalId", "role", "displayName", "username", "goalXp", "completedTasksCount", "daysCompleted", "currentStreak", "longestStreak", "joinedAt"]
+    },
+    "Phase": {
+      "title": "Phase",
+      "description": "An owner-managed roadmap phase within a learning goal.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "goalId": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "ownerId": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "title": { "type": "string", "minLength": 2, "maxLength": 120 },
+        "description": { "type": "string", "maxLength": 500 },
+        "startDay": { "type": "number" },
+        "endDay": { "type": "number" },
+        "order": { "type": "number" },
+        "objectives": { "type": "array", "description": "Up to 10 learning objective strings." },
+        "milestoneTitle": { "type": "string", "maxLength": 120 },
+        "isPublished": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "goalId", "ownerId", "title", "startDay", "endDay", "order", "isPublished", "createdAt", "updatedAt"]
+    },
+    "StudyDay": {
+      "title": "StudyDay",
+      "description": "A numbered study day inside a learning goal.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "goalId": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "ownerId": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "dayNumber": { "type": "number" },
+        "date": { "type": "string", "maxLength": 16 },
+        "title": { "type": "string", "maxLength": 120 },
+        "phaseId": { "type": "string", "maxLength": 128 },
+        "isPublished": { "type": "boolean" },
+        "isRestDay": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "goalId", "ownerId", "dayNumber", "date", "title", "isPublished", "createdAt", "updatedAt"]
+    },
+    "Task": {
+      "title": "Task",
+      "description": "An owner-authored official learning task belonging to a goal day.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "goalId": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "dayId": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "dayNumber": { "type": "number" },
+        "ownerId": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "title": { "type": "string", "minLength": 2, "maxLength": 140 },
+        "shortDescription": { "type": "string", "maxLength": 280 },
+        "detailedInstructions": { "type": "string", "maxLength": 3000 },
+        "learningNotes": { "type": "string", "maxLength": 4000 },
+        "youtubeUrl": { "type": "string", "maxLength": 500 },
+        "chatgptUrl": { "type": "string", "maxLength": 500 },
+        "resourceLinks": { "type": "array", "description": "Up to 8 external resource objects." },
+        "estimatedMinutes": { "type": "number" },
+        "xpReward": { "type": "number" },
+        "priority": { "type": "string", "enum": ["low", "medium", "high"] },
+        "order": { "type": "number" },
+        "isPublished": { "type": "boolean" },
+        "isArchived": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": [
+        "id",
+        "goalId",
+        "dayId",
+        "dayNumber",
+        "ownerId",
+        "title",
+        "estimatedMinutes",
+        "xpReward",
+        "priority",
+        "order",
+        "isPublished",
+        "isArchived",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "TaskCompletion": {
+      "title": "TaskCompletion",
+      "description": "Independent per-user completion record for a specific task with immutable XP snapshot.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 160, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "goalId": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "dayId": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "taskId": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "userId": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "dateKey": { "type": "string", "maxLength": 16 },
+        "xpAwarded": { "type": "number" },
+        "estimatedMinutes": { "type": "number" },
+        "completedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "goalId", "dayId", "taskId", "userId", "dateKey", "xpAwarded", "estimatedMinutes", "completedAt"]
+    },
+    "PersonalNote": {
+      "title": "PersonalNote",
+      "description": "Private per-user study notes attached to a task.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "taskId": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "content": { "type": "string", "maxLength": 3000 },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "taskId", "content", "updatedAt"]
+    },
+    "Invitation": {
+      "title": "Invitation",
+      "description": "Invitation code and link generated by a goal owner to invite a study partner.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "code": { "type": "string", "minLength": 6, "maxLength": 24, "pattern": "^[A-Z0-9\\-]+$" },
+        "goalId": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "goalTitle": { "type": "string", "maxLength": 120 },
+        "inviterId": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "inviterName": { "type": "string", "maxLength": 80 },
+        "inviteeEmail": { "type": "string", "maxLength": 254 },
+        "acceptedBy": { "type": "string", "maxLength": 128 },
+        "status": { "type": "string", "enum": ["pending", "accepted", "rejected", "cancelled", "expired"] },
+        "expiresAt": { "type": "string", "format": "date-time" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "code", "goalId", "goalTitle", "inviterId", "inviterName", "status", "expiresAt", "createdAt", "updatedAt"]
+    },
+    "XpTransaction": {
+      "title": "XpTransaction",
+      "description": "Immutable audit ledger entry for every XP award to prevent duplicate rewards.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 160, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "userId": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "goalId": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "sourceType": { "type": "string", "enum": ["task", "daily_bonus", "milestone", "quiz"] },
+        "sourceId": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "xpAmount": { "type": "number" },
+        "dateKey": { "type": "string", "maxLength": 16 },
+        "label": { "type": "string", "maxLength": 160 },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "userId", "goalId", "sourceType", "sourceId", "xpAmount", "dateKey", "label", "createdAt"]
+    },
+    "DailyResult": {
+      "title": "DailyResult",
+      "description": "Daily points breakdown and winner record per goal and goal-timezone date.",
+      "type": "object",
+      "properties": {
+        "dateKey": { "type": "string", "maxLength": 16 },
+        "goalId": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "scores": { "type": "object" },
+        "winnerIds": { "type": "array", "description": "UIDs of daily winners (supports ties)." },
+        "isTie": { "type": "boolean" },
+        "isClosed": { "type": "boolean" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["dateKey", "goalId", "scores", "winnerIds", "isTie", "isClosed", "updatedAt"]
+    },
+    "ActivityItem": {
+      "title": "ActivityItem",
+      "description": "Shared feed event for a study goal.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "goalId": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "actorId": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "actorName": { "type": "string", "maxLength": 80 },
+        "type": { "type": "string", "enum": ["task_completed", "day_completed", "task_published", "partner_joined", "achievement_unlocked", "milestone_reached"] },
+        "message": { "type": "string", "maxLength": 240 },
+        "xpDelta": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "goalId", "actorId", "actorName", "type", "message", "createdAt"]
+    },
+    "JournalEntry": {
+      "title": "JournalEntry",
+      "description": "Private personal learning journal entry with explicit optional sharing to the goal owner.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "userId": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "goalId": { "type": "string", "maxLength": 128 },
+        "sharedWithOwnerId": { "type": "string", "maxLength": 128 },
+        "isSharedWithOwner": { "type": "boolean" },
+        "title": { "type": "string", "minLength": 1, "maxLength": 140 },
+        "date": { "type": "string", "maxLength": 16 },
+        "topic": { "type": "string", "maxLength": 120 },
+        "notes": { "type": "string", "maxLength": 4000 },
+        "whatILearned": { "type": "string", "maxLength": 2000 },
+        "questions": { "type": "string", "maxLength": 2000 },
+        "challenges": { "type": "string", "maxLength": 2000 },
+        "resources": { "type": "string", "maxLength": 1500 },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "userId", "isSharedWithOwner", "title", "date", "topic", "notes", "createdAt", "updatedAt"]
+    },
+    "Notification": {
+      "title": "Notification",
+      "description": "In-app notification addressed to a specific user.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "recipientId": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "senderId": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "goalId": { "type": "string", "maxLength": 128 },
+        "type": {
+          "type": "string",
+          "enum": [
+            "invitation_received",
+            "invitation_accepted",
+            "partner_completed_task",
+            "partner_completed_checklist",
+            "daily_winner",
+            "achievement_unlocked",
+            "milestone_reached",
+            "weekly_summary"
+          ]
+        },
+        "title": { "type": "string", "maxLength": 120 },
+        "body": { "type": "string", "maxLength": 300 },
+        "isRead": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "recipientId", "senderId", "type", "title", "body", "isRead", "createdAt"]
+    },
+    "AchievementUnlock": {
+      "title": "AchievementUnlock",
+      "description": "Record of an achievement unlocked by a user.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 160, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "userId": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "achievementKey": { "type": "string", "maxLength": 64 },
+        "unlockedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "userId", "achievementKey", "unlockedAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/UserPublicProfile" },
+      "description": "Public study profile and gamification stats for a user (no PII)."
+    },
+    "/users/{userId}/private/{docId}": {
+      "schema": { "$ref": "#/entities/UserPrivateSettings" },
+      "description": "Private PII (email) and notification/privacy preferences readable only by the owner."
+    },
+    "/goals/{goalId}": {
+      "schema": { "$ref": "#/entities/Goal" },
+      "description": "Shared collaborative learning goal."
+    },
+    "/goals/{goalId}/participants/{userId}": {
+      "schema": { "$ref": "#/entities/Participant" },
+      "description": "Goal membership documents and per-goal participant summary."
+    },
+    "/goals/{goalId}/phases/{phaseId}": {
+      "schema": { "$ref": "#/entities/Phase" },
+      "description": "Owner-managed learning roadmap phases."
+    },
+    "/goals/{goalId}/days/{dayId}": {
+      "schema": { "$ref": "#/entities/StudyDay" },
+      "description": "Daily checklist containers indexed by day number."
+    },
+    "/goals/{goalId}/days/{dayId}/tasks/{taskId}": {
+      "schema": { "$ref": "#/entities/Task" },
+      "description": "Official owner-authored learning tasks with notes and resources."
+    },
+    "/goals/{goalId}/completions/{completionId}": {
+      "schema": { "$ref": "#/entities/TaskCompletion" },
+      "description": "Independent task completion records keyed by {taskId}_{userId} for fast real-time sync and duplicate-XP prevention."
+    },
+    "/goals/{goalId}/personalNotes/{noteId}": {
+      "schema": { "$ref": "#/entities/PersonalNote" },
+      "description": "Private user notes on tasks keyed by {taskId}_{userId}."
+    },
+    "/goals/{goalId}/dailyResults/{dateKey}": {
+      "schema": { "$ref": "#/entities/DailyResult" },
+      "description": "Daily points comparison and winner records per goal timezone date."
+    },
+    "/goals/{goalId}/activity/{activityId}": {
+      "schema": { "$ref": "#/entities/ActivityItem" },
+      "description": "Shared goal activity feed."
+    },
+    "/invitations/{invitationId}": {
+      "schema": { "$ref": "#/entities/Invitation" },
+      "description": "Shareable duo invitations keyed by unique invite code."
+    },
+    "/xpTransactions/{transactionId}": {
+      "schema": { "$ref": "#/entities/XpTransaction" },
+      "description": "Immutable XP audit ledger keyed deterministically by {userId}_{sourceType}_{sourceId}."
+    },
+    "/achievements/{achievementId}": {
+      "schema": { "$ref": "#/entities/AchievementUnlock" },
+      "description": "Unlocked achievement badges keyed by {userId}_{achievementKey}."
+    },
+    "/notifications/{notificationId}": {
+      "schema": { "$ref": "#/entities/Notification" },
+      "description": "In-app notifications per user."
+    },
+    "/journalEntries/{entryId}": {
+      "schema": { "$ref": "#/entities/JournalEntry" },
+      "description": "Personal learning journal entries, private by default."
+    }
+  }
+}

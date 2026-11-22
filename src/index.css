@@ -1,0 +1,54 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+    --sd-purple: #7956D8;
+    --sd-purple-hover: #6643C7;
+    --sd-purple-light: #F0EBFF;
+    --sd-bg: #F8F9FC;
+    --sd-card: #FFFFFF;
+    --sd-text: #242337;
+    --sd-text-muted: #66687A;
+    --sd-border: #E9EAF0;
+    --sd-green: #38A879;
+    --sd-green-light: #E7F6EE;
+    --sd-yellow: #F3BD59;
+    --sd-yellow-light: #FFF6E5;
+    --sd-red: #E66F77;
+  }
+
+  html {
+    font-family: var(--font-sans);
+    background-color: var(--sd-bg);
+    color: var(--sd-text);
+    color-scheme: light;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  body {
+    margin: 0;
+    background-color: #F8F9FC;
+    color: #242337;
+    overflow-x: hidden;
+  }
+
+  .font-mono,
+  .tabular-nums {
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+.pb-safe {
+  padding-bottom: max(0.5rem, env(safe-area-inset-bottom));
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
