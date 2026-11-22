@@ -17,10 +17,15 @@ import {
   Lock,
   MessageSquare,
   Plus,
+  Sparkles,
   Star,
   Trash2,
   Youtube,
 } from 'lucide-react';
+import {
+  buildQuestSpecificRoadmap,
+  getRecommendedChannelsForTopic,
+} from '../lib/channelRecommendations';
 import { useStudyDuo } from '../context/StudyDuoContext';
 import {
   buildCompletionId,
