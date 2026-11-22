@@ -7,8 +7,6 @@ import {
   RotateCcw,
   Save,
   Shuffle,
-  Sparkles,
-  Unlock,
 } from 'lucide-react';
 import { useStudyDuo } from '../context/StudyDuoContext';
 import {
@@ -30,11 +28,11 @@ import { getLevelInfo } from '../lib/gamification';
 import { PlayerAvatar } from '../components/avatar/PlayerAvatar';
 import { Button, Card } from '../components/ui/Primitives';
 
-const RARITY_STYLES: Record<CosmeticRarity, { text: string; bg: string }> = {
-  Starter: { text: 'text-[#6D6B84]', bg: 'bg-[#F3F2FA]' },
-  Rare: { text: 'text-[#1D8597]', bg: 'bg-[#E5F8FB]' },
-  Epic: { text: 'text-[#6B48DC]', bg: 'bg-[#F1EDFF]' },
-  Legend: { text: 'text-[#9A6808]', bg: 'bg-[#FFF6DB]' },
+const RARITY_TEXT: Record<CosmeticRarity, string> = {
+  Starter: 'text-[#888888]',
+  Rare: 'text-[#0E7490]',
+  Epic: 'text-[#7956E8]',
+  Legend: 'text-[#B26A00]',
 };
 
 export const AvatarStudioPage: React.FC = () => {
@@ -158,17 +156,17 @@ export const AvatarStudioPage: React.FC = () => {
           <button
             type="button"
             onClick={() => setActivePage('profile')}
-            className="flex h-10 w-10 items-center justify-center rounded-xl border border-[#EAE7F8] bg-white text-[#25243A] hover:bg-[#F4F0FF] cursor-pointer shrink-0"
+            className="flex h-10 w-10 items-center justify-center rounded-xl border border-[#EEEEF2] bg-white text-[#242424] hover:bg-[#F7F8FA] cursor-pointer shrink-0 transition-colors"
             aria-label="Back to Profile"
           >
             <ArrowLeft className="h-4 w-4" />
           </button>
           <div className="min-w-0">
-            <h1 className="text-xl sm:text-2xl font-extrabold tracking-tight text-[#25243A] truncate">
+            <h1 className="text-xl sm:text-2xl font-extrabold tracking-tight text-[#242424] truncate">
               Avatar Studio
             </h1>
-            <p className="text-xs sm:text-sm text-[#77768C]">
-              Personalize your study identity · Cosmetics never affect XP or rankings
+            <p className="text-xs sm:text-sm text-[#888888]">
+              Personalize your character · Cosmetics never affect XP or rankings
             </p>
           </div>
         </div>
@@ -192,45 +190,45 @@ export const AvatarStudioPage: React.FC = () => {
       {/* Main Responsive Studio Layout */}
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-12 items-start">
         {/* Left: Live Preview Stage */}
-        <Card className="lg:col-span-5 overflow-hidden p-0">
-          <div className="sd-gradient-hero px-5 pt-6 pb-5 text-center border-b border-[#EFEBF9]">
-            <div className="flex items-center justify-between text-xs font-semibold text-[#77768C] mb-3">
-              <span className="inline-flex items-center gap-1.5 text-[#7956E8]">
-                <Sparkles className="h-3.5 w-3.5" />
-                Lv. {levelInfo.level} · {levelInfo.title}
+        <Card padding="none" className="lg:col-span-5 overflow-hidden">
+          <div className="px-5 pt-5 pb-5 text-center border-b border-[#EEEEF2] bg-white">
+            <div className="flex items-center justify-between text-xs font-semibold text-[#888888] mb-4">
+              <span className="text-[#7956E8] font-bold">
+                Level {levelInfo.level} · {levelInfo.title}
               </span>
-              <span className="tabular-nums text-[#25243A]">
+              <span className="tabular-nums text-[#242424]">
                 {summary.unlockedCount}/{summary.totalCount} unlocked
               </span>
             </div>
 
-            <motion.div
-              key={`${draft.hairStyle}-${draft.outfit}-${draft.hat}-${draft.frame}-${draft.background}`}
-              initial={{ scale: 0.96, opacity: 0.85 }}
-              animate={{ scale: 1, opacity: 1 }}
-              transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
-              className="mx-auto my-2 flex justify-center"
-            >
-              <PlayerAvatar
-                config={draft}
-                seedKey={currentUser.uid}
-                size="studio"
-                animated
-                alt={`${currentUser.fullName} live avatar preview`}
-              />
-            </motion.div>
+            <div className="mx-auto my-2 flex h-44 w-44 items-center justify-center rounded-2xl bg-[#F7F8FA] border border-[#EEEEF2]">
+              <motion.div
+                key={`${draft.hairStyle}-${draft.outfit}-${draft.hat}-${draft.frame}-${draft.background}-${draft.glasses}`}
+                initial={{ scale: 0.97, opacity: 0.85 }}
+                animate={{ scale: 1, opacity: 1 }}
+                transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
+                className="flex justify-center"
+              >
+                <PlayerAvatar
+                  config={draft}
+                  seedKey={currentUser.uid}
+                  size="studio"
+                  alt={`${currentUser.fullName} live avatar preview`}
+                />
+              </motion.div>
+            </div>
 
-            <h2 className="mt-3 text-lg font-extrabold text-[#25243A]">{currentUser.fullName}</h2>
-            <p className="text-xs text-[#77768C]">@{currentUser.username}</p>
+            <h2 className="mt-4 text-lg font-extrabold text-[#242424]">{currentUser.fullName}</h2>
+            <p className="text-xs text-[#888888]">@{currentUser.username}</p>
 
             {equippedSummary.length > 0 && (
-              <p className="mt-2.5 text-[11px] font-medium text-[#6C6A82]">
+              <p className="mt-2 text-xs text-[#888888]">
                 {equippedSummary.join(' · ')}
               </p>
             )}
           </div>
 
-          <div className="p-4 flex flex-wrap items-center justify-between gap-2 bg-white">
+          <div className="p-4 flex flex-wrap items-center justify-between gap-2 bg-[#FAFAFC]">
             <Button variant="secondary" size="sm" onClick={handleRandomize}>
               <Shuffle className="h-3.5 w-3.5" />
               Shuffle Unlocked
@@ -248,10 +246,14 @@ export const AvatarStudioPage: React.FC = () => {
         </Card>
 
         {/* Right: Category Selector & Cosmetic Grid */}
-        <Card className="lg:col-span-7 p-4 sm:p-5 space-y-4">
-          {/* Category Bar (All 12 Categories — wraps on sm+, horizontal scroll on compact mobile) */}
+        <Card className="lg:col-span-7 space-y-4">
+          {/* Category Bar (All 12 Categories) */}
           <div className="-mx-1 px-1 overflow-x-auto sm:overflow-visible no-scrollbar">
-            <div className="flex items-center gap-1.5 min-w-max sm:min-w-0 sm:flex-wrap pb-1" role="tablist" aria-label="Avatar customization categories">
+            <div
+              className="flex items-center gap-1.5 min-w-max sm:min-w-0 sm:flex-wrap pb-1"
+              role="tablist"
+              aria-label="Avatar customization categories"
+            >
               {AVATAR_CATEGORY_META.map((cat) => {
                 const isActive = cat.key === activeCategory;
                 return (
@@ -264,20 +266,13 @@ export const AvatarStudioPage: React.FC = () => {
                       setActiveCategory(cat.key);
                       setLockedNotice(null);
                     }}
-                    className={`relative rounded-xl px-3.5 py-2 text-xs font-semibold transition-colors cursor-pointer min-h-[40px] ${
+                    className={`rounded-xl px-3 py-2 text-xs font-semibold transition-colors cursor-pointer min-h-[38px] ${
                       isActive
-                        ? 'text-white'
-                        : 'text-[#6A6880] hover:bg-[#F3F0FF] hover:text-[#25243A]'
+                        ? 'bg-[#7956E8] text-white'
+                        : 'bg-[#F7F8FA] text-[#5C5C6E] hover:bg-[#F1EDFF] hover:text-[#242424]'
                     }`}
                   >
-                    {isActive && (
-                      <motion.span
-                        layoutId="avatarStudioCategoryPill"
-                        className="absolute inset-0 rounded-xl bg-[#7956E8] shadow-[0_4px_12px_rgba(121,86,232,0.28)]"
-                        transition={{ type: 'spring', stiffness: 420, damping: 32 }}
-                      />
-                    )}
-                    <span className="relative z-10">{cat.shortLabel}</span>
+                    {cat.shortLabel}
                   </button>
                 );
               })}
@@ -285,10 +280,10 @@ export const AvatarStudioPage: React.FC = () => {
           </div>
 
           {/* Active Category Heading */}
-          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#F2EFFA] pb-3">
+          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#EEEEF2] pb-3">
             <div>
-              <h3 className="text-sm font-bold text-[#25243A]">{categoryMeta.label}</h3>
-              <p className="text-[11px] text-[#77768C]">
+              <h3 className="text-sm font-bold text-[#242424]">{categoryMeta.label}</h3>
+              <p className="text-xs text-[#888888]">
                 {categoryMeta.optional
                   ? 'Tap an unlocked item to equip or tap again to remove.'
                   : 'Select any unlocked style to preview live.'}
@@ -305,9 +300,10 @@ export const AvatarStudioPage: React.FC = () => {
             <motion.div
               initial={{ opacity: 0, y: -4 }}
               animate={{ opacity: 1, y: 0 }}
-              className="flex items-center gap-2.5 rounded-xl border border-[#FFE29D] bg-[#FFF9E8] px-3.5 py-2.5 text-xs text-[#7D5306]"
+              transition={{ duration: 0.16 }}
+              className="flex items-center gap-2.5 rounded-xl border border-[#FFE5A8] bg-[#FFFBEB] px-3.5 py-2.5 text-xs text-[#855200]"
             >
-              <Lock className="h-4 w-4 shrink-0 text-[#D98806]" />
+              <Lock className="h-4 w-4 shrink-0 text-[#D97706]" />
               <span>
                 <strong className="font-bold">{lockedNotice.label}</strong> is locked —{' '}
                 {lockedNotice.requirement}.
@@ -320,7 +316,6 @@ export const AvatarStudioPage: React.FC = () => {
             {itemsInCategory.map((item) => {
               const unlocked = isCosmeticItemUnlocked(item, progress);
               const isEquipped = draft[item.category] === item.id;
-              const rarityStyle = RARITY_STYLES[item.rarity];
               const isColorOnly =
                 item.category === 'skinTone' ||
                 item.category === 'hairColor' ||
@@ -338,38 +333,32 @@ export const AvatarStudioPage: React.FC = () => {
                   type="button"
                   onClick={() => handleSelectItem(item)}
                   aria-pressed={isEquipped}
-                  className={`group relative flex flex-col items-center rounded-2xl border p-3 text-center transition-all cursor-pointer min-h-[124px] ${
+                  className={`group relative flex flex-col items-center rounded-xl border p-3 text-center transition-colors cursor-pointer min-h-[120px] ${
                     isEquipped
-                      ? 'border-[#7956E8] bg-[#F6F3FF] ring-2 ring-[#7956E8]/20'
+                      ? 'border-[#7956E8] bg-[#F7F4FF]'
                       : unlocked
-                      ? 'border-[#EAE7F8] bg-white hover:border-[#CBBFF8] hover:bg-[#FAF9FF]'
-                      : 'border-[#EEEBF8] bg-[#FAF9FD] opacity-80 hover:border-[#DFD8F5]'
+                      ? 'border-[#EEEEF2] bg-white hover:border-[#D4CCFA] hover:bg-[#FAFAFC]'
+                      : 'border-[#EEEEF2] bg-[#F7F8FA] opacity-80 hover:border-[#DFDFEA]'
                   }`}
                 >
-                  {/* Top status corner */}
-                  <div className="flex w-full items-center justify-between gap-1 mb-2">
-                    <span
-                      className={`rounded-md px-1.5 py-0.5 text-[10px] font-bold ${rarityStyle.bg} ${rarityStyle.text}`}
-                    >
+                  {/* Top status row */}
+                  <div className="flex w-full items-center justify-between gap-1 mb-1.5">
+                    <span className={`text-[10px] font-bold uppercase tracking-wider ${RARITY_TEXT[item.rarity]}`}>
                       {item.rarity}
                     </span>
                     {isEquipped ? (
-                      <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#7956E8] text-white">
-                        <Check className="h-3 w-3" />
+                      <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#58CC02] text-white">
+                        <Check className="h-3 w-3 stroke-[2.5]" />
                       </span>
                     ) : !unlocked ? (
-                      <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#EFEBF9] text-[#77768C]">
-                        <Lock className="h-3 w-3" />
-                      </span>
-                    ) : (
-                      <Unlock className="h-3 w-3 text-[#C2B9E6] opacity-0 group-hover:opacity-100 transition-opacity" />
-                    )}
+                      <Lock className="h-3.5 w-3.5 text-[#888888]" />
+                    ) : null}
                   </div>
 
                   {/* Swatch or Mini Avatar Preview */}
                   {isColorOnly && item.swatch ? (
                     <div
-                      className="my-1.5 h-11 w-11 rounded-full border-2 border-white shadow-sm ring-1 ring-[#E4DFF6]"
+                      className="my-1.5 h-10 w-10 rounded-full border-2 border-white ring-1 ring-[#E2E2EA]"
                       style={{
                         background: item.accentSwatch
                           ? `linear-gradient(135deg, ${item.swatch} 0%, ${item.accentSwatch} 100%)`
@@ -377,7 +366,7 @@ export const AvatarStudioPage: React.FC = () => {
                       }}
                     />
                   ) : (
-                    <div className={`my-0.5 ${!unlocked ? 'grayscale-[40%] opacity-75' : ''}`}>
+                    <div className={`my-0.5 ${!unlocked ? 'grayscale-[45%] opacity-70' : ''}`}>
                       <PlayerAvatar
                         config={previewConfig}
                         size="md"
@@ -386,12 +375,12 @@ export const AvatarStudioPage: React.FC = () => {
                     </div>
                   )}
 
-                  <span className="mt-2 text-xs font-bold text-[#25243A] leading-tight">
+                  <span className="mt-2 text-xs font-bold text-[#242424] leading-tight">
                     {item.label}
                   </span>
 
                   {!unlocked && (
-                    <span className="mt-1 text-[10px] leading-snug text-[#77768C] line-clamp-2">
+                    <span className="mt-1 text-[10px] leading-snug text-[#888888] line-clamp-2">
                       {item.unlock.label}
                     </span>
                   )}
@@ -401,10 +390,10 @@ export const AvatarStudioPage: React.FC = () => {
           </div>
 
           {/* Unlock Roadmap Hint */}
-          <div className="flex items-center justify-between gap-3 rounded-xl bg-[#F8F7FF] border border-[#EAE7F8] px-3.5 py-2.5 text-xs text-[#6B6980]">
+          <div className="flex items-center justify-between gap-3 pt-3 border-t border-[#EEEEF2] text-xs text-[#888888]">
             <span>
-              Earn XP, maintain streaks, and unlock achievements to collect all{' '}
-              <strong className="font-bold text-[#25243A]">{AVATAR_CATALOG.length}</strong> cosmetics.
+              Earn XP, build streaks, and unlock badges to collect all{' '}
+              <strong className="font-bold text-[#242424]">{AVATAR_CATALOG.length}</strong> cosmetics.
             </span>
             <button
               type="button"

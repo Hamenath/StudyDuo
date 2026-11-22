@@ -1,17 +1,8 @@
 import React, { useEffect } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
-import { Crown, Flame, Sparkles, Trophy, Users, X, Zap } from 'lucide-react';
+import { X } from 'lucide-react';
 import { useStudyDuo } from '../../context/StudyDuoContext';
 import { Button } from './Primitives';
-
-const SPARK_POSITIONS = [
-  { x: -78, y: -56, color: '#FFC857', size: 8 },
-  { x: 76, y: -52, color: '#45C4D8', size: 7 },
-  { x: -94, y: 12, color: '#A78BFA', size: 6 },
-  { x: 92, y: 18, color: '#38B982', size: 7 },
-  { x: -50, y: -82, color: '#7956E8', size: 6 },
-  { x: 52, y: -78, color: '#FFC857', size: 8 },
-];
 
 export const DailyCelebrationOverlay: React.FC = () => {
   const { celebrationEvent, dismissCelebration, setActivePage } = useStudyDuo();
@@ -32,126 +23,87 @@ export const DailyCelebrationOverlay: React.FC = () => {
           role="dialog"
           aria-modal="true"
           aria-label="Study milestone celebration"
-          className="fixed inset-0 z-50 flex items-center justify-center bg-[#25243A]/45 px-4 py-6"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-[#242424]/40 px-4 py-6"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          transition={{ duration: 0.2 }}
+          transition={{ duration: 0.16 }}
           onClick={dismissCelebration}
         >
           <motion.div
-            className="relative w-full max-w-sm overflow-hidden rounded-3xl border border-[#EAE7F8] bg-white p-6 text-center shadow-[0_24px_64px_rgba(37,36,58,0.22)]"
-            initial={{ opacity: 0, scale: 0.9, y: 16 }}
+            className="relative w-full max-w-sm rounded-2xl border border-[#EEEEF2] bg-white p-6 text-center shadow-xl"
+            initial={{ opacity: 0, scale: 0.96, y: 10 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.94, y: 10 }}
-            transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
+            exit={{ opacity: 0, scale: 0.96, y: 8 }}
+            transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Top Gradient Strip */}
-            <div
-              className="pointer-events-none absolute inset-x-0 top-0 h-28"
-              style={{
-                background:
-                  celebrationEvent.kind === 'level_up'
-                    ? 'linear-gradient(180deg, rgba(121,86,232,0.16) 0%, rgba(255,255,255,0) 100%)'
-                    : celebrationEvent.kind === 'day_completed'
-                    ? 'linear-gradient(180deg, rgba(56,185,130,0.16) 0%, rgba(255,255,255,0) 100%)'
-                    : 'linear-gradient(180deg, rgba(255,200,87,0.22) 0%, rgba(255,255,255,0) 100%)',
-              }}
-            />
-
             <button
               type="button"
               onClick={dismissCelebration}
               aria-label="Close celebration"
-              className="absolute right-3.5 top-3.5 flex h-9 w-9 items-center justify-center rounded-full text-[#77768C] hover:bg-[#F3F0FF] hover:text-[#25243A] cursor-pointer"
+              className="absolute right-3.5 top-3.5 flex h-9 w-9 items-center justify-center rounded-xl text-[#888888] hover:bg-[#F7F8FA] hover:text-[#242424] cursor-pointer"
             >
               <X className="h-4 w-4" />
             </button>
 
-            {/* Emblem with Finite Spark Burst */}
-            <div className="relative mx-auto mt-2 flex h-20 w-20 items-center justify-center">
-              {SPARK_POSITIONS.map((s, idx) => (
-                <motion.span
-                  key={idx}
-                  aria-hidden="true"
-                  className="pointer-events-none absolute rounded-full"
-                  style={{ width: s.size, height: s.size, backgroundColor: s.color }}
-                  initial={{ x: 0, y: 0, opacity: 0, scale: 0.3 }}
-                  animate={{ x: s.x * 0.65, y: s.y * 0.65, opacity: [0, 1, 0], scale: [0.4, 1.15, 0.6] }}
-                  transition={{ duration: 0.75, delay: 0.05 * idx, ease: 'easeOut' }}
-                />
-              ))}
-
-              <motion.div
-                initial={{ scale: 0.7, rotate: -10 }}
-                animate={{ scale: 1, rotate: 0 }}
-                transition={{ type: 'spring', stiffness: 320, damping: 18 }}
-                className={`flex h-20 w-20 items-center justify-center rounded-3xl border shadow-md ${
-                  celebrationEvent.kind === 'level_up'
-                    ? 'border-[#D9CEFF] bg-[#F1EDFF] text-[#7956E8]'
-                    : celebrationEvent.kind === 'day_completed'
-                    ? 'border-[#C6F0DD] bg-[#E6F8F0] text-[#38B982]'
-                    : 'border-[#FFE29D] bg-[#FFF7E0] text-[#D98806]'
-                }`}
-              >
-                {celebrationEvent.kind === 'level_up' ? (
-                  <Crown className="h-9 w-9" />
-                ) : celebrationEvent.kind === 'day_completed' ? (
-                  <Trophy className="h-9 w-9" />
-                ) : (
-                  <Flame className="h-9 w-9" />
-                )}
-              </motion.div>
-            </div>
-
-            <div className="mt-4 inline-flex items-center gap-1.5 rounded-full bg-[#F1EDFF] px-3 py-1 text-[11px] font-bold text-[#7956E8]">
-              <Sparkles className="h-3.5 w-3.5" />
+            <motion.div
+              initial={{ scale: 0.85 }}
+              animate={{ scale: 1 }}
+              transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
+              className="mx-auto mt-1 flex h-14 w-14 items-center justify-center rounded-2xl bg-[#F7F8FA] border border-[#EEEEF2] text-3xl"
+              aria-hidden="true"
+            >
               {celebrationEvent.kind === 'level_up'
-                ? `Level ${celebrationEvent.newLevel} Reached`
+                ? '👑'
                 : celebrationEvent.kind === 'day_completed'
-                ? `Day ${celebrationEvent.dayNumber} Complete`
-                : `Day ${celebrationEvent.dayNumber} Streak Lit`}
-            </div>
+                ? '🎉'
+                : '🔥'}
+            </motion.div>
 
-            <h2 className="mt-3 text-xl font-extrabold tracking-tight text-[#25243A]">
+            <p className="mt-3 text-xs font-semibold text-[#7956E8]">
               {celebrationEvent.kind === 'level_up'
-                ? `Level Up: ${celebrationEvent.newLevelTitle || `Level ${celebrationEvent.newLevel}`}!`
+                ? `Level ${celebrationEvent.newLevel} reached`
                 : celebrationEvent.kind === 'day_completed'
-                ? 'All daily quests cleared!'
-                : 'Daily flame ignited!'}
-            </h2>
-
-            <p className="mt-1.5 text-sm leading-relaxed text-[#77768C]">
-              {celebrationEvent.kind === 'level_up'
-                ? `New avatar rewards may now be unlocked in the Avatar Studio. Keep pushing on "${celebrationEvent.goalTitle}".`
-                : celebrationEvent.kind === 'day_completed'
-                ? `You finished every published quest on Day ${celebrationEvent.dayNumber} of "${celebrationEvent.goalTitle}".`
-                : `Your Day ${celebrationEvent.streakDays} study streak is safely locked in.`}
+                ? `Day ${celebrationEvent.dayNumber} complete`
+                : `Day ${celebrationEvent.dayNumber} streak`}
             </p>
 
-            {/* Metric Strip */}
-            <div className="mt-5 grid grid-cols-2 gap-2.5">
-              <div className="rounded-2xl border border-[#EAE7F8] bg-[#FAF9FF] p-3">
-                <p className="text-[11px] font-medium text-[#77768C]">XP Awarded</p>
-                <p className="mt-0.5 flex items-center justify-center gap-1 text-lg font-extrabold text-[#7956E8] tabular-nums">
-                  <Zap className="h-4 w-4 text-[#FFC857] fill-[#FFC857]" />
+            <h2 className="mt-1 text-xl font-extrabold text-[#242424]">
+              {celebrationEvent.kind === 'level_up'
+                ? `Welcome to ${celebrationEvent.newLevelTitle || `Level ${celebrationEvent.newLevel}`}!`
+                : celebrationEvent.kind === 'day_completed'
+                ? 'Nice work! All quests done'
+                : "You're building a streak!"}
+            </h2>
+
+            <p className="mt-1.5 text-sm leading-relaxed text-[#888888]">
+              {celebrationEvent.kind === 'level_up'
+                ? `Check Avatar Studio for newly unlocked styles. Keep going on "${celebrationEvent.goalTitle}".`
+                : celebrationEvent.kind === 'day_completed'
+                ? `You finished every published task on Day ${celebrationEvent.dayNumber} of "${celebrationEvent.goalTitle}".`
+                : `Your ${celebrationEvent.streakDays}-day study streak is safely locked in.`}
+            </p>
+
+            <div className="mt-5 grid grid-cols-2 divide-x divide-[#EEEEF2] rounded-xl border border-[#EEEEF2] bg-[#F7F8FA] py-3">
+              <div className="px-3">
+                <p className="text-[11px] font-medium text-[#888888]">XP earned</p>
+                <p className="mt-0.5 text-lg font-extrabold text-[#7956E8] tabular-nums">
                   +{celebrationEvent.xpEarned + celebrationEvent.bonusXp}
                 </p>
                 {celebrationEvent.bonusXp > 0 && (
-                  <p className="text-[10px] font-semibold text-[#38B982]">
-                    Includes +{celebrationEvent.bonusXp} Day Bonus
+                  <p className="text-[10px] font-semibold text-[#3C8F00]">
+                    +{celebrationEvent.bonusXp} bonus
                   </p>
                 )}
               </div>
 
-              <div className="rounded-2xl border border-[#EAE7F8] bg-[#FAF9FF] p-3">
-                <p className="text-[11px] font-medium text-[#77768C]">Current Streak</p>
-                <p className="mt-0.5 flex items-center justify-center gap-1 text-lg font-extrabold text-[#D98806] tabular-nums">
-                  <Flame className="h-4 w-4 text-[#FFC857] fill-[#FFC857]" />
-                  {celebrationEvent.streakDays}d
+              <div className="px-3">
+                <p className="text-[11px] font-medium text-[#888888]">Streak</p>
+                <p className="mt-0.5 text-lg font-extrabold text-[#FF9600] tabular-nums">
+                  🔥 {celebrationEvent.streakDays}d
                 </p>
-                <p className="text-[10px] font-semibold text-[#77768C]">
+                <p className="text-[10px] font-medium text-[#888888]">
                   {celebrationEvent.duoStreakDays > 0
                     ? `Duo: ${celebrationEvent.duoStreakDays}d`
                     : 'Keep it going'}
@@ -160,20 +112,11 @@ export const DailyCelebrationOverlay: React.FC = () => {
             </div>
 
             {celebrationEvent.partnerName && (
-              <div
-                className={`mt-3 flex items-center justify-center gap-2 rounded-xl border px-3 py-2 text-xs font-medium ${
-                  celebrationEvent.duoFlameLitToday
-                    ? 'border-[#C8F0DF] bg-[#E6F8F0] text-[#1D7F54]'
-                    : 'border-[#E6E2FA] bg-[#F8F7FF] text-[#66647B]'
-                }`}
-              >
-                <Users className="h-3.5 w-3.5 shrink-0" />
-                <span>
-                  {celebrationEvent.duoFlameLitToday
-                    ? `Both you and ${celebrationEvent.partnerName} lit today's Duo Flame!`
-                    : `Your side is lit — waiting on ${celebrationEvent.partnerName} today.`}
-                </span>
-              </div>
+              <p className="mt-3 text-xs text-[#666666]">
+                {celebrationEvent.duoFlameLitToday
+                  ? `Both you and ${celebrationEvent.partnerName} studied today!`
+                  : `Your side is done — waiting on ${celebrationEvent.partnerName} today.`}
+              </p>
             )}
 
             <div className="mt-5 flex items-center gap-2.5">

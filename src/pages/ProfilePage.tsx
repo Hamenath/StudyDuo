@@ -1,16 +1,11 @@
 import React, { useMemo } from 'react';
 import {
-  Award,
   BarChart3,
   BookOpen,
   CheckSquare,
-  Clock,
-  Flame,
   Palette,
   Settings,
   Sparkles,
-  Trophy,
-  Zap,
 } from 'lucide-react';
 import { useStudyDuo } from '../context/StudyDuoContext';
 import { ACHIEVEMENT_CATALOG, getLevelInfo } from '../lib/gamification';
@@ -76,11 +71,11 @@ export const ProfilePage: React.FC = () => {
   ].filter(Boolean);
 
   return (
-    <div className="space-y-6">
-      {/* Player Identity Hero */}
-      <Card padding="none" className="overflow-hidden border-[#E5DFFA]">
-        <div className="sd-gradient-hero p-5 sm:p-6">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-5">
+    <div className="space-y-5">
+      {/* Clean Flat White Profile Header Card */}
+      <Card padding="none" className="overflow-hidden">
+        <div className="p-5 sm:p-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div className="flex items-center gap-4 min-w-0">
               <button
                 type="button"
@@ -95,10 +90,9 @@ export const ProfilePage: React.FC = () => {
                   avatarConfig={avatarConfig}
                   seedKey={currentUser.uid}
                   size="xl"
-                  animated
                 />
-                <span className="absolute -bottom-1 -right-1 flex h-8 w-8 items-center justify-center rounded-full bg-[#7956E8] text-white shadow-md ring-2 ring-white group-hover:scale-105 transition-transform">
-                  <Palette className="h-4 w-4" />
+                <span className="absolute -bottom-0.5 -right-0.5 flex h-7 w-7 items-center justify-center rounded-full bg-[#7956E8] text-white ring-2 ring-white transition-transform group-hover:scale-105">
+                  <Palette className="h-3.5 w-3.5" />
                 </span>
               </button>
 
@@ -106,14 +100,14 @@ export const ProfilePage: React.FC = () => {
                 <p className="text-xs font-bold text-[#7956E8]">
                   Level {levelInfo.level} · {levelInfo.title}
                 </p>
-                <h1 className="mt-0.5 text-2xl font-extrabold tracking-tight text-[#25243A] truncate">
+                <h1 className="mt-0.5 text-2xl font-extrabold tracking-tight text-[#242424] truncate">
                   {currentUser.fullName}
                 </h1>
-                <p className="text-xs font-medium text-[#77768C]">
+                <p className="text-xs text-[#888888]">
                   @{currentUser.username} · {currentUser.preferredCategory}
                 </p>
                 {currentUser.bio && (
-                  <p className="mt-2 text-xs sm:text-sm text-[#4C4A66] max-w-xl leading-relaxed">
+                  <p className="mt-1.5 text-xs sm:text-sm text-[#5C5C6E] max-w-xl leading-relaxed">
                     {currentUser.bio}
                   </p>
                 )}
@@ -132,95 +126,80 @@ export const ProfilePage: React.FC = () => {
             </div>
           </div>
 
-          {/* XP Level Progress Bar */}
-          <div className="mt-5 rounded-2xl bg-white/90 border border-[#EAE7F8] p-4 space-y-2">
+          {/* Thin XP Progress Strip */}
+          <div className="mt-5 pt-4 border-t border-[#EEEEF2] space-y-2">
             <div className="flex items-center justify-between text-xs">
-              <span className="font-extrabold text-[#25243A] inline-flex items-center gap-1.5 tabular-nums">
-                <Zap className="h-4 w-4 text-[#FFC857] fill-[#FFC857]" />
-                {currentUser.totalXp.toLocaleString()} Total XP
+              <span className="font-bold text-[#242424] tabular-nums">
+                ⚡ {currentUser.totalXp.toLocaleString()} Total XP
               </span>
-              <span className="font-semibold text-[#77768C] tabular-nums">
+              <span className="text-[#888888] tabular-nums">
                 {levelInfo.nextLevelMinXp
                   ? `${levelInfo.xpNeededForNext} XP until Level ${levelInfo.level + 1}`
-                  : 'Maximum Level Reached'}
+                  : 'Max level reached'}
               </span>
             </div>
-            <ProgressBar percent={levelInfo.progressPercent} color="#7956E8" height="h-2.5" />
+            <ProgressBar percent={levelInfo.progressPercent} color="#7956E8" height="h-2" />
+          </div>
+        </div>
+
+        {/* Hairline-Divided 4-Stat Strip */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 divide-y sm:divide-y-0 sm:divide-x divide-[#EEEEF2] border-t border-[#EEEEF2] bg-[#FAFAFC]">
+          <div className="px-4 py-3.5 text-center">
+            <p className="text-[11px] font-medium text-[#888888]">Streak</p>
+            <p className="mt-0.5 text-lg font-extrabold text-[#242424] tabular-nums">
+              🔥 {currentUser.currentStreak}d
+            </p>
+            <p className="text-[11px] text-[#888888] tabular-nums">Best {currentUser.longestStreak}d</p>
+          </div>
+          <div className="px-4 py-3.5 text-center border-l border-[#EEEEF2] sm:border-l-0">
+            <p className="text-[11px] font-medium text-[#888888]">Quests Done</p>
+            <p className="mt-0.5 text-lg font-extrabold text-[#242424] tabular-nums">
+              ✅ {currentUser.completedTasksCount}
+            </p>
+            <p className="text-[11px] text-[#888888]">Completed</p>
+          </div>
+          <div className="px-4 py-3.5 text-center">
+            <p className="text-[11px] font-medium text-[#888888]">Study Focus</p>
+            <p className="mt-0.5 text-lg font-extrabold text-[#242424] tabular-nums">
+              ⏱️ {Math.round((myStudyMinutes / 60) * 10) / 10}h
+            </p>
+            <p className="text-[11px] text-[#888888]">Total logged</p>
+          </div>
+          <div className="px-4 py-3.5 text-center border-l border-[#EEEEF2] sm:border-l-0">
+            <p className="text-[11px] font-medium text-[#888888]">Active Goals</p>
+            <p className="mt-0.5 text-lg font-extrabold text-[#242424] tabular-nums">
+              🎯 {goals.length}
+            </p>
+            <p className="text-[11px] text-[#888888]">Roadmaps</p>
           </div>
         </div>
       </Card>
 
-      {/* Study Statistics Grid */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5">
-        <Card padding="sm" className="text-center">
-          <div className="mx-auto mb-1.5 flex h-9 w-9 items-center justify-center rounded-xl bg-[#FFF6DB] text-[#D98806]">
-            <Flame className="h-4 w-4 fill-[#FFC857]" />
-          </div>
-          <p className="text-xl font-extrabold text-[#25243A] tabular-nums">
-            {currentUser.currentStreak}d
-          </p>
-          <p className="text-[11px] font-medium text-[#77768C]">
-            Current Streak (Best {currentUser.longestStreak}d)
-          </p>
-        </Card>
-
-        <Card padding="sm" className="text-center">
-          <div className="mx-auto mb-1.5 flex h-9 w-9 items-center justify-center rounded-xl bg-[#E6F8F0] text-[#1F8B5D]">
-            <CheckSquare className="h-4 w-4" />
-          </div>
-          <p className="text-xl font-extrabold text-[#25243A] tabular-nums">
-            {currentUser.completedTasksCount}
-          </p>
-          <p className="text-[11px] font-medium text-[#77768C]">Quests Cleared</p>
-        </Card>
-
-        <Card padding="sm" className="text-center">
-          <div className="mx-auto mb-1.5 flex h-9 w-9 items-center justify-center rounded-xl bg-[#E5F8FB] text-[#1D8597]">
-            <Clock className="h-4 w-4" />
-          </div>
-          <p className="text-xl font-extrabold text-[#25243A] tabular-nums">
-            {Math.round((myStudyMinutes / 60) * 10) / 10}h
-          </p>
-          <p className="text-[11px] font-medium text-[#77768C]">Study Focus</p>
-        </Card>
-
-        <Card padding="sm" className="text-center">
-          <div className="mx-auto mb-1.5 flex h-9 w-9 items-center justify-center rounded-xl bg-[#F1EDFF] text-[#7956E8]">
-            <Trophy className="h-4 w-4" />
-          </div>
-          <p className="text-xl font-extrabold text-[#25243A] tabular-nums">{goals.length}</p>
-          <p className="text-[11px] font-medium text-[#77768C]">Active Goals</p>
-        </Card>
-      </div>
-
       {/* Cosmetic Inventory + Achievements Collection */}
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-12">
-        {/* Cosmetic Inventory Preview (6 cols) */}
-        <Card className="lg:col-span-6 space-y-4">
+        <Card className="lg:col-span-6 space-y-3.5">
           <div className="flex items-center justify-between gap-2">
             <div>
-              <h2 className="text-base font-extrabold text-[#25243A]">Cosmetic Inventory</h2>
-              <p className="text-xs text-[#77768C]">
-                Avatar items unlocked through real study milestones
+              <h2 className="text-base font-bold text-[#242424]">Avatar Cosmetics</h2>
+              <p className="text-xs text-[#888888]">
+                Unlocked automatically from your study milestones
               </p>
             </div>
-            <span className="rounded-xl bg-[#F1EDFF] px-2.5 py-1 text-xs font-extrabold text-[#7956E8] tabular-nums">
+            <span className="text-xs font-extrabold text-[#7956E8] tabular-nums">
               {cosmeticSummary.unlockedCount}/{cosmeticSummary.totalCount}
             </span>
           </div>
 
           <ProgressBar
             percent={Math.round((cosmeticSummary.unlockedCount / cosmeticSummary.totalCount) * 100)}
-            color="#45C4D8"
+            color="#58CC02"
             height="h-2"
           />
 
-          <div className="rounded-2xl border border-[#EAE7F8] bg-[#FCFBFF] p-3.5 flex items-center justify-between gap-3">
+          <div className="pt-2 border-t border-[#EEEEF2] flex items-center justify-between gap-3">
             <div className="min-w-0">
-              <p className="text-[11px] font-bold uppercase tracking-wider text-[#77768C]">
-                Currently Equipped
-              </p>
-              <p className="mt-1 text-xs font-semibold text-[#25243A] truncate">
+              <p className="text-[11px] font-semibold text-[#888888]">Currently wearing</p>
+              <p className="mt-0.5 text-xs font-semibold text-[#242424] truncate">
                 {equippedLabels.join(' · ') || 'Starter Outfit'}
               </p>
             </div>
@@ -230,13 +209,12 @@ export const ProfilePage: React.FC = () => {
           </div>
         </Card>
 
-        {/* Achievement Collection Preview (6 cols) */}
-        <Card className="lg:col-span-6 space-y-4">
+        <Card className="lg:col-span-6 space-y-3.5">
           <div className="flex items-center justify-between gap-2">
             <div>
-              <h2 className="text-base font-extrabold text-[#25243A]">Achievement Collection</h2>
-              <p className="text-xs text-[#77768C]">
-                Earned badges unlock special avatar cosmetics
+              <h2 className="text-base font-bold text-[#242424]">Achievements</h2>
+              <p className="text-xs text-[#888888]">
+                Earned badges unlock special avatar items
               </p>
             </div>
             <button
@@ -249,11 +227,11 @@ export const ProfilePage: React.FC = () => {
           </div>
 
           {achievements.length === 0 ? (
-            <div className="rounded-2xl border border-dashed border-[#DFD8F8] bg-[#FAF9FF] p-5 text-center text-xs text-[#77768C]">
+            <div className="rounded-xl border border-dashed border-[#EEEEF2] bg-[#F7F8FA] p-5 text-center text-xs text-[#888888]">
               Complete your first quest to earn your first badge!
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+            <div className="divide-y divide-[#EEEEF2]">
               {achievements.slice(0, 4).map((unlock) => {
                 const def = ACHIEVEMENT_CATALOG.find((c) => c.key === unlock.achievementKey);
                 if (!def) return null;
@@ -262,17 +240,15 @@ export const ProfilePage: React.FC = () => {
                     key={unlock.id}
                     type="button"
                     onClick={() => setActivePage('achievements')}
-                    className="flex items-center gap-2.5 rounded-xl border border-[#EAE7F8] bg-[#FCFBFF] p-2.5 text-left hover:border-[#CFC6F7] cursor-pointer"
+                    className="w-full flex items-center justify-between gap-3 py-2.5 first:pt-0 last:pb-0 text-left hover:text-[#7956E8] cursor-pointer"
                   >
-                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-[#FFF6DB] text-[#D98806]">
-                      <Award className="h-4 w-4" />
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <span className="text-base leading-none shrink-0" aria-hidden="true">🏅</span>
+                      <p className="truncate text-sm font-bold text-[#242424]">{def.title}</p>
                     </div>
-                    <div className="min-w-0">
-                      <p className="truncate text-xs font-bold text-[#25243A]">{def.title}</p>
-                      <p className="text-[10px] text-[#77768C]">
-                        {new Date(unlock.unlockedAt).toLocaleDateString()}
-                      </p>
-                    </div>
+                    <span className="text-xs text-[#888888] shrink-0 tabular-nums">
+                      {new Date(unlock.unlockedAt).toLocaleDateString()}
+                    </span>
                   </button>
                 );
               })}
@@ -284,26 +260,26 @@ export const ProfilePage: React.FC = () => {
       {/* Study Workspace Shortcuts + Recent Activity */}
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-12">
         <Card className="lg:col-span-6 space-y-3.5">
-          <h2 className="text-base font-extrabold text-[#25243A]">Study Workspace</h2>
+          <h2 className="text-base font-bold text-[#242424]">Study Workspace</h2>
           <div className="grid grid-cols-2 gap-2.5">
             {[
               { id: 'checklist' as const, label: 'Quest Center', desc: 'Daily study tasks', icon: <CheckSquare className="h-4 w-4 text-[#7956E8]" /> },
-              { id: 'ai' as const, label: 'AI Coach', desc: 'Plans & quizzes', icon: <Sparkles className="h-4 w-4 text-[#45C4D8]" /> },
-              { id: 'journal' as const, label: 'Study Journal', desc: 'Private reflections', icon: <BookOpen className="h-4 w-4 text-[#38B982]" /> },
-              { id: 'analytics' as const, label: 'Analytics', desc: 'XP & consistency', icon: <BarChart3 className="h-4 w-4 text-[#D98806]" /> },
+              { id: 'ai' as const, label: 'AI Coach', desc: 'Plans & quizzes', icon: <Sparkles className="h-4 w-4 text-[#7956E8]" /> },
+              { id: 'journal' as const, label: 'Study Journal', desc: 'Private reflections', icon: <BookOpen className="h-4 w-4 text-[#3C8F00]" /> },
+              { id: 'analytics' as const, label: 'Analytics', desc: 'XP & consistency', icon: <BarChart3 className="h-4 w-4 text-[#D97706]" /> },
             ].map((item) => (
               <button
                 key={item.id}
                 type="button"
                 onClick={() => setActivePage(item.id)}
-                className="flex items-center gap-3 rounded-2xl border border-[#EAE7F8] bg-[#FCFBFF] p-3 text-left hover:border-[#CFC6F7] hover:bg-[#F5F2FF] transition-colors cursor-pointer"
+                className="flex items-center gap-3 rounded-xl border border-[#EEEEF2] bg-white p-3 text-left hover:border-[#D4CCFA] hover:bg-[#FAFAFC] transition-colors cursor-pointer"
               >
-                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white border border-[#EAE7F8]">
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#F7F8FA]">
                   {item.icon}
                 </div>
                 <div className="min-w-0">
-                  <p className="text-xs font-bold text-[#25243A] truncate">{item.label}</p>
-                  <p className="text-[11px] text-[#77768C] truncate">{item.desc}</p>
+                  <p className="text-xs font-bold text-[#242424] truncate">{item.label}</p>
+                  <p className="text-[11px] text-[#888888] truncate">{item.desc}</p>
                 </div>
               </button>
             ))}
@@ -311,25 +287,25 @@ export const ProfilePage: React.FC = () => {
         </Card>
 
         <Card className="lg:col-span-6 space-y-3.5">
-          <h2 className="text-base font-extrabold text-[#25243A]">Recent Activity</h2>
+          <h2 className="text-base font-bold text-[#242424]">Recent Activity</h2>
           {recentActivity.length === 0 ? (
-            <div className="rounded-2xl border border-dashed border-[#DFD8F8] bg-[#FAF9FF] p-6 text-center text-xs text-[#77768C]">
+            <div className="rounded-xl border border-dashed border-[#EEEEF2] bg-[#F7F8FA] p-5 text-center text-xs text-[#888888]">
               Your recent quest completions and milestones will appear here.
             </div>
           ) : (
-            <div className="divide-y divide-[#F1EEFA]">
+            <div className="divide-y divide-[#EEEEF2]">
               {recentActivity.map((item) => (
                 <div key={item.id} className="py-2.5 first:pt-0 last:pb-0 flex items-start justify-between gap-3">
                   <div className="min-w-0">
-                    <p className="text-xs font-medium text-[#25243A] leading-snug">
+                    <p className="text-xs font-medium text-[#242424] leading-snug">
                       You {item.message}
                     </p>
-                    <p className="text-[11px] text-[#77768C] mt-0.5">
+                    <p className="text-[11px] text-[#888888] mt-0.5">
                       {new Date(item.createdAt).toLocaleDateString()}
                     </p>
                   </div>
                   {item.xpDelta ? (
-                    <span className="shrink-0 rounded-lg bg-[#FFF6DB] px-2 py-0.5 text-[11px] font-extrabold text-[#9A6808] tabular-nums">
+                    <span className="shrink-0 text-xs font-bold text-[#3C8F00] tabular-nums">
                       +{item.xpDelta} XP
                     </span>
                   ) : null}

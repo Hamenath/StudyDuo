@@ -8,7 +8,6 @@ import {
   Calendar,
   Check,
   CheckSquare,
-  Clock,
   Coffee,
   Copy,
   Edit3,
@@ -19,10 +18,8 @@ import {
   Lock,
   MessageSquare,
   Plus,
-  Sparkles,
   Trash2,
   Youtube,
-  Zap,
 } from 'lucide-react';
 import { useStudyDuo } from '../context/StudyDuoContext';
 import {
@@ -51,11 +48,24 @@ const XP_PRESETS = [
   { label: 'Major (60 XP)', value: DEFAULT_XP_PRESETS.major },
 ];
 
-const DIFFICULTY_STYLES: Record<TaskPriority, { label: string; bg: string; text: string }> = {
-  low: { label: 'Easy', bg: 'bg-[#E6F8F0]', text: 'text-[#1D855A]' },
-  medium: { label: 'Medium', bg: 'bg-[#F1EDFF]', text: 'text-[#6B48DC]' },
-  high: { label: 'Hard', bg: 'bg-[#FFF6DB]', text: 'text-[#9A6808]' },
-};
+const COMPLETION_MESSAGES = [
+  'Nice work! 🎉',
+  'One step closer! 🚀',
+  "You're building a streak! 🔥",
+];
+
+function getTaskEmoji(title: string, priority: TaskPriority): string {
+  const lower = title.toLowerCase();
+  if (lower.includes('loop') || lower.includes('while') || lower.includes('for')) return '🔁';
+  if (lower.includes('string') || lower.includes('text') || lower.includes('write')) return '📝';
+  if (lower.includes('challenge') || lower.includes('project') || lower.includes('cli') || lower.includes('build')) return '🚀';
+  if (lower.includes('python') || lower.includes('code') || lower.includes('function') || lower.includes('api')) return '💻';
+  if (lower.includes('quiz') || lower.includes('test') || lower.includes('practice')) return '🎯';
+  if (lower.includes('data') || lower.includes('list') || lower.includes('dict')) return '📊';
+  if (priority === 'high') return '⚡';
+  if (priority === 'low') return '🌱';
+  return '📘';
+}
 
 export const ChecklistPage: React.FC = () => {
   const {
@@ -88,13 +98,11 @@ export const ChecklistPage: React.FC = () => {
   const [selectedDayId, setSelectedDayId] = useState<string>('');
   const [showAddDayModal, setShowAddDayModal] = useState(false);
   const [newDayTitle, setNewDayTitle] = useState('');
-  const [justCompletedId, setJustCompletedId] = useState<string | null>(null);
+  const [justCompleted, setJustCompleted] = useState<{ id: string; xp: number; message: string } | null>(null);
 
-  // Task Detail bottom sheet state
   const [detailTask, setDetailTask] = useState<Task | null>(null);
   const [personalNoteDraft, setPersonalNoteDraft] = useState('');
 
-  // Task Editor modal state (Owner only)
   const [showTaskEditor, setShowTaskEditor] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [taskForm, setTaskForm] = useState({
@@ -159,14 +167,15 @@ export const ChecklistPage: React.FC = () => {
   );
   const isFutureDay = Boolean(activeDay && activeDay.date > todayKey);
 
-  const handleCompleteQuest = async (task: Task) => {
+  const handleCompleteQuest = async (task: Task, index = 0) => {
     if (!activeGoal || !currentUser) return;
     if (completionSet.has(buildCompletionId(task.id, currentUser.uid))) return;
-    setJustCompletedId(task.id);
+    const message = COMPLETION_MESSAGES[index % COMPLETION_MESSAGES.length];
+    setJustCompleted({ id: task.id, xp: task.xpReward, message });
     await completeTask(activeGoal.id, task);
     setTimeout(() => {
-      setJustCompletedId((prev) => (prev === task.id ? null : prev));
-    }, 950);
+      setJustCompleted((prev) => (prev?.id === task.id ? null : prev));
+    }, 1800);
   };
 
   const openTaskDetail = (task: Task) => {
@@ -274,9 +283,9 @@ export const ChecklistPage: React.FC = () => {
   if (!activeGoal) {
     return (
       <EmptyState
-        icon={<CheckSquare className="h-6 w-6" />}
-        title="No active quest board yet"
-        description="Create a learning goal or accept a partner invitation code to open your daily Quest Center."
+        icon={<CheckSquare className="h-5 w-5" />}
+        title="No active checklist yet"
+        description="Create a learning goal or join with a partner invite code to open your Quest Center."
         actionLabel="Go to Roadmap"
         onAction={() => setActivePage('goals')}
       />
@@ -288,20 +297,14 @@ export const ChecklistPage: React.FC = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div className="min-w-0">
-          <div className="inline-flex items-center gap-1.5 text-xs font-bold text-[#7956E8]">
-            <Sparkles className="h-3.5 w-3.5" />
-            Quest Center
-          </div>
-          <h1 className="mt-0.5 text-2xl sm:text-3xl font-extrabold tracking-tight text-[#25243A]">
-            Daily Learning Quests
-          </h1>
-          <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs sm:text-sm text-[#77768C]">
+          <h1 className="text-2xl font-extrabold text-[#242424]">Quest Center</h1>
+          <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-[#888888]">
             {goals.length > 1 ? (
               <select
                 aria-label="Select active goal"
                 value={activeGoal.id}
                 onChange={(e) => setSelectedGoalId(e.target.value)}
-                className="rounded-xl border border-[#E4DFF6] bg-white px-2.5 py-1 text-xs font-bold text-[#25243A]"
+                className="rounded-lg border border-[#EEEEF2] bg-white px-2.5 py-1 text-xs font-semibold text-[#242424]"
               >
                 {goals.map((g) => (
                   <option key={g.id} value={g.id}>
@@ -310,13 +313,13 @@ export const ChecklistPage: React.FC = () => {
                 ))}
               </select>
             ) : (
-              <span className="font-semibold text-[#25243A]">{activeGoal.title}</span>
+              <span className="font-semibold text-[#242424]">{activeGoal.title}</span>
             )}
             {activeDay && (
               <>
                 <span aria-hidden="true">·</span>
-                <span className="font-mono text-xs tabular-nums">
-                  Day {String(activeDay.dayNumber).padStart(2, '0')} ({activeDay.date})
+                <span className="tabular-nums">
+                  Day {activeDay.dayNumber} ({activeDay.date})
                 </span>
               </>
             )}
@@ -324,19 +327,19 @@ export const ChecklistPage: React.FC = () => {
         </div>
 
         {isOwner ? (
-          <Button onClick={openNewTaskEditor} disabled={!activeDay}>
+          <Button size="sm" onClick={openNewTaskEditor} disabled={!activeDay}>
             <Plus className="h-4 w-4" />
             Add Quest
           </Button>
         ) : (
-          <div className="inline-flex items-center gap-1.5 rounded-xl border border-[#EAE7F8] bg-white px-3 py-2 text-xs font-medium text-[#77768C]">
+          <div className="inline-flex items-center gap-1.5 text-xs text-[#888888]">
             <Lock className="h-3.5 w-3.5 text-[#7956E8] shrink-0" />
-            <span>Official quests set by owner · Your XP is independent</span>
+            <span>Official quests set by owner · Independent XP</span>
           </div>
         )}
       </div>
 
-      {/* Horizontal Day Selector Strip */}
+      {/* Compact Day Selector */}
       <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1">
         {days.map((day) => {
           const isSelected = activeDay?.id === day.id;
@@ -347,22 +350,22 @@ export const ChecklistPage: React.FC = () => {
               key={day.id}
               type="button"
               onClick={() => setSelectedDayId(day.id)}
-              className={`min-h-[48px] px-4 py-2 rounded-2xl border text-left transition-all shrink-0 cursor-pointer ${
+              className={`min-h-[44px] px-3.5 py-1.5 rounded-xl border text-left transition-colors shrink-0 cursor-pointer ${
                 isSelected
-                  ? 'sd-gradient-primary border-[#7956E8] text-white shadow-[0_6px_16px_rgba(121,86,232,0.28)]'
-                  : 'bg-white border-[#EAE7F8] text-[#25243A] hover:border-[#CFC6F7]'
+                  ? 'bg-[#7956E8] border-[#7956E8] text-white'
+                  : 'bg-white border-[#EEEEF2] text-[#242424] hover:border-[#D4D4DC]'
               }`}
             >
-              <div className="flex items-center gap-1.5">
-                <p className="font-mono text-xs font-bold leading-none">
-                  Day {String(day.dayNumber).padStart(2, '0')}
-                </p>
-                {isRest && <Coffee className={`h-3 w-3 ${isSelected ? 'text-[#FFC857]' : 'text-[#45C4D8]'}`} />}
+              <div className="flex items-center gap-1">
+                <span className="text-xs font-bold leading-none tabular-nums">
+                  Day {day.dayNumber}
+                </span>
+                {isRest && <Coffee className="h-3 w-3 opacity-80" />}
                 {isFuture && !isOwner && <Lock className="h-3 w-3 opacity-70" />}
               </div>
-              <p className={`mt-1 text-[11px] leading-none ${isSelected ? 'text-white/85' : 'text-[#77768C]'}`}>
+              <p className={`mt-1 text-[11px] leading-none tabular-nums ${isSelected ? 'text-white/80' : 'text-[#888888]'}`}>
                 {day.date.slice(5)}
-                {!day.isPublished ? ' · Draft' : isFuture ? ' · Upcoming' : ''}
+                {!day.isPublished ? ' · Draft' : ''}
               </p>
             </button>
           );
@@ -372,7 +375,7 @@ export const ChecklistPage: React.FC = () => {
           <button
             type="button"
             onClick={() => setShowAddDayModal(true)}
-            className="min-h-[48px] px-3.5 py-2 rounded-2xl border border-dashed border-[#A78BFA] bg-[#F5F1FF] text-xs font-bold text-[#7956E8] hover:bg-[#ECE5FF] transition-colors inline-flex items-center gap-1.5 shrink-0 whitespace-nowrap cursor-pointer"
+            className="min-h-[44px] px-3 py-1.5 rounded-xl border border-dashed border-[#A78BFA] bg-white text-xs font-semibold text-[#7956E8] hover:bg-[#F3F0FF] transition-colors inline-flex items-center gap-1 shrink-0 whitespace-nowrap cursor-pointer"
           >
             <Plus className="h-3.5 w-3.5" />
             Add Day
@@ -380,33 +383,28 @@ export const ChecklistPage: React.FC = () => {
         )}
       </div>
 
-      {/* Rest Day or Upcoming Day Banner */}
       {isPlannedRestDay && (
-        <div className="flex items-center gap-3 rounded-2xl border border-[#BEEAF2] bg-[#E8F9FC] px-4 py-3 text-xs font-semibold text-[#177080]">
-          <Coffee className="h-4 w-4 shrink-0 text-[#45C4D8]" />
-          <span>
-            Planned Rest Day active — your individual and Duo streaks stay safely frozen today!
-          </span>
+        <div className="flex items-center gap-2.5 rounded-xl border border-[#EEEEF2] bg-white px-4 py-3 text-xs text-[#242424]">
+          <span aria-hidden="true">☕</span>
+          <span>Planned rest day — your individual and duo streaks stay safely protected today.</span>
         </div>
       )}
 
       {isFutureDay && !isOwner && (
-        <div className="flex items-center gap-3 rounded-2xl border border-[#DFD8F8] bg-[#F5F2FF] px-4 py-3 text-xs font-semibold text-[#5E41C4]">
-          <Lock className="h-4 w-4 shrink-0" />
-          <span>
-            Scheduled for {activeDay?.date} — preview upcoming quests ahead of time.
-          </span>
+        <div className="flex items-center gap-2.5 rounded-xl border border-[#EEEEF2] bg-white px-4 py-3 text-xs text-[#666666]">
+          <Lock className="h-3.5 w-3.5 text-[#7956E8] shrink-0" />
+          <span>Scheduled for {activeDay?.date} — preview upcoming quests ahead of time.</span>
         </div>
       )}
 
-      {/* Daily Progress Summary Card */}
+      {/* Daily Progress Bar & Owner Day Actions */}
       {activeDay && (
-        <Card className="space-y-4">
+        <Card className="space-y-3">
           <div className="flex flex-wrap items-start justify-between gap-3">
-            <div>
-              <h2 className="text-base font-extrabold text-[#25243A]">{activeDay.title}</h2>
-              <p className="mt-0.5 text-xs text-[#77768C] font-mono tabular-nums">
-                {myCompletedCount}/{dayTasks.length} quests cleared · {availableXp} XP pool (+30 XP full-day bonus)
+            <div className="min-w-0">
+              <h2 className="text-base font-extrabold text-[#242424]">{activeDay.title}</h2>
+              <p className="mt-0.5 text-xs text-[#888888] tabular-nums">
+                {myCompletedCount}/{dayTasks.length} completed · {availableXp} XP pool (+30 XP bonus)
               </p>
             </div>
 
@@ -415,22 +413,22 @@ export const ChecklistPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => void toggleRestDay(activeGoal.id, activeDay.date)}
-                  className={`min-h-[38px] inline-flex items-center gap-1.5 rounded-xl border px-3 text-xs font-bold transition-colors cursor-pointer ${
+                  className={`min-h-[36px] inline-flex items-center gap-1.5 rounded-xl border px-3 text-xs font-semibold transition-colors cursor-pointer ${
                     isPlannedRestDay
-                      ? 'bg-[#E5F8FB] border-[#45C4D8] text-[#177080]'
-                      : 'bg-white border-[#EAE7F8] text-[#77768C] hover:text-[#25243A]'
+                      ? 'bg-[#F3F0FF] border-[#A78BFA] text-[#7956E8]'
+                      : 'bg-white border-[#EEEEF2] text-[#666666] hover:text-[#242424]'
                   }`}
                 >
                   <Coffee className="h-3.5 w-3.5" />
-                  {isPlannedRestDay ? 'Rest Day Active' : 'Mark Rest Day'}
+                  {isPlannedRestDay ? 'Rest Day On' : 'Rest Day'}
                 </button>
                 <button
                   type="button"
                   onClick={() => void toggleDayPublished(activeGoal.id, activeDay.id, !activeDay.isPublished)}
-                  className={`min-h-[38px] inline-flex items-center gap-1.5 rounded-xl px-3 text-xs font-bold transition-colors cursor-pointer ${
+                  className={`min-h-[36px] inline-flex items-center gap-1.5 rounded-xl border px-3 text-xs font-semibold transition-colors cursor-pointer ${
                     activeDay.isPublished
-                      ? 'bg-[#E6F8F0] text-[#1F8B5D] hover:bg-[#D5F2E5]'
-                      : 'bg-[#F1EDFF] text-[#7956E8] hover:bg-[#E4DCFF]'
+                      ? 'bg-[#EFFAE6] border-[#CDEFA9] text-[#3C8F00]'
+                      : 'bg-[#F3F0FF] border-[#DDD4FA] text-[#7956E8]'
                   }`}
                 >
                   {activeDay.isPublished ? <Eye className="h-3.5 w-3.5" /> : <EyeOff className="h-3.5 w-3.5" />}
@@ -440,260 +438,264 @@ export const ChecklistPage: React.FC = () => {
             )}
           </div>
 
-          <div className="space-y-2">
-            <ProgressBar
-              percent={dailyPct}
-              color={dailyPct === 100 ? '#38B982' : '#7956E8'}
-              height="h-3"
-            />
-            <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-[#77768C]">
-              <span className="font-bold text-[#25243A] tabular-nums">
-                Your daily completion: {dailyPct}%
+          <ProgressBar
+            percent={dailyPct}
+            color={dailyPct === 100 ? '#58CC02' : '#7956E8'}
+            height="h-2"
+          />
+
+          <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-[#888888]">
+            <span className="font-semibold text-[#242424] tabular-nums">
+              {dailyPct}% complete
+            </span>
+            {partner && (
+              <span className="inline-flex items-center gap-1.5 tabular-nums">
+                <Avatar
+                  name={partner.displayName}
+                  initials={partner.avatarInitials}
+                  color={partner.avatarColor}
+                  avatarConfig={partner.avatarConfig}
+                  seedKey={partner.uid}
+                  size="xs"
+                />
+                {partner.displayName.split(' ')[0]}: {partnerCompletedCount}/{publishedCount || dayTasks.length}
               </span>
-              {partner && (
-                <span className="inline-flex items-center gap-1.5 font-semibold tabular-nums">
-                  <Avatar
-                    name={partner.displayName}
-                    initials={partner.avatarInitials}
-                    color={partner.avatarColor}
-                    avatarConfig={partner.avatarConfig}
-                    seedKey={partner.uid}
-                    size="xs"
-                  />
-                  {partner.displayName.split(' ')[0]}: {partnerCompletedCount}/{publishedCount || dayTasks.length} quests
-                </span>
-              )}
-            </div>
+            )}
           </div>
         </Card>
       )}
 
-      {/* Quest Cards List */}
+      {/* Friendly Completion Feedback Strip */}
+      <AnimatePresence>
+        {justCompleted && (
+          <motion.div
+            initial={{ opacity: 0, y: -4 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -4 }}
+            transition={{ duration: 0.18 }}
+            className="flex items-center justify-between rounded-xl border border-[#CDEFA9] bg-[#EFFAE6] px-4 py-2.5 text-xs font-bold text-[#3C8F00]"
+          >
+            <span>{justCompleted.message}</span>
+            <span className="tabular-nums">+{justCompleted.xp} XP</span>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Clean Checklist Container */}
       {dayTasks.length === 0 ? (
         <EmptyState
-          icon={<Calendar className="h-6 w-6" />}
+          icon={<Calendar className="h-5 w-5" />}
           title="No quests on this day yet"
           description={
             isOwner
-              ? 'StudyDuo never auto-publishes tasks without your approval. Click "Add Quest" to author official learning quests.'
-              : 'Your study goal owner has not published quests for this day yet.'
+              ? 'Click "Add Quest" to create official learning tasks for this day.'
+              : 'Your goal owner has not published tasks for this day yet.'
           }
           actionLabel={isOwner ? 'Add First Quest' : undefined}
           onAction={isOwner ? openNewTaskEditor : undefined}
         />
       ) : (
-        <div className="space-y-3" data-testid="checklist-tasks">
-          {dayTasks.map((task, idx) => {
-            const myDone = currentUser
-              ? completionSet.has(buildCompletionId(task.id, currentUser.uid))
-              : false;
-            const partnerDone = partner
-              ? completionSet.has(buildCompletionId(task.id, partner.uid))
-              : false;
-            const isSparkling = justCompletedId === task.id;
-            const safeYt = sanitizeExternalUrl(task.youtubeUrl);
-            const safeChatgpt = sanitizeExternalUrl(task.chatgptUrl);
-            const diff = DIFFICULTY_STYLES[task.priority] ?? DIFFICULTY_STYLES.medium;
+        <Card padding="none" className="overflow-hidden">
+          <div className="divide-y divide-[#EEEEF2]" data-testid="checklist-tasks">
+            {dayTasks.map((task, idx) => {
+              const myDone = currentUser
+                ? completionSet.has(buildCompletionId(task.id, currentUser.uid))
+                : false;
+              const partnerDone = partner
+                ? completionSet.has(buildCompletionId(task.id, partner.uid))
+                : false;
+              const isJustDone = justCompleted?.id === task.id;
+              const safeYt = sanitizeExternalUrl(task.youtubeUrl);
+              const safeChatgpt = sanitizeExternalUrl(task.chatgptUrl);
 
-            return (
-              <motion.article
-                key={task.id}
-                layout="position"
-                className={`relative rounded-2xl border p-4 sm:p-5 transition-all ${
-                  myDone
-                    ? 'border-[#BFEFD9] bg-[#F5FCF8] shadow-[0_2px_10px_rgba(56,185,130,0.08)]'
-                    : 'border-[#EAE7F8] bg-white hover:border-[#CFC6F7] shadow-[0_2px_12px_rgba(121,86,232,0.04)]'
-                }`}
-              >
-                {/* Floating +XP & Sparkle Burst on Quest Completion */}
-                <AnimatePresence>
-                  {isSparkling && (
-                    <motion.div
-                      initial={{ opacity: 0, y: 8, scale: 0.85 }}
-                      animate={{ opacity: 1, y: -20, scale: 1.05 }}
-                      exit={{ opacity: 0, y: -34 }}
-                      transition={{ duration: 0.75, ease: 'easeOut' }}
-                      className="pointer-events-none absolute right-5 top-2 z-20 inline-flex items-center gap-1 rounded-full bg-[#7956E8] px-3 py-1 text-xs font-extrabold text-white shadow-lg"
+              return (
+                <article
+                  key={task.id}
+                  className={`relative p-4 sm:px-5 transition-colors ${
+                    myDone ? 'bg-[#FAFEF7]' : 'bg-white'
+                  }`}
+                >
+                  <div className="flex items-start gap-3">
+                    {/* Crisp Animated Checkbox */}
+                    <motion.button
+                      type="button"
+                      whileTap={{ scale: 0.9 }}
+                      onClick={() => void handleCompleteQuest(task, idx)}
+                      aria-label={myDone ? `Completed ${task.title}` : `Mark "${task.title}" complete`}
+                      aria-pressed={myDone}
+                      className={`mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl transition-colors cursor-pointer ${
+                        myDone ? 'text-white' : 'hover:bg-[#F7F8FA]'
+                      }`}
                     >
-                      <Sparkles className="h-3.5 w-3.5 text-[#FFC857]" />+{task.xpReward} XP!
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-
-                <div className="flex items-start gap-3.5">
-                  {/* Animated Quest Checkbox */}
-                  <motion.button
-                    type="button"
-                    whileTap={{ scale: 0.9 }}
-                    onClick={() => void handleCompleteQuest(task)}
-                    aria-label={myDone ? `Completed ${task.title}` : `Mark "${task.title}" complete`}
-                    aria-pressed={myDone}
-                    className={`mt-0.5 min-h-[44px] min-w-[44px] rounded-2xl border-2 flex items-center justify-center transition-all shrink-0 cursor-pointer ${
-                      myDone
-                        ? 'bg-[#38B982] border-[#38B982] text-white shadow-[0_4px_12px_rgba(56,185,130,0.3)]'
-                        : 'bg-[#FAF9FF] border-[#D3CAF6] text-transparent hover:border-[#7956E8] hover:bg-[#F1EDFF]'
-                    }`}
-                  >
-                    <Check className="h-5 w-5 stroke-[2.75]" />
-                  </motion.button>
-
-                  {/* Quest Body */}
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-start justify-between gap-2">
-                      <button
-                        type="button"
-                        onClick={() => openTaskDetail(task)}
-                        className="text-left group min-w-0 cursor-pointer"
-                      >
-                        <h3
-                          className={`text-base font-bold leading-snug group-hover:text-[#7956E8] transition-colors ${
-                            myDone ? 'text-[#5A7569] line-through' : 'text-[#25243A]'
-                          }`}
-                        >
-                          {task.title}
-                        </h3>
-                      </button>
-
                       <span
-                        className={`inline-flex items-center gap-1 rounded-xl px-2.5 py-1 text-xs font-extrabold whitespace-nowrap shrink-0 tabular-nums ${
+                        className={`flex h-6 w-6 items-center justify-center rounded-lg border-2 transition-colors duration-150 ${
                           myDone
-                            ? 'bg-[#E6F8F0] text-[#1F8B5D]'
-                            : 'bg-[#FFF6DB] text-[#9A6808]'
+                            ? 'bg-[#58CC02] border-[#58CC02] text-white'
+                            : 'bg-white border-[#CFCFD8] text-transparent'
                         }`}
                       >
-                        <Zap className="h-3 w-3 fill-current" />+{task.xpReward} XP
+                        <Check className="h-3.5 w-3.5 stroke-[3]" />
                       </span>
-                    </div>
+                    </motion.button>
 
-                    {task.shortDescription && (
-                      <p className="mt-1 text-sm text-[#77768C] leading-relaxed">
-                        {task.shortDescription}
-                      </p>
-                    )}
-
-                    {/* Clean Metadata Row */}
-                    <div className="mt-2.5 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-xs text-[#77768C]">
-                      <span className="inline-flex items-center gap-1 font-mono tabular-nums whitespace-nowrap">
-                        <Clock className="h-3.5 w-3.5" />
-                        {task.estimatedMinutes} min
-                      </span>
-                      <span className={`rounded-lg px-2 py-0.5 text-[11px] font-bold ${diff.bg} ${diff.text}`}>
-                        {diff.label}
-                      </span>
-                      {!task.isPublished && (
-                        <span className="text-[#9A6808] font-bold whitespace-nowrap">
-                          Draft (owner only)
-                        </span>
-                      )}
-                      {partner && (
-                        <span
-                          className={`whitespace-nowrap font-semibold ${
-                            partnerDone ? 'text-[#38B982]' : 'text-[#908EA8]'
-                          }`}
-                        >
-                          {partner.displayName.split(' ')[0]}: {partnerDone ? 'Cleared' : 'Pending'}
-                        </span>
-                      )}
-                    </div>
-
-                    {/* Action & Resource Links Row */}
-                    <div className="mt-3.5 pt-3 border-t border-[#F1EEFA] flex flex-wrap items-center justify-between gap-2">
-                      <div className="flex flex-wrap items-center gap-2">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-start justify-between gap-2">
                         <button
                           type="button"
                           onClick={() => openTaskDetail(task)}
-                          className="min-h-[38px] inline-flex items-center gap-1.5 rounded-xl bg-[#F8F7FF] border border-[#E5E0F8] px-3 text-xs font-bold text-[#25243A] hover:bg-[#F1EDFF] hover:text-[#7956E8] transition-colors cursor-pointer"
+                          className="flex items-start gap-2 text-left group min-w-0 cursor-pointer"
                         >
-                          <BookOpen className="h-3.5 w-3.5" />
-                          Brief & Notes
+                          <span className="text-base leading-snug shrink-0 select-none" aria-hidden="true">
+                            {getTaskEmoji(task.title, task.priority)}
+                          </span>
+                          <h3
+                            className={`text-sm sm:text-[15px] font-bold leading-snug group-hover:text-[#7956E8] transition-colors ${
+                              myDone ? 'text-[#888888] line-through' : 'text-[#242424]'
+                            }`}
+                          >
+                            {task.title}
+                          </h3>
                         </button>
 
-                        {safeYt && (
-                          <a
-                            href={safeYt}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="min-h-[38px] inline-flex items-center gap-1.5 rounded-xl bg-white border border-[#EAE7F8] px-3 text-xs font-bold text-[#25243A] hover:border-[#E66F77]/60 transition-colors"
-                          >
-                            <Youtube className="h-3.5 w-3.5 text-[#E66F77]" />
-                            YouTube
-                          </a>
-                        )}
+                        <motion.span
+                          key={isJustDone ? `xp-pop-${task.id}` : `xp-idle-${task.id}`}
+                          initial={isJustDone ? { scale: 1.18 } : false}
+                          animate={{ scale: 1 }}
+                          transition={{ duration: 0.22 }}
+                          className={`shrink-0 text-xs font-bold tabular-nums whitespace-nowrap ${
+                            myDone ? 'text-[#3C8F00]' : 'text-[#7956E8]'
+                          }`}
+                        >
+                          +{task.xpReward} XP
+                        </motion.span>
+                      </div>
 
-                        {safeChatgpt && (
-                          <a
-                            href={safeChatgpt}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="min-h-[38px] inline-flex items-center gap-1.5 rounded-xl bg-white border border-[#EAE7F8] px-3 text-xs font-bold text-[#25243A] hover:border-[#38B982]/60 transition-colors"
-                          >
-                            <MessageSquare className="h-3.5 w-3.5 text-[#38B982]" />
-                            ChatGPT
-                          </a>
+                      {task.shortDescription && (
+                        <p className="mt-1 text-xs sm:text-sm text-[#666666] leading-relaxed">
+                          {task.shortDescription}
+                        </p>
+                      )}
+
+                      {/* Unboxed Inline Metadata */}
+                      <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-[#888888] tabular-nums">
+                        <span>{task.estimatedMinutes} min</span>
+                        <span aria-hidden="true">·</span>
+                        <span className="capitalize">{task.priority === 'low' ? 'Easy' : task.priority === 'high' ? 'Hard' : 'Medium'}</span>
+                        {!task.isPublished && (
+                          <>
+                            <span aria-hidden="true">·</span>
+                            <span className="text-[#FF9600] font-semibold">Draft</span>
+                          </>
+                        )}
+                        {partner && (
+                          <>
+                            <span aria-hidden="true">·</span>
+                            <span className={partnerDone ? 'text-[#3C8F00] font-medium' : 'text-[#888888]'}>
+                              {partner.displayName.split(' ')[0]}: {partnerDone ? 'Done' : 'Pending'}
+                            </span>
+                          </>
                         )}
                       </div>
 
-                      {isOwner && (
-                        <div className="flex items-center gap-1">
+                      {/* Quiet Action Links & Owner Tools */}
+                      <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
+                        <div className="flex flex-wrap items-center gap-3 text-xs font-semibold">
                           <button
                             type="button"
-                            disabled={idx === 0}
-                            onClick={() => void reorderTask(activeGoal.id, task.dayId, task.id, 'up')}
-                            aria-label={`Move "${task.title}" up`}
-                            className="min-h-[36px] min-w-[36px] flex items-center justify-center rounded-lg text-[#77768C] hover:bg-[#F3F0FF] disabled:opacity-30 cursor-pointer"
+                            onClick={() => openTaskDetail(task)}
+                            className="inline-flex items-center gap-1 text-[#7956E8] hover:underline cursor-pointer py-1"
                           >
-                            <ArrowUp className="h-4 w-4" />
+                            <BookOpen className="h-3.5 w-3.5" />
+                            Notes
                           </button>
-                          <button
-                            type="button"
-                            disabled={idx === dayTasks.length - 1}
-                            onClick={() => void reorderTask(activeGoal.id, task.dayId, task.id, 'down')}
-                            aria-label={`Move "${task.title}" down`}
-                            className="min-h-[36px] min-w-[36px] flex items-center justify-center rounded-lg text-[#77768C] hover:bg-[#F3F0FF] disabled:opacity-30 cursor-pointer"
-                          >
-                            <ArrowDown className="h-4 w-4" />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => openEditTaskEditor(task)}
-                            aria-label={`Edit "${task.title}"`}
-                            className="min-h-[36px] min-w-[36px] flex items-center justify-center rounded-lg text-[#77768C] hover:bg-[#F3F0FF] cursor-pointer"
-                          >
-                            <Edit3 className="h-4 w-4" />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => void duplicateTask(activeGoal.id, task)}
-                            aria-label={`Duplicate "${task.title}"`}
-                            className="min-h-[36px] min-w-[36px] flex items-center justify-center rounded-lg text-[#77768C] hover:bg-[#F3F0FF] cursor-pointer"
-                          >
-                            <Copy className="h-4 w-4" />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => void archiveTask(activeGoal.id, task)}
-                            aria-label={`Archive "${task.title}"`}
-                            className="min-h-[36px] min-w-[36px] flex items-center justify-center rounded-lg text-[#77768C] hover:bg-[#F3F0FF] cursor-pointer"
-                          >
-                            <Archive className="h-4 w-4" />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => setTaskToDelete(task)}
-                            aria-label={`Delete "${task.title}"`}
-                            className="min-h-[36px] min-w-[36px] flex items-center justify-center rounded-lg text-[#E66F77] hover:bg-[#FFF0F1] cursor-pointer"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </button>
+
+                          {safeYt && (
+                            <a
+                              href={safeYt}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1 text-[#555555] hover:text-[#242424] py-1"
+                            >
+                              <Youtube className="h-3.5 w-3.5 text-[#E5484D]" />
+                              Video
+                            </a>
+                          )}
+
+                          {safeChatgpt && (
+                            <a
+                              href={safeChatgpt}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1 text-[#555555] hover:text-[#242424] py-1"
+                            >
+                              <MessageSquare className="h-3.5 w-3.5 text-[#58CC02]" />
+                              ChatGPT
+                            </a>
+                          )}
                         </div>
-                      )}
+
+                        {isOwner && (
+                          <div className="flex items-center gap-0.5">
+                            <button
+                              type="button"
+                              disabled={idx === 0}
+                              onClick={() => void reorderTask(activeGoal.id, task.dayId, task.id, 'up')}
+                              aria-label={`Move "${task.title}" up`}
+                              className="min-h-[34px] min-w-[34px] flex items-center justify-center rounded-lg text-[#888888] hover:bg-[#F7F8FA] hover:text-[#242424] disabled:opacity-30 cursor-pointer"
+                            >
+                              <ArrowUp className="h-3.5 w-3.5" />
+                            </button>
+                            <button
+                              type="button"
+                              disabled={idx === dayTasks.length - 1}
+                              onClick={() => void reorderTask(activeGoal.id, task.dayId, task.id, 'down')}
+                              aria-label={`Move "${task.title}" down`}
+                              className="min-h-[34px] min-w-[34px] flex items-center justify-center rounded-lg text-[#888888] hover:bg-[#F7F8FA] hover:text-[#242424] disabled:opacity-30 cursor-pointer"
+                            >
+                              <ArrowDown className="h-3.5 w-3.5" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => openEditTaskEditor(task)}
+                              aria-label={`Edit "${task.title}"`}
+                              className="min-h-[34px] min-w-[34px] flex items-center justify-center rounded-lg text-[#888888] hover:bg-[#F7F8FA] hover:text-[#242424] cursor-pointer"
+                            >
+                              <Edit3 className="h-3.5 w-3.5" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => void duplicateTask(activeGoal.id, task)}
+                              aria-label={`Duplicate "${task.title}"`}
+                              className="min-h-[34px] min-w-[34px] flex items-center justify-center rounded-lg text-[#888888] hover:bg-[#F7F8FA] hover:text-[#242424] cursor-pointer"
+                            >
+                              <Copy className="h-3.5 w-3.5" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => void archiveTask(activeGoal.id, task)}
+                              aria-label={`Archive "${task.title}"`}
+                              className="min-h-[34px] min-w-[34px] flex items-center justify-center rounded-lg text-[#888888] hover:bg-[#F7F8FA] hover:text-[#242424] cursor-pointer"
+                            >
+                              <Archive className="h-3.5 w-3.5" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setTaskToDelete(task)}
+                              aria-label={`Delete "${task.title}"`}
+                              className="min-h-[34px] min-w-[34px] flex items-center justify-center rounded-lg text-[#E5484D] hover:bg-[#FFF5F5] cursor-pointer"
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </button>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
-                </div>
-              </motion.article>
-            );
-          })}
-        </div>
+                </article>
+              );
+            })}
+          </div>
+        </Card>
       )}
 
       {/* Quest Detail Sheet */}
@@ -703,7 +705,7 @@ export const ChecklistPage: React.FC = () => {
         title={detailTask?.title || 'Quest Details'}
         subtitle={
           detailTask
-            ? `Day ${String(detailTask.dayNumber).padStart(2, '0')} · ${detailTask.estimatedMinutes} min · +${detailTask.xpReward} XP`
+            ? `Day ${detailTask.dayNumber} · ${detailTask.estimatedMinutes} min · +${detailTask.xpReward} XP`
             : undefined
         }
         size="lg"
@@ -712,37 +714,37 @@ export const ChecklistPage: React.FC = () => {
           <div className="space-y-5">
             {detailTask.detailedInstructions && (
               <div>
-                <h3 className="text-xs font-bold text-[#77768C] mb-1.5">Instructions</h3>
-                <p className="text-sm text-[#25243A] leading-relaxed whitespace-pre-line">
+                <h3 className="text-xs font-bold text-[#888888] mb-1.5">Instructions</h3>
+                <p className="text-sm text-[#242424] leading-relaxed whitespace-pre-line">
                   {detailTask.detailedInstructions}
                 </p>
               </div>
             )}
 
             {detailTask.learningNotes && (
-              <div className="rounded-2xl bg-[#F8F7FF] border border-[#EAE7F8] p-4">
+              <div className="rounded-xl bg-[#F7F8FA] border border-[#EEEEF2] p-4">
                 <h3 className="text-xs font-bold text-[#7956E8] mb-1.5">Official Learning Notes</h3>
-                <p className="text-sm text-[#25243A] leading-relaxed whitespace-pre-line">
+                <p className="text-sm text-[#242424] leading-relaxed whitespace-pre-line">
                   {detailTask.learningNotes}
                 </p>
               </div>
             )}
 
             <div>
-              <h3 className="text-xs font-bold text-[#77768C] mb-2">Study Resources</h3>
+              <h3 className="text-xs font-bold text-[#888888] mb-2">Study Resources</h3>
               <div className="space-y-2">
                 {sanitizeExternalUrl(detailTask.youtubeUrl) && (
                   <a
                     href={sanitizeExternalUrl(detailTask.youtubeUrl)!}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="min-h-[44px] flex items-center justify-between gap-3 rounded-xl border border-[#EAE7F8] bg-white px-4 py-2.5 text-sm font-semibold text-[#25243A] hover:bg-[#F8F7FF]"
+                    className="min-h-[42px] flex items-center justify-between gap-3 rounded-xl border border-[#EEEEF2] bg-white px-4 py-2 text-sm font-medium text-[#242424] hover:bg-[#F7F8FA]"
                   >
                     <span className="flex items-center gap-2.5">
-                      <Youtube className="h-4 w-4 text-[#E66F77]" />
+                      <Youtube className="h-4 w-4 text-[#E5484D]" />
                       YouTube Lesson Video
                     </span>
-                    <ExternalLink className="h-4 w-4 text-[#88899B]" />
+                    <ExternalLink className="h-4 w-4 text-[#888888]" />
                   </a>
                 )}
                 {sanitizeExternalUrl(detailTask.chatgptUrl) && (
@@ -750,13 +752,13 @@ export const ChecklistPage: React.FC = () => {
                     href={sanitizeExternalUrl(detailTask.chatgptUrl)!}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="min-h-[44px] flex items-center justify-between gap-3 rounded-xl border border-[#EAE7F8] bg-white px-4 py-2.5 text-sm font-semibold text-[#25243A] hover:bg-[#F8F7FF]"
+                    className="min-h-[42px] flex items-center justify-between gap-3 rounded-xl border border-[#EEEEF2] bg-white px-4 py-2 text-sm font-medium text-[#242424] hover:bg-[#F7F8FA]"
                   >
                     <span className="flex items-center gap-2.5">
-                      <MessageSquare className="h-4 w-4 text-[#38B982]" />
+                      <MessageSquare className="h-4 w-4 text-[#58CC02]" />
                       ChatGPT Study Thread
                     </span>
-                    <ExternalLink className="h-4 w-4 text-[#88899B]" />
+                    <ExternalLink className="h-4 w-4 text-[#888888]" />
                   </a>
                 )}
                 {detailTask.resourceLinks.map((link, i) => {
@@ -768,26 +770,26 @@ export const ChecklistPage: React.FC = () => {
                       href={safe}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="min-h-[44px] flex items-center justify-between gap-3 rounded-xl border border-[#EAE7F8] bg-white px-4 py-2.5 text-sm font-semibold text-[#25243A] hover:bg-[#F8F7FF]"
+                      className="min-h-[42px] flex items-center justify-between gap-3 rounded-xl border border-[#EEEEF2] bg-white px-4 py-2 text-sm font-medium text-[#242424] hover:bg-[#F7F8FA]"
                     >
                       <span className="flex items-center gap-2.5">
                         <FileText className="h-4 w-4 text-[#7956E8]" />
                         {link.label}
                       </span>
-                      <ExternalLink className="h-4 w-4 text-[#88899B]" />
+                      <ExternalLink className="h-4 w-4 text-[#888888]" />
                     </a>
                   );
                 })}
                 {!sanitizeExternalUrl(detailTask.youtubeUrl) &&
                   !sanitizeExternalUrl(detailTask.chatgptUrl) &&
                   detailTask.resourceLinks.length === 0 && (
-                    <p className="text-sm text-[#77768C]">No external links attached to this quest.</p>
+                    <p className="text-sm text-[#888888]">No external links attached to this quest.</p>
                   )}
               </div>
             </div>
 
-            <div className="pt-3 border-t border-[#F1EEFA]">
-              <label htmlFor="personal-task-note" className="block text-xs font-bold text-[#25243A] mb-1.5">
+            <div className="pt-3 border-t border-[#EEEEF2]">
+              <label htmlFor="personal-task-note" className="block text-xs font-bold text-[#242424] mb-1.5">
                 My Private Study Notes (visible only to you)
               </label>
               <textarea
@@ -796,14 +798,14 @@ export const ChecklistPage: React.FC = () => {
                 value={personalNoteDraft}
                 onChange={(e) => setPersonalNoteDraft(e.target.value)}
                 placeholder="Write your own takeaways, code snippets, or follow-up questions..."
-                className="w-full rounded-xl border border-[#EAE7F8] bg-[#F8F7FF] p-3 text-sm text-[#25243A] focus:bg-white focus:border-[#7956E8] focus:outline-none"
+                className="w-full rounded-xl border border-[#EEEEF2] bg-[#F7F8FA] p-3 text-sm text-[#242424] focus:bg-white focus:border-[#7956E8] focus:outline-none"
               />
               <div className="mt-3 flex flex-wrap items-center justify-between gap-2.5">
                 <Button
                   variant="secondary"
                   onClick={() => void savePersonalNote(activeGoal.id, detailTask.id, personalNoteDraft)}
                 >
-                  Save Private Note
+                  Save Note
                 </Button>
                 <Button
                   variant="success"
@@ -813,8 +815,8 @@ export const ChecklistPage: React.FC = () => {
                   }}
                 >
                   {currentUser && completionSet.has(buildCompletionId(detailTask.id, currentUser.uid))
-                    ? 'Quest Cleared'
-                    : `Complete Quest (+${detailTask.xpReward} XP)`}
+                    ? 'Completed ✓'
+                    : `Mark Complete (+${detailTask.xpReward} XP)`}
                 </Button>
               </div>
             </div>
@@ -826,13 +828,13 @@ export const ChecklistPage: React.FC = () => {
       <ModalSheet
         open={showTaskEditor}
         onClose={() => setShowTaskEditor(false)}
-        title={editingTask ? 'Edit Official Quest' : 'Add Quest to Checklist'}
-        subtitle={activeDay ? `Day ${String(activeDay.dayNumber).padStart(2, '0')} · ${activeDay.date}` : undefined}
+        title={editingTask ? 'Edit Quest' : 'Add Quest'}
+        subtitle={activeDay ? `Day ${activeDay.dayNumber} · ${activeDay.date}` : undefined}
         size="lg"
       >
         <div className="space-y-4">
           <div>
-            <label htmlFor="task-title" className="block text-xs font-semibold text-[#25243A] mb-1.5">
+            <label htmlFor="task-title" className="block text-xs font-semibold text-[#242424] mb-1.5">
               Quest title
             </label>
             <input
@@ -840,12 +842,12 @@ export const ChecklistPage: React.FC = () => {
               value={taskForm.title}
               onChange={(e) => setTaskForm({ ...taskForm, title: e.target.value })}
               placeholder="Learn Python Variables"
-              className="w-full min-h-[44px] rounded-xl border border-[#EAE7F8] bg-[#F8F7FF] px-3.5 text-sm text-[#25243A] focus:bg-white focus:border-[#7956E8] focus:outline-none"
+              className="w-full min-h-[42px] rounded-xl border border-[#EEEEF2] bg-[#F7F8FA] px-3.5 text-sm text-[#242424] focus:bg-white focus:border-[#7956E8] focus:outline-none"
             />
           </div>
 
           <div>
-            <label htmlFor="task-short" className="block text-xs font-semibold text-[#25243A] mb-1.5">
+            <label htmlFor="task-short" className="block text-xs font-semibold text-[#242424] mb-1.5">
               Short description
             </label>
             <input
@@ -853,12 +855,12 @@ export const ChecklistPage: React.FC = () => {
               value={taskForm.shortDescription}
               onChange={(e) => setTaskForm({ ...taskForm, shortDescription: e.target.value })}
               placeholder="Practice snake_case naming and dynamic variable assignment"
-              className="w-full min-h-[44px] rounded-xl border border-[#EAE7F8] bg-[#F8F7FF] px-3.5 text-sm text-[#25243A] focus:bg-white focus:border-[#7956E8] focus:outline-none"
+              className="w-full min-h-[42px] rounded-xl border border-[#EEEEF2] bg-[#F7F8FA] px-3.5 text-sm text-[#242424] focus:bg-white focus:border-[#7956E8] focus:outline-none"
             />
           </div>
 
           <div>
-            <label htmlFor="task-instructions" className="block text-xs font-semibold text-[#25243A] mb-1.5">
+            <label htmlFor="task-instructions" className="block text-xs font-semibold text-[#242424] mb-1.5">
               Detailed instructions
             </label>
             <textarea
@@ -866,12 +868,12 @@ export const ChecklistPage: React.FC = () => {
               rows={2}
               value={taskForm.detailedInstructions}
               onChange={(e) => setTaskForm({ ...taskForm, detailedInstructions: e.target.value })}
-              className="w-full rounded-xl border border-[#EAE7F8] bg-[#F8F7FF] p-3 text-sm text-[#25243A] focus:bg-white focus:border-[#7956E8] focus:outline-none"
+              className="w-full rounded-xl border border-[#EEEEF2] bg-[#F7F8FA] p-3 text-sm text-[#242424] focus:bg-white focus:border-[#7956E8] focus:outline-none"
             />
           </div>
 
           <div>
-            <label htmlFor="task-notes" className="block text-xs font-semibold text-[#25243A] mb-1.5">
+            <label htmlFor="task-notes" className="block text-xs font-semibold text-[#242424] mb-1.5">
               Official learning notes
             </label>
             <textarea
@@ -879,13 +881,13 @@ export const ChecklistPage: React.FC = () => {
               rows={2}
               value={taskForm.learningNotes}
               onChange={(e) => setTaskForm({ ...taskForm, learningNotes: e.target.value })}
-              className="w-full rounded-xl border border-[#EAE7F8] bg-[#F8F7FF] p-3 text-sm text-[#25243A] focus:bg-white focus:border-[#7956E8] focus:outline-none"
+              className="w-full rounded-xl border border-[#EEEEF2] bg-[#F7F8FA] p-3 text-sm text-[#242424] focus:bg-white focus:border-[#7956E8] focus:outline-none"
             />
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label htmlFor="task-yt" className="block text-xs font-semibold text-[#25243A] mb-1.5">
+              <label htmlFor="task-yt" className="block text-xs font-semibold text-[#242424] mb-1.5">
                 YouTube URL (optional)
               </label>
               <input
@@ -894,12 +896,12 @@ export const ChecklistPage: React.FC = () => {
                 value={taskForm.youtubeUrl}
                 onChange={(e) => setTaskForm({ ...taskForm, youtubeUrl: e.target.value })}
                 placeholder="https://www.youtube.com/watch?v=..."
-                className="w-full min-h-[44px] rounded-xl border border-[#EAE7F8] bg-[#F8F7FF] px-3.5 text-sm text-[#25243A]"
+                className="w-full min-h-[42px] rounded-xl border border-[#EEEEF2] bg-[#F7F8FA] px-3.5 text-sm text-[#242424]"
               />
             </div>
             <div>
-              <label htmlFor="task-gpt" className="block text-xs font-semibold text-[#25243A] mb-1.5">
-                ChatGPT Conversation URL (optional)
+              <label htmlFor="task-gpt" className="block text-xs font-semibold text-[#242424] mb-1.5">
+                ChatGPT URL (optional)
               </label>
               <input
                 id="task-gpt"
@@ -907,14 +909,14 @@ export const ChecklistPage: React.FC = () => {
                 value={taskForm.chatgptUrl}
                 onChange={(e) => setTaskForm({ ...taskForm, chatgptUrl: e.target.value })}
                 placeholder="https://chatgpt.com/share/..."
-                className="w-full min-h-[44px] rounded-xl border border-[#EAE7F8] bg-[#F8F7FF] px-3.5 text-sm text-[#25243A]"
+                className="w-full min-h-[42px] rounded-xl border border-[#EEEEF2] bg-[#F7F8FA] px-3.5 text-sm text-[#242424]"
               />
             </div>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label htmlFor="task-res-label" className="block text-xs font-semibold text-[#25243A] mb-1.5">
+              <label htmlFor="task-res-label" className="block text-xs font-semibold text-[#242424] mb-1.5">
                 Extra resource label
               </label>
               <input
@@ -922,11 +924,11 @@ export const ChecklistPage: React.FC = () => {
                 value={taskForm.extraResourceLabel}
                 onChange={(e) => setTaskForm({ ...taskForm, extraResourceLabel: e.target.value })}
                 placeholder="Official Python Docs"
-                className="w-full min-h-[44px] rounded-xl border border-[#EAE7F8] bg-[#F8F7FF] px-3.5 text-sm text-[#25243A]"
+                className="w-full min-h-[42px] rounded-xl border border-[#EEEEF2] bg-[#F7F8FA] px-3.5 text-sm text-[#242424]"
               />
             </div>
             <div>
-              <label htmlFor="task-res-url" className="block text-xs font-semibold text-[#25243A] mb-1.5">
+              <label htmlFor="task-res-url" className="block text-xs font-semibold text-[#242424] mb-1.5">
                 Extra resource URL
               </label>
               <input
@@ -935,14 +937,14 @@ export const ChecklistPage: React.FC = () => {
                 value={taskForm.extraResourceUrl}
                 onChange={(e) => setTaskForm({ ...taskForm, extraResourceUrl: e.target.value })}
                 placeholder="https://docs.python.org/3/"
-                className="w-full min-h-[44px] rounded-xl border border-[#EAE7F8] bg-[#F8F7FF] px-3.5 text-sm text-[#25243A]"
+                className="w-full min-h-[42px] rounded-xl border border-[#EEEEF2] bg-[#F7F8FA] px-3.5 text-sm text-[#242424]"
               />
             </div>
           </div>
 
           <div className="grid grid-cols-3 gap-3">
             <div>
-              <label htmlFor="task-min" className="block text-xs font-semibold text-[#25243A] mb-1.5">
+              <label htmlFor="task-min" className="block text-xs font-semibold text-[#242424] mb-1.5">
                 Est. min
               </label>
               <input
@@ -952,11 +954,11 @@ export const ChecklistPage: React.FC = () => {
                 max={360}
                 value={taskForm.estimatedMinutes}
                 onChange={(e) => setTaskForm({ ...taskForm, estimatedMinutes: Number(e.target.value) })}
-                className="w-full min-h-[44px] rounded-xl border border-[#EAE7F8] bg-[#F8F7FF] px-3 text-sm font-mono text-[#25243A]"
+                className="w-full min-h-[42px] rounded-xl border border-[#EEEEF2] bg-[#F7F8FA] px-3 text-sm font-mono text-[#242424]"
               />
             </div>
             <div>
-              <label htmlFor="task-xp" className="block text-xs font-semibold text-[#25243A] mb-1.5">
+              <label htmlFor="task-xp" className="block text-xs font-semibold text-[#242424] mb-1.5">
                 XP reward
               </label>
               <input
@@ -966,18 +968,18 @@ export const ChecklistPage: React.FC = () => {
                 max={200}
                 value={taskForm.xpReward}
                 onChange={(e) => setTaskForm({ ...taskForm, xpReward: Number(e.target.value) })}
-                className="w-full min-h-[44px] rounded-xl border border-[#EAE7F8] bg-[#F8F7FF] px-3 text-sm font-mono text-[#25243A]"
+                className="w-full min-h-[42px] rounded-xl border border-[#EEEEF2] bg-[#F7F8FA] px-3 text-sm font-mono text-[#242424]"
               />
             </div>
             <div>
-              <label htmlFor="task-priority" className="block text-xs font-semibold text-[#25243A] mb-1.5">
+              <label htmlFor="task-priority" className="block text-xs font-semibold text-[#242424] mb-1.5">
                 Difficulty
               </label>
               <select
                 id="task-priority"
                 value={taskForm.priority}
                 onChange={(e) => setTaskForm({ ...taskForm, priority: e.target.value as TaskPriority })}
-                className="w-full min-h-[44px] rounded-xl border border-[#EAE7F8] bg-[#F8F7FF] px-2.5 text-sm text-[#25243A]"
+                className="w-full min-h-[42px] rounded-xl border border-[#EEEEF2] bg-[#F7F8FA] px-2.5 text-sm text-[#242424]"
               >
                 <option value="low">Easy</option>
                 <option value="medium">Medium</option>
@@ -992,10 +994,10 @@ export const ChecklistPage: React.FC = () => {
                 key={preset.value}
                 type="button"
                 onClick={() => setTaskForm({ ...taskForm, xpReward: preset.value })}
-                className={`min-h-[36px] rounded-xl px-3 text-xs font-bold border transition-colors cursor-pointer ${
+                className={`min-h-[34px] rounded-lg px-3 text-xs font-semibold border transition-colors cursor-pointer ${
                   taskForm.xpReward === preset.value
-                    ? 'bg-[#F1EDFF] border-[#7956E8] text-[#7956E8]'
-                    : 'bg-white border-[#EAE7F8] text-[#77768C]'
+                    ? 'bg-[#F3F0FF] border-[#7956E8] text-[#7956E8]'
+                    : 'bg-white border-[#EEEEF2] text-[#666666]'
                 }`}
               >
                 {preset.label}
@@ -1003,7 +1005,7 @@ export const ChecklistPage: React.FC = () => {
             ))}
           </div>
 
-          {taskFormError && <p role="alert" className="text-xs font-semibold text-[#E66F77]">{taskFormError}</p>}
+          {taskFormError && <p role="alert" className="text-xs font-semibold text-[#E5484D]">{taskFormError}</p>}
 
           <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2.5 pt-2">
             <Button variant="secondary" onClick={() => void handleSaveTask(false)}>
@@ -1018,12 +1020,12 @@ export const ChecklistPage: React.FC = () => {
       <ModalSheet
         open={showAddDayModal}
         onClose={() => setShowAddDayModal(false)}
-        title={`Add Day ${String(days.length + 1).padStart(2, '0')}`}
-        subtitle="Create a new study day container, then add your official quests manually."
+        title={`Add Day ${days.length + 1}`}
+        subtitle="Create a new study day, then add official quests."
       >
         <form onSubmit={handleAddDay} className="space-y-4">
           <div>
-            <label htmlFor="new-day-title" className="block text-xs font-semibold text-[#25243A] mb-1.5">
+            <label htmlFor="new-day-title" className="block text-xs font-semibold text-[#242424] mb-1.5">
               Day theme / focus title
             </label>
             <input
@@ -1032,7 +1034,7 @@ export const ChecklistPage: React.FC = () => {
               onChange={(e) => setNewDayTitle(e.target.value)}
               placeholder="Functions, Scope & Error Handling"
               required
-              className="w-full min-h-[44px] rounded-xl border border-[#EAE7F8] bg-[#F8F7FF] px-3.5 text-sm text-[#25243A]"
+              className="w-full min-h-[42px] rounded-xl border border-[#EEEEF2] bg-[#F7F8FA] px-3.5 text-sm text-[#242424]"
             />
           </div>
           <div className="flex justify-end gap-2.5">

@@ -2,23 +2,14 @@ import React, { useMemo, useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import {
   ArrowRight,
-  Award,
   Bell,
   Calendar,
   Check,
-  CheckCircle2,
-  Clock,
-  Crown,
-  Flame,
-  Map as MapIcon,
-  Palette,
+  ChevronRight,
   Plus,
   Send,
-  Sparkles,
   Target,
-  TrendingUp,
   UserPlus,
-  Zap,
 } from 'lucide-react';
 import { useStudyDuo } from '../context/StudyDuoContext';
 import {
@@ -34,17 +25,35 @@ import {
   Avatar,
   Button,
   Card,
-  CircularProgress,
   EmptyState,
   ProgressBar,
 } from '../components/ui/Primitives';
-import type { TaskPriority } from '../types/studyduo';
 
-const DIFFICULTY_META: Record<TaskPriority, { label: string; color: string; bg: string }> = {
-  low: { label: 'Easy', color: 'text-[#1D855A]', bg: 'bg-[#E6F8F0]' },
-  medium: { label: 'Medium', color: 'text-[#6B48DC]', bg: 'bg-[#F1EDFF]' },
-  high: { label: 'Hard', color: 'text-[#B26B00]', bg: 'bg-[#FFF6DB]' },
-};
+const FRIENDLY_CHEERS = [
+  'Nice work! 🎉',
+  'One step closer! 🚀',
+  "You're building a streak! 🔥",
+];
+
+function getQuestEmoji(title: string): string {
+  const lower = title.toLowerCase();
+  if (lower.includes('loop') || lower.includes('while') || lower.includes('for')) return '🔁';
+  if (lower.includes('string') || lower.includes('text') || lower.includes('write')) return '📝';
+  if (lower.includes('challenge') || lower.includes('project') || lower.includes('cli') || lower.includes('build')) return '🚀';
+  if (lower.includes('python') || lower.includes('code') || lower.includes('function') || lower.includes('api')) return '💻';
+  if (lower.includes('quiz') || lower.includes('test') || lower.includes('practice')) return '🎯';
+  if (lower.includes('data') || lower.includes('list') || lower.includes('dict')) return '📊';
+  return '📘';
+}
+
+function getBadgeEmoji(key: string): string {
+  if (key.includes('streak')) return '🔥';
+  if (key === 'study_champion') return '👑';
+  if (key === 'goal_completed') return '🏆';
+  if (key === 'perfect_week') return '🌟';
+  if (key.includes('tasks')) return '✅';
+  return '🎖️';
+}
 
 export const DashboardPage: React.FC = () => {
   const {
@@ -68,16 +77,14 @@ export const DashboardPage: React.FC = () => {
     setActivePage,
   } = useStudyDuo();
 
-  const [floatingXpTaskId, setFloatingXpTaskId] = useState<string | null>(null);
+  const [completedBanner, setCompletedBanner] = useState<{ taskId: string; xp: number; cheer: string } | null>(null);
 
   const tz = activeGoal?.timezone || currentUser?.timezone || 'UTC';
   const todayKey = getDateKeyInTimezone(new Date(), tz);
   const greeting = getGreetingByHour(new Date().getHours());
   const levelInfo = getLevelInfo(currentUser?.totalXp || 0);
-
   const isOwner = activeGoal?.ownerId === currentUser?.uid;
 
-  // Determine today's active study day
   const activeDay = useMemo(() => {
     if (!days.length) return null;
     const byDate = days.find((d) => d.date === todayKey && (d.isPublished || isOwner));
@@ -99,10 +106,17 @@ export const DashboardPage: React.FC = () => {
   }, [completions, currentUser]);
 
   const completedTodayCount = todaysQuests.filter((t) => myCompletedTaskIds.has(t.id)).length;
-  const dailyCompletionPct =
-    todaysQuests.length > 0 ? Math.round((completedTodayCount / todaysQuests.length) * 100) : 0;
+  const todaysStudyMinutes = useMemo(() => {
+    if (!currentUser) return 0;
+    const fromTodayCompletions = completions
+      .filter((c) => c.userId === currentUser.uid && c.dateKey === todayKey)
+      .reduce((sum, c) => sum + (c.estimatedMinutes || 0), 0);
+    if (fromTodayCompletions > 0) return fromTodayCompletions;
+    return todaysQuests
+      .filter((t) => myCompletedTaskIds.has(t.id))
+      .reduce((sum, t) => sum + (t.estimatedMinutes || 0), 0);
+  }, [completions, currentUser, myCompletedTaskIds, todayKey, todaysQuests]);
 
-  // Last 7 days activity (for Streak Card + Weekly Activity Chart)
   const weeklyActivity = useMemo(() => {
     const restSet = new Set(activeGoal?.restDays || []);
     const myDateSet = new Set(
@@ -122,14 +136,12 @@ export const DashboardPage: React.FC = () => {
         .filter((c) => c.userId === currentUser?.uid && c.dateKey === dateKey)
         .reduce((acc, c) => acc + c.xpAwarded, 0);
       const xp = Math.max(dayXpFromTx, dayXpFromComp);
-      const active = myDateSet.has(dateKey) || xp > 0;
-      const isRest = restSet.has(dateKey);
       return {
         dateKey,
         shortDay,
         xp,
-        active,
-        isRest,
+        active: myDateSet.has(dateKey) || xp > 0,
+        isRest: restSet.has(dateKey),
         isToday: dateKey === todayKey,
       };
     });
@@ -138,7 +150,6 @@ export const DashboardPage: React.FC = () => {
   const maxWeeklyXp = Math.max(60, ...weeklyActivity.map((d) => d.xp));
   const weeklyTotalXp = weeklyActivity.reduce((acc, d) => acc + d.xp, 0);
 
-  // Duo status & leaderboard comparison
   const partner = useMemo(
     () => participants.find((p) => p.uid !== currentUser?.uid) ?? null,
     [currentUser?.uid, participants]
@@ -185,7 +196,6 @@ export const DashboardPage: React.FC = () => {
     return Math.min(100, Math.round((totalDone / totalPossible) * 100));
   }, [completions, participants.length, tasks]);
 
-  // Roadmap milestones preview
   const upcomingMilestones = useMemo(() => {
     const visiblePhases = phases
       .filter((p) => p.isPublished || isOwner)
@@ -205,9 +215,6 @@ export const DashboardPage: React.FC = () => {
     });
   }, [isOwner, myCompletedTaskIds, phases, tasks]);
 
-  const nextMilestone = upcomingMilestones.find((m) => m.pct < 100) ?? upcomingMilestones[0] ?? null;
-
-  // Recent unlocked achievements
   const recentAchievements = useMemo(() => {
     return [...achievements]
       .sort((a, b) => b.unlockedAt.localeCompare(a.unlockedAt))
@@ -219,386 +226,269 @@ export const DashboardPage: React.FC = () => {
       .filter((item) => Boolean(item.def));
   }, [achievements]);
 
-  const totalStudyMinutes = useMemo(
-    () =>
-      completions
-        .filter((c) => c.userId === currentUser?.uid)
-        .reduce((acc, c) => acc + (c.estimatedMinutes || 0), 0),
-    [completions, currentUser?.uid]
-  );
-
-  const handleQuickComplete = async (task: (typeof todaysQuests)[number]) => {
+  const handleQuickComplete = async (task: (typeof todaysQuests)[number], idx: number) => {
     if (!activeGoal || myCompletedTaskIds.has(task.id)) return;
-    setFloatingXpTaskId(task.id);
+    const cheer = FRIENDLY_CHEERS[idx % FRIENDLY_CHEERS.length];
+    setCompletedBanner({ taskId: task.id, xp: task.xpReward, cheer });
     await completeTask(activeGoal.id, task);
     setTimeout(() => {
-      setFloatingXpTaskId((curr) => (curr === task.id ? null : curr));
-    }, 900);
+      setCompletedBanner((curr) => (curr?.taskId === task.id ? null : curr));
+    }, 1800);
   };
 
   if (!currentUser) return null;
 
   const isRestToday = activeGoal?.restDays.includes(todayKey) || activeDay?.isRestDay;
   const alreadyNudged = activeGoal ? nudgedTodayGoalIds.includes(activeGoal.id) : false;
+  const firstName = currentUser.fullName.split(' ')[0];
 
   return (
     <div className="space-y-5">
-      {/* A. WELCOME HERO SECTION */}
-      <Card padding="none" className="overflow-hidden border-[#E5DFFA]">
-        <div className="sd-gradient-hero p-4 sm:p-6">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex items-center gap-3.5 sm:gap-4 min-w-0">
-              <button
-                type="button"
-                onClick={() => setActivePage('avatar')}
-                className="relative group shrink-0 cursor-pointer rounded-full focus-visible:ring-2 focus-visible:ring-[#7956E8]"
-                title="Customize your avatar"
-                aria-label="Customize your avatar"
-              >
-                <Avatar
-                  initials={currentUser.avatarInitials}
-                  color={currentUser.avatarColor}
-                  avatarConfig={currentUser.avatarConfig}
-                  seedKey={currentUser.uid}
-                  size="lg"
-                  animated
-                />
-                <span className="absolute -bottom-1 -right-1 flex h-6 w-6 items-center justify-center rounded-full bg-[#7956E8] text-white shadow-sm ring-2 ring-white group-hover:scale-110 transition-transform">
-                  <Palette className="h-3 w-3" />
-                </span>
-              </button>
+      {/* 1. COMPACT GREETING HEADER + DAILY XP PROGRESS */}
+      <Card className="space-y-4">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-3.5 min-w-0">
+            <button
+              type="button"
+              onClick={() => setActivePage('avatar')}
+              className="shrink-0 cursor-pointer rounded-full focus-visible:ring-2 focus-visible:ring-[#7956E8]"
+              title="Customize avatar"
+              aria-label="Customize your avatar"
+            >
+              <Avatar
+                name={currentUser.fullName}
+                initials={currentUser.avatarInitials}
+                color={currentUser.avatarColor}
+                avatarConfig={currentUser.avatarConfig}
+                seedKey={currentUser.uid}
+                size="lg"
+              />
+            </button>
 
-              <div className="min-w-0">
-                <p className="text-xs font-semibold text-[#7956E8]">
-                  {greeting} · Level {levelInfo.level} {levelInfo.title}
-                </p>
-                <h1 className="mt-0.5 text-xl sm:text-2xl font-extrabold tracking-tight text-[#25243A] truncate">
-                  {currentUser.fullName}
-                </h1>
-                <p className="mt-0.5 text-xs text-[#77768C] truncate">
-                  {activeGoal
-                    ? `${activeGoal.title} · Day ${activeDay?.dayNumber ?? 1} of ${activeGoal.durationDays}`
-                    : 'Ready to launch your next shared learning adventure'}
-                </p>
-              </div>
+            <div className="min-w-0">
+              <p className="text-xs font-medium text-[#888888]">{greeting}</p>
+              <h1 className="text-xl sm:text-2xl font-extrabold text-[#242424] truncate">
+                Hi, {firstName} 👋
+              </h1>
+              <p className="text-xs text-[#888888] truncate">
+                {activeGoal
+                  ? `${activeGoal.title} · Day ${activeDay?.dayNumber ?? 1} of ${activeGoal.durationDays}`
+                  : 'Pick a learning goal to get started'}
+              </p>
             </div>
+          </div>
 
-            <div className="flex flex-wrap items-center gap-2 shrink-0">
-              {goals.length > 1 && (
-                <select
-                  aria-label="Switch active learning goal"
-                  value={selectedGoalId || ''}
-                  onChange={(e) => setSelectedGoalId(e.target.value)}
-                  className="rounded-xl border border-[#DFD8F8] bg-white px-3 py-2 text-xs font-semibold text-[#25243A] min-h-[40px] max-w-[180px]"
-                >
-                  {goals.map((g) => (
-                    <option key={g.id} value={g.id}>
-                      {g.title}
-                    </option>
-                  ))}
-                </select>
+          <div className="flex items-center gap-2 shrink-0">
+            {goals.length > 1 && (
+              <select
+                aria-label="Switch active learning goal"
+                value={selectedGoalId || ''}
+                onChange={(e) => setSelectedGoalId(e.target.value)}
+                className="rounded-xl border border-[#EEEEF2] bg-[#F7F8FA] px-3 py-2 text-xs font-semibold text-[#242424] min-h-[38px] max-w-[165px]"
+              >
+                {goals.map((g) => (
+                  <option key={g.id} value={g.id}>
+                    {g.title}
+                  </option>
+                ))}
+              </select>
+            )}
+
+            <button
+              type="button"
+              onClick={() => setActivePage('notifications')}
+              className="hidden lg:inline-flex relative h-10 w-10 items-center justify-center rounded-xl border border-[#EEEEF2] bg-white text-[#666666] hover:bg-[#F7F8FA] hover:text-[#242424] cursor-pointer"
+              aria-label="Notifications"
+            >
+              <Bell className="h-4 w-4" />
+              {unreadNotificationCount > 0 && (
+                <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-[#7956E8]" />
               )}
+            </button>
 
-              <button
-                type="button"
-                onClick={() => setActivePage('notifications')}
-                className="hidden lg:inline-flex relative h-10 w-10 items-center justify-center rounded-xl border border-[#E4DFF6] bg-white text-[#66647B] hover:border-[#CFC6F7] hover:text-[#25243A] cursor-pointer"
-                aria-label="Notifications"
-              >
-                <Bell className="h-4 w-4" />
-                {unreadNotificationCount > 0 && (
-                  <span className="absolute -top-1 -right-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-[#7956E8] px-1 text-[10px] font-bold text-white tabular-nums">
-                    {unreadNotificationCount}
-                  </span>
-                )}
-              </button>
+            <Button size="sm" onClick={() => setActivePage(activeGoal ? 'checklist' : 'goals')}>
+              {activeGoal ? 'Open Quests' : 'Create Goal'}
+              <ArrowRight className="h-3.5 w-3.5" />
+            </Button>
+          </div>
+        </div>
 
-              <Button size="sm" onClick={() => setActivePage(activeGoal ? 'checklist' : 'goals')}>
-                {activeGoal ? 'Quest Center' : 'Create Goal'}
-                <ArrowRight className="h-3.5 w-3.5" />
-              </Button>
+        {/* Daily XP Progress Strip */}
+        <div className="pt-3 border-t border-[#EEEEF2] space-y-2">
+          <div className="flex flex-wrap items-baseline justify-between gap-2 text-xs">
+            <div className="flex items-baseline gap-2">
+              <span className="text-base font-extrabold text-[#242424] tabular-nums">
+                {currentUser.totalXp.toLocaleString()} XP
+              </span>
+              <span className="font-semibold text-[#7956E8]">
+                Level {levelInfo.level} · {levelInfo.title}
+              </span>
             </div>
+            <span className="text-[#888888] tabular-nums">
+              {levelInfo.nextLevelMinXp
+                ? `${levelInfo.xpNeededForNext} XP to Level ${levelInfo.level + 1}`
+                : 'Max level'}
+            </span>
+          </div>
+          <ProgressBar percent={levelInfo.progressPercent} color="#7956E8" height="h-2" />
+        </div>
+
+        {/* 2. QUICK STATISTICS (Clean 3-Column Divider Row) */}
+        <div className="grid grid-cols-3 divide-x divide-[#EEEEF2] pt-2 border-t border-[#EEEEF2]">
+          <div className="pr-3">
+            <p className="text-[11px] font-medium text-[#888888]">Streak</p>
+            <p className="mt-0.5 text-base sm:text-lg font-extrabold text-[#242424] tabular-nums">
+              <span aria-hidden="true" className="mr-1">🔥</span>
+              {currentUser.currentStreak}d
+            </p>
+            <p className="text-[11px] text-[#888888] tabular-nums">
+              {isRestToday ? 'Rest day' : `Best ${currentUser.longestStreak}d`}
+            </p>
+          </div>
+
+          <div className="px-3">
+            <p className="text-[11px] font-medium text-[#888888]">Today&apos;s study</p>
+            <p className="mt-0.5 text-base sm:text-lg font-extrabold text-[#242424] tabular-nums">
+              <span aria-hidden="true" className="mr-1">⏱️</span>
+              {todaysStudyMinutes}m
+            </p>
+            <p className="text-[11px] text-[#888888] tabular-nums">
+              Goal {activeGoal?.dailyTargetMinutes ?? 60}m
+            </p>
+          </div>
+
+          <div className="pl-3">
+            <p className="text-[11px] font-medium text-[#888888]">Quests done</p>
+            <p className="mt-0.5 text-base sm:text-lg font-extrabold text-[#242424] tabular-nums">
+              <span aria-hidden="true" className="mr-1">✅</span>
+              {completedTodayCount}/{todaysQuests.length}
+            </p>
+            <p className="text-[11px] text-[#3C8F00] tabular-nums whitespace-nowrap">
+              {todaysQuests.length > 0 && completedTodayCount === todaysQuests.length
+                ? 'All done!'
+                : `+30 XP bonus`}
+            </p>
           </div>
         </div>
       </Card>
 
-      {/* B, C, D — THREE CORE GAME PROGRESSION CARDS */}
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-        {/* B. XP PROGRESSION CARD */}
-        <Card className="sd-card-hover flex flex-col justify-between gap-4">
-          <div className="flex items-start justify-between gap-2">
-            <div>
-              <p className="text-xs font-semibold text-[#77768C]">XP Progression</p>
-              <div className="mt-1 flex items-baseline gap-1.5">
-                <span className="text-2xl font-extrabold text-[#25243A] tabular-nums">
-                  {currentUser.totalXp.toLocaleString()}
-                </span>
-                <span className="text-xs font-bold text-[#7956E8]">XP</span>
-              </div>
-            </div>
-            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[#F1EDFF] text-[#7956E8]">
-              <Zap className="h-5 w-5 fill-[#7956E8]/15" />
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <div className="flex items-center justify-between text-xs">
-              <span className="font-bold text-[#25243A]">
-                Lv.{levelInfo.level} {levelInfo.title}
-              </span>
-              <span className="font-semibold text-[#77768C] tabular-nums">
-                {levelInfo.nextLevelMinXp
-                  ? `${levelInfo.xpNeededForNext} XP to Lv.${levelInfo.level + 1}`
-                  : 'Max Rank'}
-              </span>
-            </div>
-            <ProgressBar percent={levelInfo.progressPercent} color="#7956E8" height="h-2.5" />
-            <div className="flex items-center justify-between text-[11px] text-[#77768C]">
-              <span className="tabular-nums">{levelInfo.progressPercent}% level progress</span>
-              {levelInfo.xpNeededForNext > 0 && levelInfo.xpNeededForNext <= 60 ? (
-                <span className="font-bold text-[#38B982] inline-flex items-center gap-1">
-                  <Sparkles className="h-3 w-3" /> Level-up ready!
-                </span>
-              ) : (
-                <span>+{weeklyTotalXp} XP this week</span>
-              )}
-            </div>
-          </div>
-        </Card>
-
-        {/* C. DAILY QUEST PROGRESS CARD */}
-        <Card className="sd-card-hover flex items-center justify-between gap-4">
-          <div className="min-w-0 flex-1 space-y-2">
-            <p className="text-xs font-semibold text-[#77768C]">Daily Quest Progress</p>
-            <div className="flex items-baseline gap-1.5">
-              <span className="text-2xl font-extrabold text-[#25243A] tabular-nums">
-                {completedTodayCount}/{todaysQuests.length}
-              </span>
-              <span className="text-xs font-semibold text-[#77768C]">quests</span>
-            </div>
-            <p className="text-xs leading-snug text-[#77768C]">
-              {isRestToday
-                ? 'Rest day active — recharge without losing your streak.'
-                : todaysQuests.length === 0
-                ? 'No published quests scheduled yet.'
-                : completedTodayCount === todaysQuests.length
-                ? 'All quests done! +30 XP Day Bonus unlocked.'
-                : `${todaysQuests.length - completedTodayCount} quest${
-                    todaysQuests.length - completedTodayCount === 1 ? '' : 's'
-                  } left for +30 XP bonus.`}
-            </p>
-            <button
-              type="button"
-              onClick={() => setActivePage('checklist')}
-              className="inline-flex items-center gap-1 text-xs font-bold text-[#7956E8] hover:underline cursor-pointer"
-            >
-              Open quests <ArrowRight className="h-3 w-3" />
-            </button>
-          </div>
-
-          <CircularProgress
-            percent={dailyCompletionPct}
-            size={84}
-            strokeWidth={8}
-            color={dailyCompletionPct === 100 ? '#38B982' : '#7956E8'}
-          >
-            <span className="text-base font-extrabold text-[#25243A] tabular-nums">
-              {dailyCompletionPct}%
-            </span>
-          </CircularProgress>
-        </Card>
-
-        {/* D. STREAK CARD */}
-        <Card className="sd-card-hover flex flex-col justify-between gap-3.5">
-          <div className="flex items-start justify-between gap-2">
-            <div>
-              <p className="text-xs font-semibold text-[#77768C]">Study Streak</p>
-              <div className="mt-1 flex items-baseline gap-1.5">
-                <span className="text-2xl font-extrabold text-[#25243A] tabular-nums">
-                  {currentUser.currentStreak}
-                </span>
-                <span className="text-xs font-bold text-[#D98806]">
-                  {currentUser.currentStreak === 1 ? 'day' : 'days'}
-                </span>
-              </div>
-              <p className="text-[11px] text-[#77768C] mt-0.5 tabular-nums">
-                Best: {currentUser.longestStreak}d {isRestToday ? '· Rest day freeze' : ''}
-              </p>
-            </div>
-            <motion.div
-              initial={{ scale: 0.92 }}
-              animate={{ scale: 1 }}
-              transition={{ duration: 0.35 }}
-              className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[#FFF6DB] text-[#E09100]"
-            >
-              <Flame className="h-5 w-5 fill-[#FFC857]" />
-            </motion.div>
-          </div>
-
-          {/* 7-Day Activity Strip */}
-          <div className="grid grid-cols-7 gap-1 pt-1">
-            {weeklyActivity.map((day) => (
-              <div key={day.dateKey} className="flex flex-col items-center gap-1">
-                <div
-                  title={`${day.dateKey}: ${
-                    day.isRest ? 'Rest Day' : day.active ? `${day.xp} XP` : 'No activity'
-                  }`}
-                  className={`flex h-7 w-7 items-center justify-center rounded-xl text-[10px] font-bold transition-colors ${
-                    day.active
-                      ? 'bg-[#38B982] text-white shadow-[0_2px_6px_rgba(56,185,130,0.3)]'
-                      : day.isRest
-                      ? 'bg-[#E5F8FB] text-[#1D8597] border border-[#BEEAF2]'
-                      : day.isToday
-                      ? 'bg-[#F1EDFF] text-[#7956E8] border border-dashed border-[#A78BFA]'
-                      : 'bg-[#F5F3FC] text-[#A2A0B5]'
-                  }`}
-                >
-                  {day.active ? <Check className="h-3.5 w-3.5" /> : day.isRest ? 'R' : '·'}
-                </div>
-                <span
-                  className={`text-[10px] font-semibold ${
-                    day.isToday ? 'text-[#7956E8]' : 'text-[#8C8AA2]'
-                  }`}
-                >
-                  {day.shortDay}
-                </span>
-              </div>
-            ))}
-          </div>
-        </Card>
-      </div>
-
       {/* NO ACTIVE GOAL EMPTY STATE */}
       {!activeGoal ? (
-        <Card>
-          <EmptyState
-            icon={<Target className="h-6 w-6" />}
-            title="Start your first StudyDuo goal"
-            description="Create a learning roadmap or join your study partner with an invite code to unlock daily quests, shared streaks, and live leaderboards."
-            action={
-              <div className="flex flex-wrap items-center justify-center gap-2.5">
-                <Button onClick={() => setActivePage('goals')}>
-                  <Plus className="h-4 w-4" /> Create Learning Goal
-                </Button>
-                <Button variant="secondary" onClick={() => setActivePage('groups')}>
-                  <UserPlus className="h-4 w-4" /> Join with Invite Code
-                </Button>
-              </div>
-            }
-          />
-        </Card>
+        <EmptyState
+          icon={<Target className="h-5 w-5" />}
+          title="Start your first StudyDuo goal"
+          description="Create a learning roadmap or join your study partner with an invite code to track daily quests together."
+          action={
+            <div className="flex flex-wrap items-center justify-center gap-2.5">
+              <Button size="sm" onClick={() => setActivePage('goals')}>
+                <Plus className="h-4 w-4" /> Create Goal
+              </Button>
+              <Button size="sm" variant="secondary" onClick={() => setActivePage('groups')}>
+                <UserPlus className="h-4 w-4" /> Join with Code
+              </Button>
+            </div>
+          }
+        />
       ) : (
         <>
-          {/* E & F — TODAY'S QUESTS + DUO PROGRESS */}
+          {/* 3. TODAY'S QUESTS + DUO PROGRESS */}
           <div className="grid grid-cols-1 gap-5 lg:grid-cols-12 items-start">
-            {/* F. TODAY'S QUESTS (7 cols) */}
-            <Card className="lg:col-span-7 space-y-4">
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <div>
-                  <h2 className="text-base font-extrabold text-[#25243A]">Today&apos;s Quests</h2>
-                  <p className="text-xs text-[#77768C]">
-                    {activeDay
-                      ? `Day ${activeDay.dayNumber} · ${activeDay.title}`
-                      : 'Check off quests to earn XP and fuel your streak'}
+            {/* TODAY'S QUESTS (7 cols) */}
+            <Card className="lg:col-span-7" padding="none">
+              <div className="flex items-center justify-between gap-2 px-4 sm:px-5 py-4 border-b border-[#EEEEF2]">
+                <div className="min-w-0">
+                  <h2 className="text-base font-extrabold text-[#242424]">Today&apos;s Quests</h2>
+                  <p className="text-xs text-[#888888] truncate">
+                    {activeDay ? `Day ${activeDay.dayNumber} · ${activeDay.title}` : 'Daily study checklist'}
                   </p>
                 </div>
                 <button
                   type="button"
                   onClick={() => setActivePage('checklist')}
-                  className="inline-flex items-center gap-1 rounded-xl bg-[#F4F1FE] px-3 py-1.5 text-xs font-bold text-[#7956E8] hover:bg-[#EAE3FF] transition-colors cursor-pointer"
+                  className="inline-flex items-center gap-1 text-xs font-semibold text-[#7956E8] hover:underline cursor-pointer shrink-0 whitespace-nowrap"
                 >
-                  Full Quest Center <ArrowRight className="h-3.5 w-3.5" />
+                  View all <ChevronRight className="h-3.5 w-3.5" />
                 </button>
               </div>
 
+              <AnimatePresence>
+                {completedBanner && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    exit={{ opacity: 0, height: 0 }}
+                    transition={{ duration: 0.18 }}
+                    className="overflow-hidden border-b border-[#DFF5CC] bg-[#EFFAE6] px-4 sm:px-5 py-2 text-xs font-semibold text-[#3C8F00] flex items-center justify-between"
+                  >
+                    <span>{completedBanner.cheer}</span>
+                    <span className="tabular-nums">+{completedBanner.xp} XP</span>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
               {todaysQuests.length === 0 ? (
-                <EmptyState
-                  icon={<Calendar className="h-5 w-5" />}
-                  title="No quests queued for today"
-                  description={
-                    isOwner
-                      ? 'Add tasks in the Quest Center or generate a roadmap with AI Coach.'
-                      : 'Your goal owner has not published quests for today yet.'
-                  }
-                  action={
-                    <Button size="sm" onClick={() => setActivePage('checklist')}>
+                <div className="p-6 text-center space-y-2">
+                  <Calendar className="mx-auto h-5 w-5 text-[#888888]" />
+                  <p className="text-sm font-semibold text-[#242424]">No quests for today yet</p>
+                  <p className="text-xs text-[#888888]">
+                    {isOwner
+                      ? 'Add tasks in Quest Center to build today’s study checklist.'
+                      : 'Your partner will publish today’s study checklist soon.'}
+                  </p>
+                  <div className="pt-2">
+                    <Button size="sm" variant="secondary" onClick={() => setActivePage('checklist')}>
                       Open Quest Center
                     </Button>
-                  }
-                />
+                  </div>
+                </div>
               ) : (
-                <div className="space-y-2.5">
-                  {todaysQuests.map((task) => {
+                <div className="divide-y divide-[#EEEEF2]">
+                  {todaysQuests.map((task, idx) => {
                     const done = myCompletedTaskIds.has(task.id);
-                    const diff = DIFFICULTY_META[task.priority] ?? DIFFICULTY_META.medium;
                     return (
                       <div
                         key={task.id}
-                        className={`relative flex items-center gap-3 rounded-2xl border p-3.5 transition-all ${
-                          done
-                            ? 'border-[#CBEFE0] bg-[#F5FCF8]'
-                            : 'border-[#EAE7F8] bg-white hover:border-[#CFC6F7]'
-                        }`}
+                        className="flex items-center gap-3 px-4 sm:px-5 py-3.5 hover:bg-[#FAFAFC] transition-colors"
                       >
-                        <button
+                        <motion.button
                           type="button"
-                          onClick={() => handleQuickComplete(task)}
+                          whileTap={{ scale: 0.92 }}
+                          onClick={() => handleQuickComplete(task, idx)}
                           disabled={done}
                           aria-label={done ? `${task.title} completed` : `Complete ${task.title}`}
-                          className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border-2 transition-all cursor-pointer ${
+                          className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-lg border-2 transition-colors duration-150 cursor-pointer ${
                             done
-                              ? 'border-[#38B982] bg-[#38B982] text-white'
-                              : 'border-[#D3CAF6] bg-[#FAF8FF] text-transparent hover:border-[#7956E8] hover:bg-[#F1EDFF]'
+                              ? 'border-[#58CC02] bg-[#58CC02] text-white'
+                              : 'border-[#D4D4DC] bg-white text-transparent hover:border-[#7956E8]'
                           }`}
                         >
-                          <Check className="h-4 w-4 stroke-[3]" />
-                        </button>
+                          <Check className="h-3.5 w-3.5 stroke-[3]" />
+                        </motion.button>
 
-                        <div className="min-w-0 flex-1">
+                        <span className="text-base shrink-0 select-none" aria-hidden="true">
+                          {getQuestEmoji(task.title)}
+                        </span>
+
+                        <button
+                          type="button"
+                          onClick={() => setActivePage('checklist')}
+                          className="min-w-0 flex-1 text-left cursor-pointer"
+                        >
                           <p
-                            className={`text-sm font-bold leading-snug ${
-                              done ? 'text-[#5A7569] line-through' : 'text-[#25243A]'
+                            className={`text-sm font-semibold leading-snug truncate ${
+                              done ? 'text-[#888888] line-through' : 'text-[#242424]'
                             }`}
                           >
                             {task.title}
                           </p>
-                          <div className="mt-1 flex flex-wrap items-center gap-x-2.5 gap-y-1 text-[11px] font-medium text-[#77768C]">
-                            <span className="inline-flex items-center gap-1 tabular-nums">
-                              <Clock className="h-3 w-3" />
-                              {task.estimatedMinutes}m
+                          <p className="text-xs text-[#888888] tabular-nums">
+                            {task.estimatedMinutes} min
+                            <span aria-hidden="true"> · </span>
+                            <span className={done ? 'text-[#3C8F00] font-semibold' : 'text-[#7956E8] font-semibold'}>
+                              +{task.xpReward} XP
                             </span>
-                            <span className={`rounded-md px-1.5 py-0.5 text-[10px] font-bold ${diff.bg} ${diff.color}`}>
-                              {diff.label}
-                            </span>
-                          </div>
-                        </div>
-
-                        <div className="shrink-0 text-right">
-                          <span
-                            className={`inline-flex items-center gap-1 rounded-xl px-2.5 py-1 text-xs font-extrabold tabular-nums ${
-                              done
-                                ? 'bg-[#E6F8F0] text-[#1F8B5D]'
-                                : 'bg-[#FFF6DB] text-[#9A6808]'
-                            }`}
-                          >
-                            <Zap className="h-3 w-3 fill-current" />+{task.xpReward}
-                          </span>
-                        </div>
-
-                        {/* Floating +XP feedback */}
-                        <AnimatePresence>
-                          {floatingXpTaskId === task.id && (
-                            <motion.span
-                              initial={{ opacity: 0, y: 4, scale: 0.9 }}
-                              animate={{ opacity: 1, y: -22, scale: 1.05 }}
-                              exit={{ opacity: 0, y: -34 }}
-                              transition={{ duration: 0.65, ease: 'easeOut' }}
-                              className="pointer-events-none absolute right-4 top-1 rounded-full bg-[#7956E8] px-2.5 py-0.5 text-xs font-extrabold text-white shadow-md"
-                            >
-                              +{task.xpReward} XP!
-                            </motion.span>
-                          )}
-                        </AnimatePresence>
+                          </p>
+                        </button>
                       </div>
                     );
                   })}
@@ -606,21 +496,22 @@ export const DashboardPage: React.FC = () => {
               )}
             </Card>
 
-            {/* E. DUO PROGRESS CARD (5 cols) */}
+            {/* DUO PROGRESS (5 cols) */}
             <Card className="lg:col-span-5 space-y-4">
               <div className="flex items-center justify-between gap-2">
-                <div>
-                  <h2 className="text-base font-extrabold text-[#25243A]">Duo Progress</h2>
-                  <p className="text-xs text-[#77768C]">{activeGoal.groupName || 'StudyDuo Partner Hub'}</p>
+                <div className="min-w-0">
+                  <h2 className="text-base font-extrabold text-[#242424]">Duo Progress</h2>
+                  <p className="text-xs text-[#888888] truncate">
+                    {activeGoal.groupName || 'Your study team'}
+                  </p>
                 </div>
-                <span className="inline-flex items-center gap-1 rounded-xl bg-[#FFF6DB] px-2.5 py-1 text-xs font-extrabold text-[#9A6808] tabular-nums">
-                  <Flame className="h-3.5 w-3.5 text-[#F59E0B] fill-[#FFC857]" />
-                  {duoStreak?.duoStreak ?? activeGoal.groupStreak}d Duo
+                <span className="text-xs font-bold text-[#FF9600] tabular-nums shrink-0">
+                  🔥 {duoStreak?.duoStreak ?? activeGoal.groupStreak}d duo
                 </span>
               </div>
 
-              {/* Side-by-side Player Avatars */}
-              <div className="grid grid-cols-2 gap-3">
+              {/* Both Player Avatars */}
+              <div className="grid grid-cols-2 divide-x divide-[#EEEEF2] py-1">
                 {[selfParticipant, partner].map((member, idx) => {
                   if (!member) {
                     return (
@@ -628,15 +519,12 @@ export const DashboardPage: React.FC = () => {
                         key="invite-slot"
                         type="button"
                         onClick={() => setActivePage('groups')}
-                        className="flex flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-[#CFC6F7] bg-[#FAF9FF] p-3.5 text-center hover:bg-[#F3EFFF] transition-colors cursor-pointer"
+                        className="flex flex-col items-center justify-center gap-1.5 px-2 py-2 text-center hover:bg-[#F7F8FA] rounded-xl transition-colors cursor-pointer"
                       >
-                        <div className="flex h-11 w-11 items-center justify-center rounded-full bg-[#F1EDFF] text-[#7956E8]">
-                          <UserPlus className="h-5 w-5" />
+                        <div className="flex h-11 w-11 items-center justify-center rounded-full border border-dashed border-[#A78BFA] text-[#7956E8]">
+                          <UserPlus className="h-4 w-4" />
                         </div>
-                        <div>
-                          <p className="text-xs font-bold text-[#25243A]">Invite Partner</p>
-                          <p className="text-[11px] text-[#77768C]">Start a Duo Flame</p>
-                        </div>
+                        <p className="text-xs font-semibold text-[#7956E8]">Invite Partner</p>
                       </button>
                     );
                   }
@@ -645,12 +533,10 @@ export const DashboardPage: React.FC = () => {
                   const litToday =
                     idx === 0 ? duoStreak?.myStudiedToday : duoStreak?.partnerStudiedToday;
                   return (
-                    <div
-                      key={member.uid}
-                      className="flex flex-col items-center rounded-2xl border border-[#EAE7F8] bg-[#FCFBFF] p-3.5 text-center"
-                    >
+                    <div key={member.uid} className="flex flex-col items-center px-2 text-center">
                       <div className="relative">
                         <Avatar
+                          name={member.displayName}
                           initials={member.avatarInitials}
                           color={member.avatarColor}
                           avatarConfig={member.avatarConfig}
@@ -660,20 +546,20 @@ export const DashboardPage: React.FC = () => {
                         {litToday && (
                           <span
                             title="Studied today"
-                            className="absolute -bottom-0.5 -right-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-[#38B982] text-white ring-2 ring-white"
+                            className="absolute -bottom-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-[#58CC02] text-white ring-2 ring-white"
                           >
-                            <Check className="h-3 w-3 stroke-[3]" />
+                            <Check className="h-2.5 w-2.5 stroke-[3]" />
                           </span>
                         )}
                       </div>
-                      <p className="mt-2 max-w-full truncate text-xs font-bold text-[#25243A]">
-                        {member.uid === currentUser.uid ? 'You' : member.displayName}
+                      <p className="mt-2 max-w-full truncate text-xs font-bold text-[#242424]">
+                        {member.uid === currentUser.uid ? 'You' : member.displayName.split(' ')[0]}
                       </p>
-                      <p className="text-xs font-extrabold text-[#7956E8] tabular-nums">
+                      <p className="text-xs font-bold text-[#7956E8] tabular-nums">
                         {xp.toLocaleString()} XP
                       </p>
-                      <p className="text-[10px] text-[#77768C] tabular-nums">
-                        Lv.{getLevelInfo(xp).level} · {member.currentStreak}d streak
+                      <p className="text-[11px] text-[#888888] tabular-nums">
+                        Lv.{getLevelInfo(xp).level} · {member.currentStreak}d
                       </p>
                     </div>
                   );
@@ -681,102 +567,75 @@ export const DashboardPage: React.FC = () => {
               </div>
 
               {/* Shared Goal Progress */}
-              <div className="space-y-1.5">
+              <div className="space-y-1.5 pt-3 border-t border-[#EEEEF2]">
                 <div className="flex items-center justify-between text-xs">
-                  <span className="font-semibold text-[#77768C]">Shared Goal Progress</span>
-                  <span className="font-extrabold text-[#25243A] tabular-nums">
-                    {sharedGoalProgressPct}%
-                  </span>
+                  <span className="font-medium text-[#888888]">Shared goal progress</span>
+                  <span className="font-bold text-[#242424] tabular-nums">{sharedGoalProgressPct}%</span>
                 </div>
-                <ProgressBar percent={sharedGoalProgressPct} color="#45C4D8" height="h-2.5" />
+                <ProgressBar percent={sharedGoalProgressPct} color="#58CC02" height="h-2" />
               </div>
 
-              {/* Duo Flame Status & Friendly Nudge */}
               {duoStreak && (
-                <div className="rounded-2xl border border-[#EAE7F8] bg-[#F8F7FF] p-3 text-xs space-y-2">
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="font-bold text-[#25243A]">{duoStreak.headline}</span>
-                    {duoStreak.canNudgePartner && (
-                      <button
-                        type="button"
-                        disabled={alreadyNudged}
-                        onClick={() => nudgePartnerStreak(activeGoal.id)}
-                        className="inline-flex items-center gap-1 rounded-lg bg-[#7956E8] px-2.5 py-1 text-[11px] font-bold text-white hover:bg-[#6743D8] disabled:opacity-50 cursor-pointer"
-                      >
-                        <Send className="h-3 w-3" />
-                        {alreadyNudged ? 'Nudged' : 'Nudge'}
-                      </button>
-                    )}
-                  </div>
-                  <p className="text-[#77768C] leading-relaxed">{duoStreak.subtext}</p>
+                <div className="flex items-center justify-between gap-2 pt-1 text-xs">
+                  <p className="text-[#666666] leading-snug">{duoStreak.subtext}</p>
+                  {duoStreak.canNudgePartner && (
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      disabled={alreadyNudged}
+                      onClick={() => nudgePartnerStreak(activeGoal.id)}
+                      className="shrink-0"
+                    >
+                      <Send className="h-3 w-3" />
+                      {alreadyNudged ? 'Nudged' : 'Nudge'}
+                    </Button>
+                  )}
                 </div>
-              )}
-
-              {/* Next Milestone Callout */}
-              {nextMilestone && (
-                <button
-                  type="button"
-                  onClick={() => setActivePage('goals')}
-                  className="flex w-full items-center justify-between gap-3 rounded-2xl border border-[#EAE7F8] bg-white px-3.5 py-2.5 text-left hover:border-[#CFC6F7] transition-colors cursor-pointer"
-                >
-                  <div className="min-w-0">
-                    <p className="text-[10px] font-bold uppercase tracking-wider text-[#7956E8]">
-                      Next Milestone
-                    </p>
-                    <p className="truncate text-xs font-bold text-[#25243A]">
-                      {nextMilestone.phase.milestoneTitle || nextMilestone.phase.title}
-                    </p>
-                  </div>
-                  <span className="shrink-0 text-xs font-extrabold text-[#38B982] tabular-nums">
-                    {nextMilestone.pct}%
-                  </span>
-                </button>
               )}
             </Card>
           </div>
 
-          {/* ADDITIONAL SECTIONS: ROADMAP MILESTONES, WEEKLY ACTIVITY CHART & RECENT ACHIEVEMENTS */}
-          <div className="grid grid-cols-1 gap-5 lg:grid-cols-12">
-            {/* Weekly Activity Chart & Study Statistics (5 cols) */}
+          {/* 4. WEEKLY ACTIVITY, UPCOMING MILESTONES & RECENT ACHIEVEMENTS */}
+          <div className="grid grid-cols-1 gap-5 lg:grid-cols-12 items-start">
+            {/* Weekly Study Activity (5 cols) */}
             <Card className="lg:col-span-5 space-y-4">
               <div className="flex items-center justify-between gap-2">
                 <div>
-                  <h2 className="text-base font-extrabold text-[#25243A]">Weekly Activity</h2>
-                  <p className="text-xs text-[#77768C]">XP earned over the last 7 days</p>
+                  <h2 className="text-base font-extrabold text-[#242424]">Weekly Activity</h2>
+                  <p className="text-xs text-[#888888] tabular-nums">
+                    +{weeklyTotalXp} XP in the last 7 days
+                  </p>
                 </div>
                 <button
                   type="button"
                   onClick={() => setActivePage('analytics')}
-                  className="inline-flex items-center gap-1 text-xs font-bold text-[#7956E8] hover:underline cursor-pointer"
+                  className="text-xs font-semibold text-[#7956E8] hover:underline cursor-pointer"
                 >
-                  Analytics <TrendingUp className="h-3.5 w-3.5" />
+                  Details
                 </button>
               </div>
 
-              {/* Clean Animated Bar Chart */}
-              <div className="flex items-end justify-between gap-2 h-32 pt-3 px-1">
+              <div className="flex items-end justify-between gap-2 h-24 pt-2">
                 {weeklyActivity.map((day) => {
-                  const pct = day.xp > 0 ? Math.max(14, Math.round((day.xp / maxWeeklyXp) * 100)) : 6;
+                  const pct = day.xp > 0 ? Math.max(18, Math.round((day.xp / maxWeeklyXp) * 100)) : 8;
                   return (
                     <div key={day.dateKey} className="flex-1 flex flex-col items-center gap-1.5 h-full justify-end">
-                      <span className="text-[10px] font-bold text-[#77768C] tabular-nums">
+                      <span className="text-[10px] font-medium text-[#888888] tabular-nums">
                         {day.xp > 0 ? day.xp : ''}
                       </span>
-                      <motion.div
-                        initial={{ height: 6 }}
-                        animate={{ height: `${pct}%` }}
-                        transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
-                        className={`w-full max-w-[30px] rounded-t-xl ${
+                      <div
+                        style={{ height: `${pct}%` }}
+                        className={`w-full max-w-[24px] rounded-t-md transition-all duration-200 ${
                           day.isToday
-                            ? 'sd-gradient-primary shadow-[0_4px_10px_rgba(121,86,232,0.28)]'
+                            ? 'bg-[#7956E8]'
                             : day.xp > 0
-                            ? 'bg-[#C4B2FB]'
-                            : 'bg-[#F0ECF9]'
+                            ? 'bg-[#58CC02]/75'
+                            : 'bg-[#EEEEF2]'
                         }`}
                       />
                       <span
                         className={`text-[10px] font-semibold ${
-                          day.isToday ? 'text-[#7956E8]' : 'text-[#8C8AA2]'
+                          day.isToday ? 'text-[#7956E8]' : 'text-[#888888]'
                         }`}
                       >
                         {day.shortDay}
@@ -785,114 +644,88 @@ export const DashboardPage: React.FC = () => {
                   );
                 })}
               </div>
-
-              {/* Study Statistics Strip */}
-              <div className="grid grid-cols-3 gap-2 border-t border-[#F1EEFA] pt-3.5 text-center">
-                <div>
-                  <p className="text-base font-extrabold text-[#25243A] tabular-nums">
-                    {currentUser.completedTasksCount}
-                  </p>
-                  <p className="text-[11px] text-[#77768C]">Quests Done</p>
-                </div>
-                <div>
-                  <p className="text-base font-extrabold text-[#25243A] tabular-nums">
-                    {Math.round(totalStudyMinutes / 60 * 10) / 10}h
-                  </p>
-                  <p className="text-[11px] text-[#77768C]">Focus Time</p>
-                </div>
-                <div>
-                  <p className="text-base font-extrabold text-[#25243A] tabular-nums">
-                    {achievements.length}/{ACHIEVEMENT_CATALOG.length}
-                  </p>
-                  <p className="text-[11px] text-[#77768C]">Badges</p>
-                </div>
-              </div>
             </Card>
 
-            {/* Upcoming Roadmap Milestones (4 cols) */}
-            <Card className="lg:col-span-4 space-y-3.5">
-              <div className="flex items-center justify-between gap-2">
-                <h2 className="text-base font-extrabold text-[#25243A]">Roadmap Milestones</h2>
+            {/* Upcoming Milestones (4 cols) */}
+            <Card className="lg:col-span-4" padding="none">
+              <div className="flex items-center justify-between gap-2 px-4 sm:px-5 py-3.5 border-b border-[#EEEEF2]">
+                <h2 className="text-base font-extrabold text-[#242424]">Upcoming Milestones</h2>
                 <button
                   type="button"
                   onClick={() => setActivePage('goals')}
-                  className="text-xs font-bold text-[#7956E8] hover:underline cursor-pointer"
+                  className="text-xs font-semibold text-[#7956E8] hover:underline cursor-pointer"
                 >
-                  View Map
+                  Roadmap
                 </button>
               </div>
 
               {upcomingMilestones.length === 0 ? (
-                <div className="rounded-2xl border border-dashed border-[#DFD8F8] bg-[#FAF9FF] p-5 text-center text-xs text-[#77768C]">
-                  <MapIcon className="mx-auto mb-2 h-5 w-5 text-[#A78BFA]" />
-                  Add phases in Roadmap Adventure to track milestones.
-                </div>
+                <p className="p-5 text-xs text-[#888888]">No roadmap milestones yet.</p>
               ) : (
-                <div className="space-y-3">
+                <div className="divide-y divide-[#EEEEF2]">
                   {upcomingMilestones.map(({ phase, done, total, pct }) => (
-                    <div
+                    <button
                       key={phase.id}
-                      className="rounded-2xl border border-[#EAE7F8] bg-[#FCFBFF] p-3 space-y-2"
+                      type="button"
+                      onClick={() => setActivePage('goals')}
+                      className="w-full text-left px-4 sm:px-5 py-3 space-y-1.5 hover:bg-[#FAFAFC] transition-colors cursor-pointer"
                     >
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="min-w-0">
-                          <p className="truncate text-xs font-bold text-[#25243A]">{phase.title}</p>
-                          <p className="text-[11px] text-[#77768C]">
-                            Days {phase.startDay}–{phase.endDay} · {done}/{total} quests
-                          </p>
-                        </div>
-                        {pct === 100 ? (
-                          <CheckCircle2 className="h-4 w-4 text-[#38B982] shrink-0" />
-                        ) : (
-                          <span className="text-xs font-extrabold text-[#7956E8] tabular-nums">
-                            {pct}%
-                          </span>
-                        )}
+                      <div className="flex items-baseline justify-between gap-2">
+                        <p className="truncate text-xs font-bold text-[#242424]">{phase.title}</p>
+                        <span
+                          className={`text-xs font-bold tabular-nums shrink-0 ${
+                            pct === 100 ? 'text-[#3C8F00]' : 'text-[#7956E8]'
+                          }`}
+                        >
+                          {pct}%
+                        </span>
                       </div>
+                      <p className="text-[11px] text-[#888888] tabular-nums">
+                        Days {phase.startDay}–{phase.endDay} · {done}/{total} quests
+                      </p>
                       <ProgressBar
                         percent={pct}
-                        color={pct === 100 ? '#38B982' : '#7956E8'}
+                        color={pct === 100 ? '#58CC02' : '#7956E8'}
                         height="h-1.5"
                       />
-                    </div>
+                    </button>
                   ))}
                 </div>
               )}
             </Card>
 
             {/* Recent Achievements (3 cols) */}
-            <Card className="lg:col-span-3 space-y-3.5">
-              <div className="flex items-center justify-between gap-2">
-                <h2 className="text-base font-extrabold text-[#25243A]">Recent Badges</h2>
+            <Card className="lg:col-span-3" padding="none">
+              <div className="flex items-center justify-between gap-2 px-4 sm:px-5 py-3.5 border-b border-[#EEEEF2]">
+                <h2 className="text-base font-extrabold text-[#242424]">Achievements</h2>
                 <button
                   type="button"
                   onClick={() => setActivePage('achievements')}
-                  className="text-xs font-bold text-[#7956E8] hover:underline cursor-pointer"
+                  className="text-xs font-semibold text-[#7956E8] hover:underline cursor-pointer"
                 >
-                  Gallery
+                  All ({achievements.length})
                 </button>
               </div>
 
               {recentAchievements.length === 0 ? (
-                <div className="rounded-2xl border border-dashed border-[#DFD8F8] bg-[#FAF9FF] p-5 text-center text-xs text-[#77768C]">
-                  <Award className="mx-auto mb-2 h-5 w-5 text-[#FFC857]" />
-                  Complete your first quest to earn a collectible badge!
-                </div>
+                <p className="p-5 text-xs text-[#888888]">
+                  Finish your first quest to earn a badge!
+                </p>
               ) : (
-                <div className="space-y-2.5">
+                <div className="divide-y divide-[#EEEEF2]">
                   {recentAchievements.map(({ unlock, def }) => (
                     <button
                       key={unlock.id}
                       type="button"
                       onClick={() => setActivePage('achievements')}
-                      className="flex w-full items-center gap-3 rounded-2xl border border-[#EAE7F8] bg-[#FCFBFF] p-2.5 text-left hover:border-[#CFC6F7] transition-colors cursor-pointer"
+                      className="flex w-full items-center gap-3 px-4 sm:px-5 py-3 text-left hover:bg-[#FAFAFC] transition-colors cursor-pointer"
                     >
-                      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#FFF6DB] text-[#D98806]">
-                        <Crown className="h-4 w-4" />
-                      </div>
+                      <span className="text-lg shrink-0" aria-hidden="true">
+                        {getBadgeEmoji(def!.key)}
+                      </span>
                       <div className="min-w-0">
-                        <p className="truncate text-xs font-bold text-[#25243A]">{def!.title}</p>
-                        <p className="truncate text-[11px] text-[#77768C]">
+                        <p className="truncate text-xs font-bold text-[#242424]">{def!.title}</p>
+                        <p className="text-[11px] text-[#888888]">
                           {new Date(unlock.unlockedAt).toLocaleDateString()}
                         </p>
                       </div>
