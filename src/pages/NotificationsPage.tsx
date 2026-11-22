@@ -5,6 +5,7 @@ import {
   CheckCheck,
   CheckCircle2,
   Crown,
+  Flame,
   Sparkles,
   UserCheck,
   UserPlus,
@@ -25,6 +26,8 @@ function getNotifIcon(type: NotificationType) {
       return <CheckCircle2 className="h-4 w-4 text-[#38A879]" />;
     case 'daily_winner':
       return <Crown className="h-4 w-4 text-[#C28A1E]" />;
+    case 'streak_reminder':
+      return <Flame className="h-4 w-4 text-[#E58A2B] fill-[#F3BD59]" />;
     case 'achievement_unlocked':
       return <Award className="h-4 w-4 text-[#7956D8]" />;
     case 'milestone_reached':

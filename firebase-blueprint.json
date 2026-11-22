@@ -93,6 +93,7 @@
         "groupStreak": { "type": "number" },
         "longestGroupStreak": { "type": "number" },
         "restDays": { "type": "array", "description": "Bounded array of planned rest day ISO dates (max 30)." },
+        "lastAcceptedInviteCode": { "type": "string", "maxLength": 24 },
         "status": { "type": "string", "enum": ["active", "completed", "archived"] },
         "createdAt": { "type": "string", "format": "date-time" },
         "updatedAt": { "type": "string", "format": "date-time" }
@@ -359,7 +360,8 @@
             "daily_winner",
             "achievement_unlocked",
             "milestone_reached",
-            "weekly_summary"
+            "weekly_summary",
+            "streak_reminder"
           ]
         },
         "title": { "type": "string", "maxLength": 120 },

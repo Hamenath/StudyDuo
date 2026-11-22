@@ -11,6 +11,7 @@ import {
   type User as FirebaseUser,
 } from 'firebase/auth';
 import {
+  arrayUnion,
   collection,
   deleteDoc,
   doc,
@@ -47,6 +48,7 @@ import type {
   AchievementUnlock,
   ActivityItem,
   AiSuggestedPhase,
+  DailyCelebrationEvent,
   DailyResult,
   DifficultyLevel,
   Goal,
@@ -218,6 +220,12 @@ interface StudyDuoContextValue {
   markNotificationRead: (notifId: string) => Promise<void>;
   markAllNotificationsRead: () => Promise<void>;
   awardQuizXp: (goalId: string, quizKey: string, scoreRatio: number) => Promise<number>;
+  nudgePartnerStreak: (goalId: string) => Promise<void>;
+  nudgedTodayGoalIds: string[];
+
+  // Daily Completion & Streak Celebration
+  celebrationEvent: DailyCelebrationEvent | null;
+  dismissCelebration: () => void;
 
   // Toasts
   toasts: ToastMessage[];
@@ -285,9 +293,16 @@ export const StudyDuoProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const [liveAchievements, setLiveAchievements] = useState<AchievementUnlock[]>([]);
   const [liveNotifications, setLiveNotifications] = useState<NotificationItem[]>([]);
   const [liveJournalEntries, setLiveJournalEntries] = useState<JournalEntry[]>([]);
+  const [liveSharedJournalEntries, setLiveSharedJournalEntries] = useState<JournalEntry[]>([]);
+  const [celebrationEvent, setCelebrationEvent] = useState<DailyCelebrationEvent | null>(null);
+  const [nudgedTodayGoalIds, setNudgedTodayGoalIds] = useState<string[]>([]);
 
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
   const completionLocks = useRef<Set<string>>(new Set());
+
+  const dismissCelebration = useCallback(() => {
+    setCelebrationEvent(null);
+  }, []);
 
   const showToast = useCallback((message: string, tone: ToastMessage['tone'] = 'success') => {
     const id = makeId('toast');
@@ -582,6 +597,46 @@ export const StudyDuoProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       )
     );
 
+    // Opt-in partner journal entries explicitly shared with this goal owner
+    unsubs.push(
+      onSnapshot(
+        query(
+          collection(db, 'journalEntries'),
+          where('sharedWithOwnerId', '==', uid),
+          where('isSharedWithOwner', '==', true)
+        ),
+        (snap) => {
+          const sharedItems: JournalEntry[] = snap.docs
+            .map((s) => {
+              const d = s.data();
+              return {
+                id: d.id,
+                userId: d.userId,
+                goalId: d.goalId || '',
+                sharedWithOwnerId: d.sharedWithOwnerId || '',
+                isSharedWithOwner: Boolean(d.isSharedWithOwner),
+                title: d.title,
+                date: d.date,
+                topic: d.topic || '',
+                notes: d.notes || '',
+                whatILearned: d.whatILearned || '',
+                questions: d.questions || '',
+                challenges: d.challenges || '',
+                resources: d.resources || '',
+                createdAt: tsToIso(d.createdAt),
+                updatedAt: tsToIso(d.updatedAt),
+              };
+            })
+            .sort((a, b) => b.date.localeCompare(a.date));
+          setLiveSharedJournalEntries(sharedItems);
+        },
+        (err) => {
+          console.warn('Shared partner journal listener skipped (index may be building):', err?.message);
+          setLiveSharedJournalEntries([]);
+        }
+      )
+    );
+
     unsubs.push(
       onSnapshot(
         query(collection(db, 'invitations'), where('inviterId', '==', uid)),
@@ -637,7 +692,7 @@ export const StudyDuoProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
     unsubs.push(
       onSnapshot(
-        query(collection(db, 'goals', goalId, 'participants'), where('goalId', '==', goalId)),
+        collection(db, 'goals', goalId, 'participants'),
         (snap) => {
           setLiveParticipants(
             snap.docs.map((s) => {
@@ -665,12 +720,8 @@ export const StudyDuoProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     );
 
     const phasesQuery = isOwner
-      ? query(collection(db, 'goals', goalId, 'phases'), where('goalId', '==', goalId))
-      : query(
-          collection(db, 'goals', goalId, 'phases'),
-          where('goalId', '==', goalId),
-          where('isPublished', '==', true)
-        );
+      ? collection(db, 'goals', goalId, 'phases')
+      : query(collection(db, 'goals', goalId, 'phases'), where('isPublished', '==', true));
     unsubs.push(
       onSnapshot(
         phasesQuery,
@@ -702,12 +753,8 @@ export const StudyDuoProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     );
 
     const daysQuery = isOwner
-      ? query(collection(db, 'goals', goalId, 'days'), where('goalId', '==', goalId))
-      : query(
-          collection(db, 'goals', goalId, 'days'),
-          where('goalId', '==', goalId),
-          where('isPublished', '==', true)
-        );
+      ? collection(db, 'goals', goalId, 'days')
+      : query(collection(db, 'goals', goalId, 'days'), where('isPublished', '==', true));
     unsubs.push(
       onSnapshot(
         daysQuery,
@@ -738,7 +785,7 @@ export const StudyDuoProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
     unsubs.push(
       onSnapshot(
-        query(collection(db, 'goals', goalId, 'completions'), where('goalId', '==', goalId)),
+        collection(db, 'goals', goalId, 'completions'),
         (snap) => {
           setLiveCompletions(
             snap.docs.map((s) => {
@@ -783,7 +830,7 @@ export const StudyDuoProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
     unsubs.push(
       onSnapshot(
-        query(collection(db, 'goals', goalId, 'dailyResults'), where('goalId', '==', goalId)),
+        collection(db, 'goals', goalId, 'dailyResults'),
         (snap) => {
           setLiveDailyResults(
             snap.docs.map((s) => {
@@ -806,7 +853,7 @@ export const StudyDuoProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
     unsubs.push(
       onSnapshot(
-        query(collection(db, 'goals', goalId, 'activity'), where('goalId', '==', goalId)),
+        collection(db, 'goals', goalId, 'activity'),
         (snap) => {
           const items: ActivityItem[] = snap.docs
             .map((s) => {
@@ -846,17 +893,8 @@ export const StudyDuoProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
     const unsubs = liveDays.map((day) => {
       const q = isOwner
-        ? query(
-            collection(db, 'goals', goalId, 'days', day.id, 'tasks'),
-            where('goalId', '==', goalId),
-            where('dayId', '==', day.id)
-          )
-        : query(
-            collection(db, 'goals', goalId, 'days', day.id, 'tasks'),
-            where('goalId', '==', goalId),
-            where('dayId', '==', day.id),
-            where('isPublished', '==', true)
-          );
+        ? collection(db, 'goals', goalId, 'days', day.id, 'tasks')
+        : query(collection(db, 'goals', goalId, 'days', day.id, 'tasks'), where('isPublished', '==', true));
 
       return onSnapshot(
         q,
@@ -1009,12 +1047,19 @@ export const StudyDuoProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   }, [currentUser, liveNotifications, mode, previewState.notifications]);
 
   const journalEntries = useMemo(() => {
-    const raw = mode === 'preview' ? previewState.journalEntries : liveJournalEntries;
     if (!currentUser) return [];
-    return raw.filter(
-      (e) => e.userId === currentUser.uid || (e.isSharedWithOwner && e.sharedWithOwnerId === currentUser.uid)
-    );
-  }, [currentUser, liveJournalEntries, mode, previewState.journalEntries]);
+    if (mode === 'preview') {
+      return previewState.journalEntries.filter(
+        (e) => e.userId === currentUser.uid || (e.isSharedWithOwner && e.sharedWithOwnerId === currentUser.uid)
+      );
+    }
+    const mergedMap = new Map<string, JournalEntry>();
+    for (const e of liveJournalEntries) mergedMap.set(e.id, e);
+    for (const e of liveSharedJournalEntries) mergedMap.set(e.id, e);
+    return Array.from(mergedMap.values())
+      .filter((e) => e.userId === currentUser.uid || (e.isSharedWithOwner && e.sharedWithOwnerId === currentUser.uid))
+      .sort((a, b) => b.date.localeCompare(a.date));
+  }, [currentUser, liveJournalEntries, liveSharedJournalEntries, mode, previewState.journalEntries]);
 
   const unreadNotificationCount = useMemo(
     () => notifications.filter((n) => !n.isRead).length,
@@ -1187,17 +1232,33 @@ export const StudyDuoProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       if (!currentUser) return;
       const initials = patch.fullName ? getInitials(patch.fullName) : currentUser.avatarInitials;
       if (mode === 'preview') {
-        setPreviewState((prev) => ({
-          ...prev,
-          ownerUser:
-            previewPersona === 'owner'
-              ? { ...prev.ownerUser, ...patch, avatarInitials: initials, updatedAt: new Date().toISOString() }
-              : prev.ownerUser,
-          partnerUser:
-            previewPersona === 'partner'
-              ? { ...prev.partnerUser, ...patch, avatarInitials: initials, updatedAt: new Date().toISOString() }
-              : prev.partnerUser,
-        }));
+        setPreviewState((prev) => {
+          const nextParticipantsByGoal = { ...prev.participantsByGoal };
+          for (const gId of Object.keys(nextParticipantsByGoal)) {
+            nextParticipantsByGoal[gId] = nextParticipantsByGoal[gId].map((p) =>
+              p.uid === currentUser.uid
+                ? {
+                    ...p,
+                    ...(patch.fullName !== undefined ? { displayName: patch.fullName.trim(), avatarInitials: initials } : {}),
+                    ...(patch.username !== undefined ? { username: patch.username.trim() } : {}),
+                    ...(patch.avatarColor !== undefined ? { avatarColor: patch.avatarColor } : {}),
+                  }
+                : p
+            );
+          }
+          return {
+            ...prev,
+            ownerUser:
+              previewPersona === 'owner'
+                ? { ...prev.ownerUser, ...patch, avatarInitials: initials, updatedAt: new Date().toISOString() }
+                : prev.ownerUser,
+            partnerUser:
+              previewPersona === 'partner'
+                ? { ...prev.partnerUser, ...patch, avatarInitials: initials, updatedAt: new Date().toISOString() }
+                : prev.partnerUser,
+            participantsByGoal: nextParticipantsByGoal,
+          };
+        });
         showToast('Profile updated.');
         return;
       }
@@ -1211,12 +1272,25 @@ export const StudyDuoProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           ...(patch.avatarColor !== undefined ? { avatarColor: patch.avatarColor } : {}),
           updatedAt: serverTimestamp(),
         });
+        // Keep shared goal participant cards in sync with updated display identity
+        const participantPatch: Record<string, string> = {};
+        if (patch.fullName !== undefined) {
+          participantPatch.displayName = patch.fullName.trim();
+          participantPatch.avatarInitials = initials;
+        }
+        if (patch.username !== undefined) participantPatch.username = patch.username.trim();
+        if (patch.avatarColor !== undefined) participantPatch.avatarColor = patch.avatarColor;
+        if (Object.keys(participantPatch).length > 0 && liveGoals.length > 0) {
+          await Promise.allSettled(
+            liveGoals.map((g) => updateDoc(doc(db, 'goals', g.id, 'participants', currentUser.uid), participantPatch))
+          );
+        }
         showToast('Profile updated.');
       } catch (err) {
         handleFirestoreError(err, OperationType.UPDATE, `users/${currentUser.uid}`);
       }
     },
-    [currentUser, mode, previewPersona, showToast]
+    [currentUser, liveGoals, mode, previewPersona, showToast]
   );
 
   const updatePrivateSettings = useCallback(
@@ -1973,12 +2047,34 @@ export const StudyDuoProvider: React.FC<{ children: React.ReactNode }> = ({ chil
               }
             : null;
 
-        if (mode === 'preview') {
-          setPreviewState((prev) => {
-            const prevGoalCompletions = prev.completionsByGoal[goalId] || [];
-            if (prevGoalCompletions.some((c) => c.id === completionId)) return prev;
+        const isFirstCompletionToday = !completions.some(
+          (c) => c.userId === currentUser.uid && c.dateKey === dateKey
+        );
+        const partnerParticipant = participants.find((p) => p.uid !== currentUser.uid);
+        const partnerStudiedToday = Boolean(
+          partnerParticipant &&
+            completions.some((c) => c.userId === partnerParticipant.uid && c.dateKey === dateKey)
+        );
 
-            const nextCompletions = [...prevGoalCompletions, newCompletion];
+        if (mode === 'preview') {
+          const prevGoalCompletions = previewState.completionsByGoal[goalId] || [];
+          const projectedCompletions = [...prevGoalCompletions, newCompletion];
+          const projectedUserDates = projectedCompletions
+            .filter((c) => c.userId === currentUser.uid)
+            .map((c) => c.dateKey);
+          const projectedInd = calculateIndividualStreak(projectedUserDates, target.restDays, dateKey);
+          const projectedGrp = calculateGroupStreak(
+            target.participantIds,
+            projectedCompletions,
+            target.restDays,
+            dateKey
+          );
+
+          setPreviewState((prev) => {
+            const existingGoalCompletions = prev.completionsByGoal[goalId] || [];
+            if (existingGoalCompletions.some((c) => c.id === completionId)) return prev;
+
+            const nextCompletions = [...existingGoalCompletions, newCompletion];
             const nextTxs = bonusTx
               ? [...prev.xpTransactions, newTx, bonusTx]
               : [...prev.xpTransactions, newTx];
@@ -2104,6 +2200,21 @@ export const StudyDuoProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             };
           });
 
+          if (completesWholeDay || isFirstCompletionToday) {
+            setCelebrationEvent({
+              id: makeId('cel'),
+              kind: completesWholeDay ? 'day_completed' : 'streak_day_lit',
+              dayNumber: task.dayNumber,
+              goalTitle: target.title,
+              streakDays: Math.max(1, projectedInd.currentStreak),
+              duoStreakDays: projectedGrp.groupStreak,
+              duoFlameLitToday: partnerStudiedToday,
+              partnerName: partnerParticipant?.displayName,
+              xpEarned: task.xpReward,
+              bonusXp,
+            });
+          }
+
           showToast(
             bonusXp > 0
               ? `Task completed! +${task.xpReward} XP + ${bonusXp} XP Day Completion Bonus!`
@@ -2119,10 +2230,10 @@ export const StudyDuoProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         const partRef = doc(db, 'goals', goalId, 'participants', currentUser.uid);
         const dailyRef = doc(db, 'goals', goalId, 'dailyResults', dateKey);
 
-        const awarded = await runTransaction(db, async (txn) => {
+        const txResult = await runTransaction(db, async (txn) => {
           const existingComp = await txn.get(compRef);
           if (existingComp.exists()) {
-            return false; // Idempotent guard: already completed!
+            return { awarded: false, currentStreak: currentUser.currentStreak, longestStreak: currentUser.longestStreak };
           }
           const userSnap = await txn.get(userRef);
           const partSnap = await txn.get(partRef);
@@ -2144,6 +2255,7 @@ export const StudyDuoProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             target.restDays,
             dateKey
           );
+          const nextLongestStreak = Math.max(Number(curUserData.longestStreak || 0), longestStreak);
 
           txn.set(compRef, {
             ...newCompletion,
@@ -2164,7 +2276,7 @@ export const StudyDuoProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             totalXp: nextTotalXp,
             level: nextLevel,
             currentStreak,
-            longestStreak: Math.max(Number(curUserData.longestStreak || 0), longestStreak),
+            longestStreak: nextLongestStreak,
             completedTasksCount: nextTasksCount,
             completedGoalsCount: Number(curUserData.completedGoalsCount || 0),
             lastActiveDate: dateKey,
@@ -2204,12 +2316,29 @@ export const StudyDuoProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             updatedAt: serverTimestamp(),
           });
 
-          return true;
+          return { awarded: true, currentStreak, longestStreak: nextLongestStreak };
         });
 
-        if (!awarded) {
+        if (!txResult.awarded) {
           showToast('Task already completed — no duplicate XP awarded.', 'info');
           return false;
+        }
+
+        // Sync Duo Group Streak on goal doc whenever both partners have studied
+        const updatedCompletions = [...completions, newCompletion];
+        const { groupStreak, longestGroupStreak } = calculateGroupStreak(
+          target.participantIds,
+          updatedCompletions,
+          target.restDays,
+          dateKey
+        );
+        const nextLongestGroupStreak = Math.max(target.longestGroupStreak || 0, longestGroupStreak);
+        if (groupStreak !== target.groupStreak || nextLongestGroupStreak !== target.longestGroupStreak) {
+          await updateDoc(doc(db, 'goals', goalId), {
+            groupStreak,
+            longestGroupStreak: nextLongestGroupStreak,
+            updatedAt: serverTimestamp(),
+          });
         }
 
         // Write shared activity & partner notification outside core transaction
@@ -2220,7 +2349,9 @@ export const StudyDuoProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           actorId: currentUser.uid,
           actorName: currentUser.fullName,
           type: completesWholeDay ? 'day_completed' : 'task_completed',
-          message: `completed "${task.title}" on Day ${task.dayNumber}`,
+          message: completesWholeDay
+            ? `finished "${task.title}" and completed all of Day ${task.dayNumber}!`
+            : `completed "${task.title}" on Day ${task.dayNumber}`,
           xpDelta: totalAwarded,
           createdAt: serverTimestamp(),
         });
@@ -2241,7 +2372,7 @@ export const StudyDuoProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           });
         }
 
-        // Check & record newly unlocked achievements
+        // Check & record newly unlocked achievements using exact calculated streak
         const unlockedKeys = evaluateAchievements({
           completedTasksCount: currentUser.completedTasksCount + 1,
           completedDaysCount: completesWholeDay ? 1 : 0,
@@ -2249,8 +2380,8 @@ export const StudyDuoProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             ...completions.filter((c) => c.userId === currentUser.uid).map((c) => c.dateKey),
             dateKey,
           ]).size,
-          currentStreak: currentUser.currentStreak + 1,
-          longestStreak: Math.max(currentUser.longestStreak, currentUser.currentStreak + 1),
+          currentStreak: txResult.currentStreak,
+          longestStreak: txResult.longestStreak,
           completedGoalsCount: currentUser.completedGoalsCount,
           dailyWinsCount: dailyResults.filter((r) => r.winnerIds.includes(currentUser.uid)).length,
           existingKeys: achievements.map((a) => a.achievementKey),
@@ -2262,6 +2393,21 @@ export const StudyDuoProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             userId: currentUser.uid,
             achievementKey: key,
             unlockedAt: serverTimestamp(),
+          });
+        }
+
+        if (completesWholeDay || isFirstCompletionToday) {
+          setCelebrationEvent({
+            id: makeId('cel'),
+            kind: completesWholeDay ? 'day_completed' : 'streak_day_lit',
+            dayNumber: task.dayNumber,
+            goalTitle: target.title,
+            streakDays: Math.max(1, txResult.currentStreak),
+            duoStreakDays: groupStreak,
+            duoFlameLitToday: partnerStudiedToday,
+            partnerName: partnerParticipant?.displayName,
+            xpEarned: task.xpReward,
+            bonusXp,
           });
         }
 
@@ -2287,7 +2433,9 @@ export const StudyDuoProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       dailyResults,
       goals,
       mode,
+      participants,
       previewPersona,
+      previewState.completionsByGoal,
       showToast,
       tasks,
       xpTransactions,
@@ -2430,17 +2578,44 @@ export const StudyDuoProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           showToast('You are already the owner of this goal. Switch to Partner view to test accepting.', 'info');
           return false;
         }
-        setPreviewState((prev) => ({
-          ...prev,
-          invitations: prev.invitations.map((i) =>
-            i.code === code ? { ...i, status: 'accepted', acceptedBy: currentUser.uid } : i
-          ),
-          goals: prev.goals.map((g) =>
-            g.id === inv.goalId && !g.participantIds.includes(currentUser.uid)
-              ? { ...g, participantIds: [...g.participantIds, currentUser.uid] }
-              : g
-          ),
-        }));
+        setPreviewState((prev) => {
+          const curParts = prev.participantsByGoal[inv.goalId] || [];
+          const hasPart = curParts.some((p) => p.uid === currentUser.uid);
+          return {
+            ...prev,
+            invitations: prev.invitations.map((i) =>
+              i.code === code ? { ...i, status: 'accepted', acceptedBy: currentUser.uid } : i
+            ),
+            goals: prev.goals.map((g) =>
+              g.id === inv.goalId && !g.participantIds.includes(currentUser.uid)
+                ? { ...g, participantIds: [...g.participantIds, currentUser.uid], lastAcceptedInviteCode: code }
+                : g
+            ),
+            participantsByGoal: hasPart
+              ? prev.participantsByGoal
+              : {
+                  ...prev.participantsByGoal,
+                  [inv.goalId]: [
+                    ...curParts,
+                    {
+                      uid: currentUser.uid,
+                      goalId: inv.goalId,
+                      role: 'collaborator',
+                      displayName: currentUser.fullName,
+                      username: currentUser.username,
+                      avatarColor: currentUser.avatarColor,
+                      avatarInitials: currentUser.avatarInitials,
+                      goalXp: 0,
+                      completedTasksCount: 0,
+                      daysCompleted: 0,
+                      currentStreak: 0,
+                      longestStreak: 0,
+                      joinedAt: new Date().toISOString(),
+                    },
+                  ],
+                },
+          };
+        });
         setSelectedGoalId(inv.goalId);
         setShowWelcomeChoice(false);
         showToast(`Joined "${inv.goalTitle}"!`);
@@ -2468,26 +2643,16 @@ export const StudyDuoProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           showToast('You already own this goal.', 'info');
           return false;
         }
-
-        const goalRef = doc(db, 'goals', inv.goalId);
-        const goalSnap = await getDoc(goalRef);
-        if (!goalSnap.exists()) {
-          showToast('The linked goal no longer exists.', 'error');
-          return false;
-        }
-        const gData = goalSnap.data();
-        const existingMembers: string[] = gData.participantIds || [];
-        if (existingMembers.includes(currentUser.uid)) {
+        if (liveGoals.some((g) => g.id === inv.goalId)) {
           showToast('You are already a member of this goal.', 'info');
           return false;
         }
-        if (existingMembers.length >= Number(gData.maxParticipants || 2)) {
-          showToast('This study duo already has all participant spots filled.', 'error');
-          return false;
-        }
 
+        // Security rule validates pending invitation proof on goal update before invite flips to 'accepted'
+        const goalRef = doc(db, 'goals', inv.goalId);
         await updateDoc(goalRef, {
-          participantIds: [...existingMembers, currentUser.uid],
+          participantIds: arrayUnion(currentUser.uid),
+          lastAcceptedInviteCode: code,
           updatedAt: serverTimestamp(),
         });
         await setDoc(doc(db, 'goals', inv.goalId, 'participants', currentUser.uid), {
@@ -2533,7 +2698,7 @@ export const StudyDuoProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         handleFirestoreError(err, OperationType.WRITE, `invitations/${code}`);
       }
     },
-    [currentUser, mode, previewState.invitations, showToast]
+    [currentUser, liveGoals, mode, previewState.invitations, showToast]
   );
 
   const rejectInvitationByCode = useCallback(
@@ -2701,7 +2866,7 @@ export const StudyDuoProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     }
   }, [currentUser?.uid, mode, notifications, showToast]);
 
-  // Anti-farm quiz XP: awarded at most once per unique quizKey/day (max 15 XP)
+  // Anti-farm quiz XP: atomic transaction, awarded at most once per unique quizKey/day (max 15 XP)
   const awardQuizXp = useCallback(
     async (goalId: string, quizKey: string, scoreRatio: number): Promise<number> => {
       if (!currentUser || scoreRatio < 0.5) return 0;
@@ -2729,13 +2894,28 @@ export const StudyDuoProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           createdAt: nowIso,
         };
         setPreviewState((prev) => {
+          if (prev.xpTransactions.some((x) => x.id === txId)) return prev;
+          const nextTxs = [...prev.xpTransactions, tx];
           const nextXp = currentUser.totalXp + xpAmount;
           const updatedUser = { ...currentUser, totalXp: nextXp, level: getLevelInfo(nextXp).level };
+          const participantIds = goal?.participantIds || [currentUser.uid];
+          const nextDailyRes = computeDailyResult(goalId, dateKey, participantIds, nextTxs, false);
+          const prevDailyList = prev.dailyResultsByGoal[goalId] || [];
+          const nextDailyList = prevDailyList.some((r) => r.dateKey === dateKey)
+            ? prevDailyList.map((r) => (r.dateKey === dateKey ? nextDailyRes : r))
+            : [...prevDailyList, nextDailyRes];
           return {
             ...prev,
             ownerUser: previewPersona === 'owner' ? updatedUser : prev.ownerUser,
             partnerUser: previewPersona === 'partner' ? updatedUser : prev.partnerUser,
-            xpTransactions: [...prev.xpTransactions, tx],
+            participantsByGoal: {
+              ...prev.participantsByGoal,
+              [goalId]: (prev.participantsByGoal[goalId] || []).map((p) =>
+                p.uid === currentUser.uid ? { ...p, goalXp: p.goalXp + xpAmount } : p
+              ),
+            },
+            dailyResultsByGoal: { ...prev.dailyResultsByGoal, [goalId]: nextDailyList },
+            xpTransactions: nextTxs,
           };
         });
         showToast(`Quiz mastered! +${xpAmount} XP awarded (capped once per topic/day).`);
@@ -2744,31 +2924,139 @@ export const StudyDuoProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
       try {
         const txRef = doc(db, 'xpTransactions', txId);
-        const existing = await getDoc(txRef);
-        if (existing.exists()) return 0;
-        await setDoc(txRef, {
-          id: txId,
-          userId: currentUser.uid,
-          goalId,
-          sourceType: 'quiz',
-          sourceId,
-          xpAmount,
-          dateKey,
-          label: `AI Quiz Mastery (${Math.round(scoreRatio * 100)}%)`,
-          createdAt: serverTimestamp(),
+        const userRef = doc(db, 'users', currentUser.uid);
+        const partRef = doc(db, 'goals', goalId, 'participants', currentUser.uid);
+        const dailyRef = doc(db, 'goals', goalId, 'dailyResults', dateKey);
+
+        const awardedAmount = await runTransaction(db, async (txn) => {
+          const existingTx = await txn.get(txRef);
+          if (existingTx.exists()) return 0;
+          const userSnap = await txn.get(userRef);
+          const partSnap = await txn.get(partRef);
+          const dailySnap = await txn.get(dailyRef);
+
+          const curXp = Number(userSnap.data()?.totalXp || 0);
+          const nextXp = curXp + xpAmount;
+
+          txn.set(txRef, {
+            id: txId,
+            userId: currentUser.uid,
+            goalId,
+            sourceType: 'quiz',
+            sourceId,
+            xpAmount,
+            dateKey,
+            label: `AI Quiz Mastery (${Math.round(scoreRatio * 100)}%)`,
+            createdAt: serverTimestamp(),
+          });
+          txn.update(userRef, {
+            totalXp: nextXp,
+            level: getLevelInfo(nextXp).level,
+            updatedAt: serverTimestamp(),
+          });
+          if (partSnap.exists()) {
+            txn.update(partRef, {
+              goalXp: Number(partSnap.data()?.goalXp || 0) + xpAmount,
+            });
+          }
+
+          const scores: Record<string, number> = dailySnap.exists()
+            ? { ...(dailySnap.data().scores || {}) }
+            : {};
+          scores[currentUser.uid] = (scores[currentUser.uid] || 0) + xpAmount;
+          let maxScore = 0;
+          Object.values(scores).forEach((s) => {
+            if (s > maxScore) maxScore = s;
+          });
+          const winnerIds =
+            maxScore > 0 ? Object.keys(scores).filter((uid) => scores[uid] === maxScore) : [];
+          txn.set(dailyRef, {
+            dateKey,
+            goalId,
+            scores,
+            winnerIds,
+            isTie: winnerIds.length > 1,
+            isClosed: false,
+            updatedAt: serverTimestamp(),
+          });
+
+          return xpAmount;
         });
-        await updateDoc(doc(db, 'users', currentUser.uid), {
-          totalXp: currentUser.totalXp + xpAmount,
-          level: getLevelInfo(currentUser.totalXp + xpAmount).level,
-          updatedAt: serverTimestamp(),
-        });
-        showToast(`Quiz mastered! +${xpAmount} XP awarded.`);
-        return xpAmount;
+
+        if (awardedAmount > 0) {
+          showToast(`Quiz mastered! +${awardedAmount} XP awarded.`);
+        }
+        return awardedAmount;
       } catch (err) {
         handleFirestoreError(err, OperationType.WRITE, `xpTransactions/${txId}`);
+        return 0;
       }
     },
     [currentUser, goals, mode, previewPersona, showToast, xpTransactions]
+  );
+
+  // Snapchat-style friendly Duo Streak Nudge (once per day per goal)
+  const nudgePartnerStreak = useCallback(
+    async (goalId: string) => {
+      if (!currentUser) return;
+      const goal = goals.find((g) => g.id === goalId);
+      if (!goal) return;
+      const partnerId = goal.participantIds.find((id) => id !== currentUser.uid);
+      if (!partnerId) {
+        showToast('Invite a study partner first to start a Duo Flame.', 'info');
+        return;
+      }
+      if (nudgedTodayGoalIds.includes(goalId)) {
+        showToast('You already sent a friendly streak reminder today!', 'info');
+        return;
+      }
+      const partnerName = participants.find((p) => p.uid === partnerId)?.displayName || 'your partner';
+      const nowIso = new Date().toISOString();
+      const notifId = makeId('notif');
+      const streakLabel = goal.groupStreak > 0 ? `${goal.groupStreak}-day Duo Flame` : 'Duo Flame';
+
+      if (mode === 'preview') {
+        setPreviewState((prev) => ({
+          ...prev,
+          notifications: [
+            {
+              id: notifId,
+              recipientId: partnerId,
+              senderId: currentUser.uid,
+              goalId,
+              type: 'streak_reminder',
+              title: `${currentUser.fullName} nudged your Duo Flame!`,
+              body: `Complete 1 task on "${goal.title}" before midnight to keep your ${streakLabel} alive.`,
+              isRead: false,
+              createdAt: nowIso,
+            },
+            ...prev.notifications,
+          ],
+        }));
+        setNudgedTodayGoalIds((prev) => [...prev, goalId]);
+        showToast(`Sent a friendly streak reminder to ${partnerName}!`);
+        return;
+      }
+
+      try {
+        await setDoc(doc(db, 'notifications', notifId), {
+          id: notifId,
+          recipientId: partnerId,
+          senderId: currentUser.uid,
+          goalId,
+          type: 'streak_reminder',
+          title: `${currentUser.fullName} nudged your Duo Flame!`,
+          body: `Complete 1 task on "${goal.title}" before midnight to keep your ${streakLabel} alive.`,
+          isRead: false,
+          createdAt: serverTimestamp(),
+        });
+        setNudgedTodayGoalIds((prev) => [...prev, goalId]);
+        showToast(`Sent a friendly streak reminder to ${partnerName}!`);
+      } catch (err) {
+        handleFirestoreError(err, OperationType.CREATE, `notifications/${notifId}`);
+      }
+    },
+    [currentUser, goals, mode, nudgedTodayGoalIds, participants, showToast]
   );
 
   const value: StudyDuoContextValue = {
@@ -2841,6 +3129,10 @@ export const StudyDuoProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     markNotificationRead,
     markAllNotificationsRead,
     awardQuizXp,
+    nudgePartnerStreak,
+    nudgedTodayGoalIds,
+    celebrationEvent,
+    dismissCelebration,
     toasts,
     showToast,
     dismissToast,

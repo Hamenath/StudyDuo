@@ -1,11 +1,13 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import {
   Award,
   BarChart3,
   Bell,
   BookOpen,
   CheckSquare,
+  Flame,
   Home,
+  Hourglass,
   Settings,
   Sparkles,
   Target,
@@ -15,8 +17,10 @@ import {
   LogIn,
 } from 'lucide-react';
 import { useStudyDuo } from '../../context/StudyDuoContext';
+import { computeDuoStreakStatus } from '../../lib/gamification';
 import type { NavPage } from '../../types/studyduo';
 import { Avatar, OfflineIndicator, PWAInstallButton, ToastStack } from '../ui/Primitives';
+import { DailyCelebrationOverlay } from '../ui/DailyCelebrationOverlay';
 
 interface NavItemConfig {
   id: NavPage;
@@ -62,12 +66,75 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) 
     switchPreviewPersona,
     exitPreviewMode,
     currentUser,
+    activeGoal,
+    participants,
+    completions,
     activePage,
     setActivePage,
     unreadNotificationCount,
+    celebrationEvent,
+    dismissCelebration,
     toasts,
     dismissToast,
   } = useStudyDuo();
+
+  const duoStreak = useMemo(() => {
+    if (!currentUser) return null;
+    const partner = participants.find((p) => p.uid !== currentUser.uid);
+    return computeDuoStreakStatus({
+      participantIds: activeGoal?.participantIds || [currentUser.uid],
+      currentUserId: currentUser.uid,
+      partnerName: partner?.displayName,
+      completions,
+      restDays: activeGoal?.restDays || [],
+      timezone: activeGoal?.timezone || currentUser.timezone || 'UTC',
+      groupStreak: activeGoal?.groupStreak || 0,
+    });
+  }, [activeGoal, completions, currentUser, participants]);
+
+  const streakCount = currentUser?.currentStreak || 0;
+  const streakNeedsAction =
+    duoStreak?.state === 'waiting_on_you' || duoStreak?.state === 'at_risk';
+  const streakIsLit = Boolean(duoStreak?.myStudiedToday);
+
+  const renderStreakPill = (compact = false) => {
+    if (!currentUser) return null;
+    const statusDesc = duoStreak?.headline || `${streakCount} day study streak`;
+    return (
+      <button
+        type="button"
+        onClick={() => setActivePage(streakNeedsAction ? 'checklist' : 'dashboard')}
+        title={`${streakCount}-day study streak · ${statusDesc}`}
+        aria-label={`Study streak: ${streakCount} days. ${statusDesc}`}
+        className={`inline-flex items-center gap-1 rounded-xl border px-2.5 transition-colors shrink-0 ${
+          compact ? 'min-h-[36px] py-1' : 'min-h-[34px] py-1'
+        } ${
+          streakIsLit
+            ? 'bg-[#FFF6E5] border-[#F3BD59]/55 text-[#9A6A0A] hover:bg-[#FFEDC8]'
+            : streakNeedsAction
+            ? 'bg-[#FFF1EC] border-[#E87A4E]/45 text-[#B44A22] hover:bg-[#FFE6DC]'
+            : 'bg-[#F8F9FC] border-[#E9EAF0] text-[#66687A] hover:bg-[#F0EBFF]/60 hover:text-[#242337]'
+        }`}
+      >
+        <Flame
+          className={`h-4 w-4 shrink-0 ${
+            streakIsLit
+              ? 'text-[#E58A2B] fill-[#F3BD59]'
+              : streakNeedsAction
+              ? 'text-[#D95B2B]'
+              : 'text-[#88899B]'
+          }`}
+        />
+        <span className="font-mono text-xs font-bold tabular-nums leading-none">
+          {streakCount}
+          {!compact ? 'd' : ''}
+        </span>
+        {streakNeedsAction && (
+          <Hourglass className="h-3 w-3 text-[#D95B2B] shrink-0" aria-hidden="true" />
+        )}
+      </button>
+    );
+  };
 
   const renderNavSection = (title: string, section: NavItemConfig['section']) => (
     <div className="space-y-1">
@@ -106,11 +173,18 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) 
     <div className="min-h-screen bg-[#F8F9FC] text-[#242337] flex flex-col lg:flex-row">
       {/* Desktop Left Sidebar */}
       <aside className="hidden lg:flex lg:w-[260px] lg:shrink-0 lg:flex-col lg:fixed lg:inset-y-0 bg-white border-r border-[#E9EAF0] z-30">
-        <div className="h-16 px-5 flex items-center gap-2.5 border-b border-[#E9EAF0]">
-          <StudyDuoBrandMark size={30} />
-          <span className="text-lg font-bold tracking-tight text-[#242337] whitespace-nowrap">
-            StudyDuo
-          </span>
+        <div className="h-16 px-4 flex items-center justify-between gap-2 border-b border-[#E9EAF0]">
+          <button
+            type="button"
+            onClick={() => setActivePage('dashboard')}
+            className="flex items-center gap-2.5 min-w-0 text-left"
+          >
+            <StudyDuoBrandMark size={30} />
+            <span className="text-lg font-bold tracking-tight text-[#242337] whitespace-nowrap">
+              StudyDuo
+            </span>
+          </button>
+          {renderStreakPill(false)}
         </div>
 
         <nav aria-label="Main navigation" className="flex-1 overflow-y-auto px-3 py-4 space-y-5">
@@ -147,8 +221,8 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) 
 
       {/* Main Column */}
       <div className="flex-1 flex flex-col min-w-0 lg:pl-[260px]">
-        {/* Mobile Compact Top Header (56px height to respect 15% sticky budget) */}
-        <header className="lg:hidden sticky top-0 z-30 h-14 bg-white/95 backdrop-blur-md border-b border-[#E9EAF0] px-5 flex items-center justify-between gap-3">
+        {/* Mobile Compact Top Header (56px height, optimized down to 320px) */}
+        <header className="lg:hidden sticky top-0 z-30 h-14 bg-white/95 backdrop-blur-md border-b border-[#E9EAF0] px-3.5 sm:px-5 flex items-center justify-between gap-2">
           <button
             type="button"
             onClick={() => setActivePage('dashboard')}
@@ -159,11 +233,12 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) 
           </button>
 
           <div className="flex items-center gap-1 shrink-0">
+            {renderStreakPill(true)}
             <button
               type="button"
               onClick={() => setActivePage('ai')}
               aria-label="Open AI Study Assistant"
-              className={`min-h-[44px] min-w-[44px] flex items-center justify-center rounded-xl transition-colors ${
+              className={`min-h-[44px] min-w-[40px] sm:min-w-[44px] flex items-center justify-center rounded-xl transition-colors ${
                 activePage === 'ai' ? 'bg-[#F0EBFF] text-[#7956D8]' : 'text-[#66687A] hover:bg-[#F8F9FC]'
               }`}
             >
@@ -173,7 +248,7 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) 
               type="button"
               onClick={() => setActivePage('notifications')}
               aria-label={`Notifications (${unreadNotificationCount} unread)`}
-              className={`relative min-h-[44px] min-w-[44px] flex items-center justify-center rounded-xl transition-colors ${
+              className={`relative min-h-[44px] min-w-[40px] sm:min-w-[44px] flex items-center justify-center rounded-xl transition-colors ${
                 activePage === 'notifications'
                   ? 'bg-[#F0EBFF] text-[#7956D8]'
                   : 'text-[#66687A] hover:bg-[#F8F9FC]'
@@ -181,7 +256,7 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) 
             >
               <Bell className="h-5 w-5" />
               {unreadNotificationCount > 0 && (
-                <span className="absolute top-2 right-2 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-[#7956D8] px-1 text-[10px] font-bold text-white tabular-nums">
+                <span className="absolute top-2 right-1.5 sm:right-2 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-[#7956D8] px-1 text-[10px] font-bold text-white tabular-nums">
                   {unreadNotificationCount}
                 </span>
               )}
@@ -191,19 +266,19 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) 
 
         {/* Interactive Preview Mode Switcher Strip (non-sticky so it doesn't eat viewport) */}
         {mode === 'preview' && (
-          <div className="bg-[#F0EBFF]/75 border-b border-[#7956D8]/15 px-5 lg:px-8 py-2.5">
-            <div className="max-w-6xl mx-auto flex flex-wrap items-center justify-between gap-3">
-              <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-[#242337]">
+          <div className="bg-[#F0EBFF]/75 border-b border-[#7956D8]/15 px-3.5 sm:px-5 lg:px-8 py-2.5">
+            <div className="max-w-6xl mx-auto flex flex-wrap items-center justify-between gap-2.5">
+              <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-[#242337]">
                 <span className="font-semibold text-[#7956D8]">Interactive Preview</span>
-                <span aria-hidden="true" className="text-[#88899B]">·</span>
-                <span className="text-[#66687A]">Test duo roles live or sign in to save to Firestore</span>
+                <span aria-hidden="true" className="text-[#88899B] hidden sm:inline">·</span>
+                <span className="text-[#66687A] hidden sm:inline">Test duo roles live or sign in to save to Firestore</span>
               </div>
               <div className="flex items-center gap-2 flex-wrap">
                 <div className="inline-flex rounded-xl bg-white p-0.5 border border-[#E9EAF0]" role="group" aria-label="Switch preview persona">
                   <button
                     type="button"
                     onClick={() => switchPreviewPersona('owner')}
-                    className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors whitespace-nowrap ${
+                    className={`px-2.5 sm:px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors whitespace-nowrap ${
                       previewPersona === 'owner'
                         ? 'bg-[#7956D8] text-white'
                         : 'text-[#66687A] hover:text-[#242337]'
@@ -214,7 +289,7 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) 
                   <button
                     type="button"
                     onClick={() => switchPreviewPersona('partner')}
-                    className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors whitespace-nowrap ${
+                    className={`px-2.5 sm:px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors whitespace-nowrap ${
                       previewPersona === 'partner'
                         ? 'bg-[#38A879] text-white'
                         : 'text-[#66687A] hover:text-[#242337]'
@@ -226,7 +301,7 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) 
                 <button
                   type="button"
                   onClick={exitPreviewMode}
-                  className="inline-flex items-center gap-1.5 rounded-xl bg-white border border-[#E9EAF0] px-3 py-1.5 text-xs font-semibold text-[#242337] hover:bg-[#F8F9FC] transition-colors whitespace-nowrap"
+                  className="inline-flex items-center gap-1.5 rounded-xl bg-white border border-[#E9EAF0] px-2.5 sm:px-3 py-1.5 text-xs font-semibold text-[#242337] hover:bg-[#F8F9FC] transition-colors whitespace-nowrap"
                 >
                   <LogIn className="h-3.5 w-3.5 text-[#7956D8]" />
                   Sign In
@@ -237,7 +312,7 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) 
         )}
 
         {/* Main Scrollable Content */}
-        <main className="flex-1 w-full max-w-6xl mx-auto px-5 sm:px-6 lg:px-8 pt-6 pb-24 lg:pb-12">
+        <main className="flex-1 w-full max-w-6xl mx-auto px-3.5 sm:px-6 lg:px-8 pt-5 sm:pt-6 pb-24 lg:pb-12">
           {children}
         </main>
       </div>
@@ -268,7 +343,7 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) 
                 }`}
               >
                 <Icon className="h-5 w-5" />
-                <span className={`text-[11px] leading-none whitespace-nowrap ${isActive ? 'font-semibold' : 'font-medium'}`}>
+                <span className={`text-[10px] sm:text-[11px] leading-none whitespace-nowrap ${isActive ? 'font-semibold' : 'font-medium'}`}>
                   {item.shortLabel}
                 </span>
               </button>
@@ -277,6 +352,7 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) 
         </div>
       </nav>
 
+      <DailyCelebrationOverlay event={celebrationEvent} onDismiss={dismissCelebration} />
       <OfflineIndicator />
       <ToastStack toasts={toasts} onDismiss={dismissToast} />
     </div>

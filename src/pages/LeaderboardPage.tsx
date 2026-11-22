@@ -13,6 +13,7 @@ export const LeaderboardPage: React.FC = () => {
     goals,
     setSelectedGoalId,
     participants,
+    completions,
     xpTransactions,
     dailyResults,
     setActivePage,
@@ -31,8 +32,17 @@ export const LeaderboardPage: React.FC = () => {
     for (const p of participants) {
       userXpMap[p.uid] = p.uid === currentUser?.uid ? currentUser.totalXp : p.goalXp;
     }
-    return computeLeaderboard(participants, xpTransactions, activeGoal.id, todayKey, tab, userXpMap);
-  }, [activeGoal, currentUser, participants, tab, todayKey, xpTransactions]);
+    return computeLeaderboard(
+      participants,
+      xpTransactions,
+      activeGoal.id,
+      todayKey,
+      tab,
+      userXpMap,
+      dailyResults,
+      completions
+    );
+  }, [activeGoal, completions, currentUser, dailyResults, participants, tab, todayKey, xpTransactions]);
 
   const sortedHistory = useMemo(
     () => [...dailyResults].sort((a, b) => b.dateKey.localeCompare(a.dateKey)),

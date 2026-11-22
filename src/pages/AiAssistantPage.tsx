@@ -12,7 +12,7 @@ import {
   Wand2,
 } from 'lucide-react';
 import { useStudyDuo } from '../context/StudyDuoContext';
-import { canManageGoal, getDateKeyInTimezone } from '../lib/gamification';
+import { canManageGoal, getDateKeyInTimezone, getSharedDailyScore } from '../lib/gamification';
 import type { AiQuizResponse, AiStudyPlanResponse, DifficultyLevel } from '../types/studyduo';
 
 type AiTab = 'planner' | 'explainer' | 'quiz' | 'notes' | 'coach';
@@ -25,6 +25,7 @@ export const AiAssistantPage: React.FC = () => {
     phases,
     tasks,
     completions,
+    dailyResults,
     participants,
     xpTransactions,
     journalEntries,
@@ -200,16 +201,30 @@ export const AiAssistantPage: React.FC = () => {
   const handleAskCoach = async (e: React.FormEvent) => {
     e.preventDefault();
     const todayKey = getDateKeyInTimezone(new Date(), activeGoal?.timezone || currentUser?.timezone || 'UTC');
-    const myDailyPts = xpTransactions
-      .filter((tx) => tx.userId === currentUser?.uid && tx.goalId === activeGoal?.id && tx.dateKey === todayKey)
-      .reduce((s, t) => s + t.xpAmount, 0);
+    const myDailyPts =
+      currentUser && activeGoal
+        ? getSharedDailyScore({
+            goalId: activeGoal.id,
+            dateKey: todayKey,
+            userId: currentUser.uid,
+            dailyResults,
+            completions,
+            transactions: xpTransactions,
+          })
+        : 0;
 
     const partner = participants.find((p) => p.uid !== currentUser?.uid);
-    const partnerDailyPts = partner
-      ? xpTransactions
-          .filter((tx) => tx.userId === partner.uid && tx.goalId === activeGoal?.id && tx.dateKey === todayKey)
-          .reduce((s, t) => s + t.xpAmount, 0)
-      : 0;
+    const partnerDailyPts =
+      partner && activeGoal
+        ? getSharedDailyScore({
+            goalId: activeGoal.id,
+            dateKey: todayKey,
+            userId: partner.uid,
+            dailyResults,
+            completions,
+            transactions: xpTransactions,
+          })
+        : 0;
 
     // Respect user privacy setting: only include personal journal summaries if explicitly opted-in
     const authorizedJournalSummaries = privateSettings?.allowAiJournalContext

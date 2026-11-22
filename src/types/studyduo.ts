@@ -71,6 +71,7 @@ export interface Goal {
   groupStreak: number;
   longestGroupStreak: number;
   restDays: string[];
+  lastAcceptedInviteCode?: string;
   status: GoalStatus;
   createdAt: string;
   updatedAt: string;
@@ -250,7 +251,8 @@ export type NotificationType =
   | 'daily_winner'
   | 'achievement_unlocked'
   | 'milestone_reached'
-  | 'weekly_summary';
+  | 'weekly_summary'
+  | 'streak_reminder';
 
 export interface NotificationItem {
   id: string;
@@ -309,4 +311,17 @@ export interface AiQuizQuestion {
 export interface AiQuizResponse {
   topic: string;
   questions: AiQuizQuestion[];
+}
+
+export interface DailyCelebrationEvent {
+  id: string;
+  kind: 'streak_day_lit' | 'day_completed';
+  dayNumber: number;
+  goalTitle: string;
+  streakDays: number;
+  duoStreakDays: number;
+  duoFlameLitToday: boolean;
+  partnerName?: string;
+  xpEarned: number;
+  bonusXp: number;
 }

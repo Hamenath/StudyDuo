@@ -298,6 +298,195 @@ export function calculateGroupStreak(
   return { groupStreak: currentStreak, longestGroupStreak: longestStreak };
 }
 
+export type DuoStreakState =
+  | 'safe'
+  | 'waiting_on_partner'
+  | 'waiting_on_you'
+  | 'at_risk'
+  | 'rest_day'
+  | 'starting';
+
+export interface DuoStreakStatus {
+  state: DuoStreakState;
+  duoStreak: number;
+  myStudiedToday: boolean;
+  partnerStudiedToday: boolean;
+  hasPartner: boolean;
+  hoursUntilMidnight: number;
+  headline: string;
+  subtext: string;
+  canNudgePartner: boolean;
+}
+
+export function getHoursUntilMidnightInTimezone(now: Date, timezone: string): number {
+  try {
+    const parts = new Intl.DateTimeFormat('en-US', {
+      timeZone: timezone,
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false,
+    }).formatToParts(now);
+    const hourVal = Number(parts.find((p) => p.type === 'hour')?.value ?? '12') % 24;
+    const minVal = Number(parts.find((p) => p.type === 'minute')?.value ?? '0');
+    const remainingMinutes = Math.max(1, 24 * 60 - (hourVal * 60 + minVal));
+    return Math.max(1, Math.min(24, Math.ceil(remainingMinutes / 60)));
+  } catch {
+    const remainingMinutes = Math.max(1, 24 * 60 - (now.getUTCHours() * 60 + now.getUTCMinutes()));
+    return Math.max(1, Math.min(24, Math.ceil(remainingMinutes / 60)));
+  }
+}
+
+/**
+ * Snapchat-style Duo Streak status engine for both study partners.
+ * Tracks whether both sides lit today's flame, countdown hours to midnight,
+ * rest-day protection, and when a friendly partner nudge is appropriate.
+ */
+export function computeDuoStreakStatus(params: {
+  participantIds: string[];
+  currentUserId: string;
+  partnerName?: string;
+  completions: TaskCompletion[];
+  restDays: string[];
+  timezone: string;
+  groupStreak?: number;
+  now?: Date;
+}): DuoStreakStatus {
+  const now = params.now ?? new Date();
+  const todayKey = getDateKeyInTimezone(now, params.timezone);
+  const hoursUntilMidnight = getHoursUntilMidnightInTimezone(now, params.timezone);
+  const partnerLabel = params.partnerName?.trim() || 'your partner';
+
+  const partnerIds = params.participantIds.filter((uid) => uid !== params.currentUserId);
+  const hasPartner = partnerIds.length > 0;
+  const isRestDay = params.restDays.includes(todayKey);
+
+  const myStudiedToday = params.completions.some(
+    (c) => c.userId === params.currentUserId && c.dateKey === todayKey
+  );
+  const partnerStudiedToday =
+    hasPartner &&
+    partnerIds.every((pid) =>
+      params.completions.some((c) => c.userId === pid && c.dateKey === todayKey)
+    );
+
+  const computed = calculateGroupStreak(
+    params.participantIds,
+    params.completions,
+    params.restDays,
+    todayKey
+  );
+  const duoStreak = Math.max(computed.groupStreak, params.groupStreak ?? 0);
+
+  if (isRestDay) {
+    return {
+      state: 'rest_day',
+      duoStreak,
+      myStudiedToday,
+      partnerStudiedToday,
+      hasPartner,
+      hoursUntilMidnight,
+      headline: 'Rest day freeze active',
+      subtext: 'Your duo streak is safely paused today — resume tomorrow to keep building.',
+      canNudgePartner: false,
+    };
+  }
+
+  if (!hasPartner) {
+    return myStudiedToday
+      ? {
+          state: 'safe',
+          duoStreak: 0,
+          myStudiedToday: true,
+          partnerStudiedToday: false,
+          hasPartner: false,
+          hoursUntilMidnight,
+          headline: 'Your flame is lit today',
+          subtext: 'Invite a study partner to start a shared Duo Flame together.',
+          canNudgePartner: false,
+        }
+      : {
+          state: 'starting',
+          duoStreak: 0,
+          myStudiedToday: false,
+          partnerStudiedToday: false,
+          hasPartner: false,
+          hoursUntilMidnight,
+          headline: 'Ignite your daily streak',
+          subtext: 'Finish 1 study task today to light your flame.',
+          canNudgePartner: false,
+        };
+  }
+
+  if (myStudiedToday && partnerStudiedToday) {
+    const activeCount = Math.max(1, duoStreak);
+    return {
+      state: 'safe',
+      duoStreak: activeCount,
+      myStudiedToday: true,
+      partnerStudiedToday: true,
+      hasPartner: true,
+      hoursUntilMidnight,
+      headline: `Day ${activeCount} Duo Flame safe!`,
+      subtext: `Both you and ${partnerLabel} studied today. Come back tomorrow to keep it burning.`,
+      canNudgePartner: false,
+    };
+  }
+
+  if (myStudiedToday && !partnerStudiedToday) {
+    return {
+      state: 'waiting_on_partner',
+      duoStreak,
+      myStudiedToday: true,
+      partnerStudiedToday: false,
+      hasPartner: true,
+      hoursUntilMidnight,
+      headline: `Waiting on ${partnerLabel}`,
+      subtext: `Your side is lit! ${partnerLabel} has ${hoursUntilMidnight}h left today to keep your Duo Flame alive.`,
+      canNudgePartner: true,
+    };
+  }
+
+  if (!myStudiedToday && partnerStudiedToday) {
+    return {
+      state: 'waiting_on_you',
+      duoStreak,
+      myStudiedToday: false,
+      partnerStudiedToday: true,
+      hasPartner: true,
+      hoursUntilMidnight,
+      headline: `${partnerLabel} lit their side!`,
+      subtext: `Complete 1 task in the next ${hoursUntilMidnight}h to keep your Duo Flame burning.`,
+      canNudgePartner: false,
+    };
+  }
+
+  if (duoStreak > 0) {
+    return {
+      state: 'at_risk',
+      duoStreak,
+      myStudiedToday: false,
+      partnerStudiedToday: false,
+      hasPartner: true,
+      hoursUntilMidnight,
+      headline: `${duoStreak}-day Duo Flame needs a spark`,
+      subtext: `${hoursUntilMidnight}h left today — complete 1 task to light your side first.`,
+      canNudgePartner: false,
+    };
+  }
+
+  return {
+    state: 'starting',
+    duoStreak: 0,
+    myStudiedToday: false,
+    partnerStudiedToday: false,
+    hasPartner: true,
+    hoursUntilMidnight,
+    headline: 'Start your Duo Flame',
+    subtext: `Both you and ${partnerLabel} need 1 task today to ignite Day 1.`,
+    canNudgePartner: false,
+  };
+}
+
 /**
  * Deterministic IDs for idempotency (prevents duplicate completion & duplicate XP awards).
  */
@@ -311,6 +500,45 @@ export function buildXpTxId(
   sourceId: string
 ): string {
   return `${userId}_${sourceType}_${sourceId}`;
+}
+
+/**
+ * Returns a participant's daily XP for a given dateKey using shared goal data
+ * (dailyResults + completions + personal xpTransactions) so partner scores are always accurate
+ * even when partner xpTransactions remain private in Firestore.
+ */
+export function getSharedDailyScore(params: {
+  goalId: string;
+  dateKey: string;
+  userId: string;
+  dailyResults?: DailyResult[];
+  completions?: TaskCompletion[];
+  transactions?: XpTransaction[];
+}): number {
+  const dr = params.dailyResults?.find(
+    (d) => d.goalId === params.goalId && d.dateKey === params.dateKey
+  );
+  const drScore = dr?.scores?.[params.userId] ?? 0;
+
+  let txScore = 0;
+  if (params.transactions) {
+    for (const tx of params.transactions) {
+      if (tx.goalId === params.goalId && tx.dateKey === params.dateKey && tx.userId === params.userId) {
+        txScore += tx.xpAmount;
+      }
+    }
+  }
+
+  let compScore = 0;
+  if (params.completions) {
+    for (const comp of params.completions) {
+      if (comp.goalId === params.goalId && comp.dateKey === params.dateKey && comp.userId === params.userId) {
+        compScore += comp.xpAwarded;
+      }
+    }
+  }
+
+  return Math.max(drScore, txScore, compScore);
 }
 
 /**
@@ -381,27 +609,60 @@ export function computeLeaderboard(
   goalId: string,
   todayKey: string,
   tab: 'today' | 'week' | 'overall',
-  userTotalXpMap?: Record<string, number>
+  userTotalXpMap?: Record<string, number>,
+  dailyResults?: DailyResult[],
+  completions?: TaskCompletion[]
 ): LeaderboardEntry[] {
   const weekCutoff = addDaysToDateKey(todayKey, -6);
 
   const raw = participants.map((p) => {
-    let dailyPoints = 0;
-    let weeklyPoints = 0;
+    let txDaily = 0;
+    let txWeekly = 0;
     let goalPoints = 0;
 
     for (const tx of transactions) {
       if (tx.goalId !== goalId || tx.userId !== p.uid) continue;
       goalPoints += tx.xpAmount;
       if (tx.dateKey === todayKey) {
-        dailyPoints += tx.xpAmount;
+        txDaily += tx.xpAmount;
       }
       if (tx.dateKey >= weekCutoff && tx.dateKey <= todayKey) {
-        weeklyPoints += tx.xpAmount;
+        txWeekly += tx.xpAmount;
       }
     }
 
-    const totalXp = userTotalXpMap?.[p.uid] ?? Math.max(p.goalXp, goalPoints);
+    let drDaily = 0;
+    let drWeekly = 0;
+    if (dailyResults) {
+      for (const dr of dailyResults) {
+        if (dr.goalId !== goalId) continue;
+        const val = dr.scores[p.uid] ?? 0;
+        if (dr.dateKey === todayKey) {
+          drDaily += val;
+        }
+        if (dr.dateKey >= weekCutoff && dr.dateKey <= todayKey) {
+          drWeekly += val;
+        }
+      }
+    }
+
+    let compDaily = 0;
+    let compWeekly = 0;
+    if (completions) {
+      for (const comp of completions) {
+        if (comp.goalId !== goalId || comp.userId !== p.uid) continue;
+        if (comp.dateKey === todayKey) {
+          compDaily += comp.xpAwarded;
+        }
+        if (comp.dateKey >= weekCutoff && comp.dateKey <= todayKey) {
+          compWeekly += comp.xpAwarded;
+        }
+      }
+    }
+
+    const dailyPoints = Math.max(txDaily, drDaily, compDaily);
+    const weeklyPoints = Math.max(txWeekly, drWeekly, compWeekly);
+    const totalXp = userTotalXpMap?.[p.uid] ?? Math.max(p.goalXp, goalPoints, weeklyPoints);
     const levelInfo = getLevelInfo(totalXp);
     const points =
       tab === 'today' ? dailyPoints : tab === 'week' ? weeklyPoints : totalXp;

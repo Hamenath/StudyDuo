@@ -130,7 +130,7 @@ service cloud.firestore {
           'category', 'icon', 'startDate', 'durationDays', 'targetDate',
           'difficulty', 'timezone', 'dailyTargetMinutes', 'maxParticipants',
           'groupName', 'groupStreak', 'longestGroupStreak', 'restDays',
-          'status', 'createdAt', 'updatedAt'
+          'lastAcceptedInviteCode', 'status', 'createdAt', 'updatedAt'
         ])
         && data.id == goalId
         && isValidId(data.id)
@@ -148,6 +148,7 @@ service cloud.firestore {
         && data.dailyTargetMinutes is number && data.dailyTargetMinutes >= 5 && data.dailyTargetMinutes <= 720
         && data.maxParticipants is number && data.maxParticipants >= 1 && data.maxParticipants <= 10
         && isOptionalString(data, 'groupName', 80)
+        && isOptionalString(data, 'lastAcceptedInviteCode', 24)
         && (!('groupStreak' in data) || (data.groupStreak is number && data.groupStreak >= 0))
         && (!('longestGroupStreak' in data) || (data.longestGroupStreak is number && data.longestGroupStreak >= 0))
         && (!('restDays' in data) || (data.restDays is list && data.restDays.size() <= 30 && (data.restDays.size() == 0 || data.restDays[0] is string)))
@@ -284,6 +285,15 @@ service cloud.firestore {
         && data.completedAt == request.time;
     }
 
+    function matchesOfficialTask(goalId, data) {
+      let taskPath = /databases/$(database)/documents/goals/$(goalId)/days/$(data.dayId)/tasks/$(data.taskId);
+      return exists(taskPath)
+        && get(taskPath).data.isArchived == false
+        && (get(taskPath).data.isPublished == true || get(taskPath).data.ownerId == request.auth.uid)
+        && data.xpAwarded == get(taskPath).data.xpReward
+        && data.estimatedMinutes == get(taskPath).data.estimatedMinutes;
+    }
+
     function isValidPersonalNote(data, noteId) {
       return data.keys().hasAll(['userId', 'taskId', 'content', 'updatedAt'])
         && data.keys().hasOnly(['userId', 'taskId', 'content', 'updatedAt'])
@@ -335,7 +345,17 @@ service cloud.firestore {
         && data.xpAmount is number && data.xpAmount >= 5 && data.xpAmount <= 200
         && isNonEmptyString(data.dateKey, 8, 16)
         && isNonEmptyString(data.label, 1, 160)
-        && data.createdAt == request.time;
+        && data.createdAt == request.time
+        && (
+          (
+            data.sourceType == 'task'
+            && existsAfter(/databases/$(database)/documents/goals/$(data.goalId)/completions/$(data.sourceId + '_' + request.auth.uid))
+            && data.xpAmount == getAfter(/databases/$(database)/documents/goals/$(data.goalId)/completions/$(data.sourceId + '_' + request.auth.uid)).data.xpAwarded
+          ) ||
+          (data.sourceType == 'daily_bonus' && data.xpAmount == 30) ||
+          (data.sourceType == 'quiz' && data.xpAmount >= 5 && data.xpAmount <= 15) ||
+          (data.sourceType == 'milestone' && data.xpAmount == 100)
+        );
     }
 
     function isValidDailyResult(data, goalId, dateKey) {
@@ -359,7 +379,7 @@ service cloud.firestore {
         && isNonEmptyString(data.actorName, 1, 80)
         && data.type in ['task_completed', 'day_completed', 'task_published', 'partner_joined', 'achievement_unlocked', 'milestone_reached']
         && isNonEmptyString(data.message, 1, 240)
-        && (!('xpDelta' in data) || (data.xpDelta is number && data.xpDelta >= 0 && data.xpDelta <= 500))
+        && (!('xpDelta' in data) || (data.xpDelta is number && data.xpDelta >= 0 && data.xpDelta <= 230))
         && data.createdAt == request.time;
     }
 
@@ -400,7 +420,7 @@ service cloud.firestore {
         && data.type in [
           'invitation_received', 'invitation_accepted', 'partner_completed_task',
           'partner_completed_checklist', 'daily_winner', 'achievement_unlocked',
-          'milestone_reached', 'weekly_summary'
+          'milestone_reached', 'weekly_summary', 'streak_reminder'
         ]
         && isNonEmptyString(data.title, 1, 120)
         && isNonEmptyString(data.body, 1, 300)
@@ -445,14 +465,14 @@ service cloud.firestore {
             'fullName', 'username', 'avatarColor', 'avatarInitials', 'photoURL',
             'bio', 'preferredCategory', 'timezone', 'onboardingCompleted', 'updatedAt'
           ]) ||
-          // Action 2: Bounded XP / streak progression update
+          // Action 2: Bounded XP / streak progression update (max 200 task + 30 daily bonus)
           (
             incoming().diff(existing()).affectedKeys().hasOnly([
               'totalXp', 'level', 'currentStreak', 'longestStreak',
               'completedTasksCount', 'completedGoalsCount', 'lastActiveDate', 'updatedAt'
             ])
             && incoming().totalXp >= existing().totalXp
-            && incoming().totalXp <= existing().totalXp + 300
+            && incoming().totalXp <= existing().totalXp + 230
             && incoming().completedTasksCount >= existing().completedTasksCount
             && incoming().completedTasksCount <= existing().completedTasksCount + 1
           )
@@ -508,14 +528,20 @@ service cloud.firestore {
               'groupName', 'restDays', 'status', 'updatedAt'
             ])
           ) ||
-          // Action 2: Invited partner joins goal (append self only, respecting maxParticipants)
+          // Action 2: Invited partner joins goal with cryptographic proof of pending invitation
           (
             !(request.auth.uid in existing().participantIds)
             && existing().participantIds.size() < existing().maxParticipants
             && incoming().participantIds.size() == existing().participantIds.size() + 1
             && incoming().participantIds.hasAll(existing().participantIds)
             && request.auth.uid in incoming().participantIds
-            && incoming().diff(existing()).affectedKeys().hasOnly(['participantIds', 'updatedAt'])
+            && incoming().diff(existing()).affectedKeys().hasOnly(['participantIds', 'lastAcceptedInviteCode', 'updatedAt'])
+            && 'lastAcceptedInviteCode' in incoming()
+            && isValidId(incoming().lastAcceptedInviteCode)
+            && exists(/databases/$(database)/documents/invitations/$(incoming().lastAcceptedInviteCode))
+            && get(/databases/$(database)/documents/invitations/$(incoming().lastAcceptedInviteCode)).data.goalId == goalId
+            && get(/databases/$(database)/documents/invitations/$(incoming().lastAcceptedInviteCode)).data.inviterId == existing().ownerId
+            && get(/databases/$(database)/documents/invitations/$(incoming().lastAcceptedInviteCode)).data.status == 'pending'
           ) ||
           // Action 3: Member updates group streak counters
           (
@@ -528,7 +554,7 @@ service cloud.firestore {
       // Participants
       match /participants/{userId} {
         allow get: if isSignedIn() && isValidId(goalId) && isValidId(userId) && isGoalMember(goalId);
-        allow list: if isSignedIn() && isGoalMember(goalId) && resource.data.goalId == goalId;
+        allow list: if isSignedIn() && isGoalMember(goalId);
         allow create: if isVerified() && isValidId(goalId) && isValidId(userId)
           && isSelf(userId)
           && isValidParticipant(incoming(), goalId, userId)
@@ -550,15 +576,17 @@ service cloud.firestore {
             'goalXp', 'completedTasksCount', 'daysCompleted', 'currentStreak', 'longestStreak'
           ])
           && incoming().goalXp >= existing().goalXp
-          && incoming().goalXp <= existing().goalXp + 300;
+          && incoming().goalXp <= existing().goalXp + 230
+          && incoming().completedTasksCount >= existing().completedTasksCount
+          && incoming().completedTasksCount <= existing().completedTasksCount + 1;
         allow delete: if isVerified() && isValidId(goalId) && isValidId(userId) && (isGoalOwner(goalId) || isSelf(userId));
       }
 
-      // Phases (Owner-Only Writes)
+      // Phases (Owner-Only Writes; single-field collaborator query support)
       match /phases/{phaseId} {
         allow get: if isSignedIn() && isValidId(goalId) && isValidId(phaseId) && isGoalMember(goalId)
           && (existing().isPublished == true || existing().ownerId == request.auth.uid);
-        allow list: if isSignedIn() && isGoalMember(goalId) && resource.data.goalId == goalId
+        allow list: if isSignedIn() && isGoalMember(goalId)
           && (resource.data.isPublished == true || resource.data.ownerId == request.auth.uid);
         allow create: if isVerified() && isValidId(goalId) && isValidId(phaseId)
           && isValidPhase(incoming(), goalId, phaseId)
@@ -580,11 +608,11 @@ service cloud.firestore {
         allow delete: if isVerified() && isValidId(goalId) && isValidId(phaseId) && isGoalOwner(goalId);
       }
 
-      // Days (Owner-Only Writes)
+      // Days (Owner-Only Writes; single-field collaborator query support)
       match /days/{dayId} {
         allow get: if isSignedIn() && isValidId(goalId) && isValidId(dayId) && isGoalMember(goalId)
           && (existing().isPublished == true || existing().ownerId == request.auth.uid);
-        allow list: if isSignedIn() && isGoalMember(goalId) && resource.data.goalId == goalId
+        allow list: if isSignedIn() && isGoalMember(goalId)
           && (resource.data.isPublished == true || resource.data.ownerId == request.auth.uid);
         allow create: if isVerified() && isValidId(goalId) && isValidId(dayId)
           && isValidDay(incoming(), goalId, dayId)
@@ -604,12 +632,12 @@ service cloud.firestore {
           && isGoalOwner(goalId);
         allow delete: if isVerified() && isValidId(goalId) && isValidId(dayId) && isGoalOwner(goalId);
 
-        // Tasks (Owner-Only Writes)
+        // Tasks (Owner-Only Writes; single-field collaborator query support)
         match /tasks/{taskId} {
           allow get: if isSignedIn() && isValidId(goalId) && isValidId(dayId) && isValidId(taskId)
             && isGoalMember(goalId)
             && (existing().isPublished == true || existing().ownerId == request.auth.uid);
-          allow list: if isSignedIn() && isGoalMember(goalId) && resource.data.goalId == goalId && resource.data.dayId == dayId
+          allow list: if isSignedIn() && isGoalMember(goalId)
             && (resource.data.isPublished == true || resource.data.ownerId == request.auth.uid);
           allow create: if isVerified() && isValidId(goalId) && isValidId(dayId) && isValidId(taskId)
             && isValidTask(incoming(), goalId, dayId, taskId)
@@ -634,13 +662,14 @@ service cloud.firestore {
         }
       }
 
-      // Independent Task Completions (Idempotent Create, Immutable History)
+      // Independent Task Completions (Idempotent Create, Official Task XP Cross-Check, Immutable History)
       match /completions/{completionId} {
         allow get: if isSignedIn() && isValidId(goalId) && isValidId(completionId) && isGoalMember(goalId);
-        allow list: if isSignedIn() && isGoalMember(goalId) && resource.data.goalId == goalId;
+        allow list: if isSignedIn() && isGoalMember(goalId);
         allow create: if isVerified() && isValidId(goalId) && isValidId(completionId)
           && isValidCompletion(incoming(), goalId, completionId)
-          && isGoalMember(goalId);
+          && isGoalMember(goalId)
+          && matchesOfficialTask(goalId, incoming());
         allow update, delete: if false;
       }
 
@@ -662,7 +691,7 @@ service cloud.firestore {
       // Daily Results & Winner Board
       match /dailyResults/{dateKey} {
         allow get: if isSignedIn() && isValidId(goalId) && isValidId(dateKey) && isGoalMember(goalId);
-        allow list: if isSignedIn() && isGoalMember(goalId) && resource.data.goalId == goalId;
+        allow list: if isSignedIn() && isGoalMember(goalId);
         allow create: if isVerified() && isValidId(goalId) && isValidId(dateKey)
           && isValidDailyResult(incoming(), goalId, dateKey)
           && isGoalMember(goalId);
@@ -677,7 +706,7 @@ service cloud.firestore {
       // Activity Feed
       match /activity/{activityId} {
         allow get: if isSignedIn() && isValidId(goalId) && isValidId(activityId) && isGoalMember(goalId);
-        allow list: if isSignedIn() && isGoalMember(goalId) && resource.data.goalId == goalId;
+        allow list: if isSignedIn() && isGoalMember(goalId);
         allow create: if isVerified() && isValidId(goalId) && isValidId(activityId)
           && isValidActivity(incoming(), goalId, activityId)
           && isGoalMember(goalId);

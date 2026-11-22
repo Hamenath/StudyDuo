@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import http from 'node:http';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { GoogleGenAI, Type } from '@google/genai';
+import { GoogleGenAI, ThinkingLevel, Type } from '@google/genai';
 import { z } from 'zod';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -113,6 +113,15 @@ const coachRequestSchema = z.object({
   }),
 });
 
+function parseJsonFromModelText<T>(raw: string | undefined): T {
+  const cleaned = (raw ?? '{}')
+    .trim()
+    .replace(/^```(?:json)?\s*/i, '')
+    .replace(/\s*```$/i, '')
+    .trim();
+  return JSON.parse(cleaned) as T;
+}
+
 function formatGeminiError(err: unknown): { status: number; message: string } {
   const msg = err instanceof Error ? err.message : String(err);
   if (msg.includes('GEMINI_API_KEY')) {
@@ -180,6 +189,7 @@ Daily target study time: ${dailyTargetMinutes} minutes per day.
 
 Create 4 to 6 logical phases spanning Day 1 to Day ${durationDays} with clear startDay/endDay ranges, concrete learning objectives, milestone titles, sample daily topics, a revision strategy, and hands-on practice recommendations. Do NOT invent or fabricate external URLs.`,
         config: {
+          thinkingConfig: { thinkingLevel: ThinkingLevel.LOW },
           systemInstruction:
             'You are StudyDuo AI Study Planner. Produce clear, structured, actionable learning roadmaps for two study partners. Never invent URLs. Keep descriptions concise and motivating.',
           responseMimeType: 'application/json',
@@ -230,8 +240,7 @@ Create 4 to 6 logical phases spanning Day 1 to Day ${durationDays} with clear st
         },
       });
 
-      const rawText = (response.text ?? '{}').trim();
-      const plan = JSON.parse(rawText);
+      const plan = parseJsonFromModelText(response.text);
       res.json({ plan });
     } catch (err) {
       const formatted = formatGeminiError(err);
@@ -265,6 +274,7 @@ ${goalContext ? `Study goal context: ${goalContext}` : ''}
 
 Format clearly with short headings, bullet points, and a 2-minute quick self-check prompt at the end. Do not invent external URLs.`,
         config: {
+          thinkingConfig: { thinkingLevel: ThinkingLevel.LOW },
           systemInstruction:
             'You are StudyDuo AI Tutor. Give crisp, encouraging, accurate explanations structured for mobile readability. Never fabricate URLs.',
         },
@@ -296,6 +306,7 @@ ${completedTasks.length > 0 ? `Base questions on these completed study tasks: ${
 Include a balanced mix of types: "mcq" (with 4 concise options), "true_false" (options: ["True", "False"]), "short_answer", and "coding" (or practical scenario if non-coding).
 Provide an accurate correctAnswer and a clear educational explanation for each question.`,
         config: {
+          thinkingConfig: { thinkingLevel: ThinkingLevel.LOW },
           systemInstruction:
             'You are StudyDuo Quiz Engine. Create fair, concept-testing questions with concise explanations.',
           responseMimeType: 'application/json',
@@ -311,7 +322,7 @@ Provide an accurate correctAnswer and a clear educational explanation for each q
                     id: { type: Type.STRING },
                     type: {
                       type: Type.STRING,
-                      enum: ['mcq', 'true_false', 'short_answer', 'coding'],
+                      description: 'One of: mcq, true_false, short_answer, coding',
                     },
                     question: { type: Type.STRING },
                     options: {
@@ -330,8 +341,34 @@ Provide an accurate correctAnswer and a clear educational explanation for each q
         },
       });
 
-      const quiz = JSON.parse((response.text ?? '{}').trim());
-      res.json({ quiz });
+      const parsedQuiz = parseJsonFromModelText<{
+        topic?: string;
+        questions?: Array<{
+          id?: string;
+          type?: string;
+          question?: string;
+          options?: string[];
+          correctAnswer?: string;
+          explanation?: string;
+        }>;
+      }>(response.text);
+
+      const allowedTypes = new Set(['mcq', 'true_false', 'short_answer', 'coding']);
+      const normalizedQuestions = (parsedQuiz.questions || []).map((q, idx) => ({
+        id: q.id || `q_${idx + 1}`,
+        type: allowedTypes.has(String(q.type)) ? String(q.type) : 'short_answer',
+        question: String(q.question || ''),
+        options: Array.isArray(q.options) && q.options.length > 0 ? q.options.map(String) : undefined,
+        correctAnswer: String(q.correctAnswer || ''),
+        explanation: String(q.explanation || ''),
+      }));
+
+      res.json({
+        quiz: {
+          topic: parsedQuiz.topic || topic,
+          questions: normalizedQuestions,
+        },
+      });
     } catch (err) {
       const formatted = formatGeminiError(err);
       res.status(formatted.status).json({ error: formatted.message });
@@ -367,6 +404,7 @@ Learner Notes:
 ${notesText}
 """`,
         config: {
+          thinkingConfig: { thinkingLevel: ThinkingLevel.LOW },
           systemInstruction:
             'You are StudyDuo Notes Assistant. Transform learner notes cleanly without inventing external URLs or unrelated facts.',
         },
@@ -433,6 +471,7 @@ User question: "${question}"
 
 Respond with clear structure, actionable advice, and warm encouragement.`,
         config: {
+          thinkingConfig: { thinkingLevel: ThinkingLevel.LOW },
           systemInstruction:
             'You are StudyDuo AI Study Coach. Be supportive, concise, practical, and privacy-respecting. Never fabricate URLs or fake statistics.',
         },

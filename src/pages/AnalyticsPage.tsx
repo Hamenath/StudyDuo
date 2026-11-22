@@ -14,12 +14,12 @@ import {
 import { BarChart3, CheckCircle2, Clock, Flame, TrendingUp } from 'lucide-react';
 import { useStudyDuo } from '../context/StudyDuoContext';
 import { EmptyState } from '../components/ui/Primitives';
-import { addDaysToDateKey, getDateKeyInTimezone } from '../lib/gamification';
+import { addDaysToDateKey, getDateKeyInTimezone, getSharedDailyScore } from '../lib/gamification';
 
 type RangeDays = 7 | 14 | 30;
 
 export const AnalyticsPage: React.FC = () => {
-  const { currentUser, activeGoal, participants, completions, xpTransactions, setActivePage } = useStudyDuo();
+  const { currentUser, activeGoal, participants, completions, dailyResults, xpTransactions, setActivePage } = useStudyDuo();
   const [rangeDays, setRangeDays] = useState<RangeDays>(7);
 
   const todayKey = useMemo(
@@ -62,13 +62,23 @@ export const AnalyticsPage: React.FC = () => {
       const partnerCount = partner
         ? completions.filter((c) => c.userId === partner.uid && c.dateKey === dateKey).length
         : 0;
-      const myDayXp = xpTransactions
-        .filter((tx) => tx.userId === currentUser.uid && tx.goalId === activeGoal.id && tx.dateKey === dateKey)
-        .reduce((sum, tx) => sum + tx.xpAmount, 0);
+      const myDayXp = getSharedDailyScore({
+        goalId: activeGoal.id,
+        dateKey,
+        userId: currentUser.uid,
+        dailyResults,
+        completions,
+        transactions: xpTransactions,
+      });
       const partnerDayXp = partner
-        ? xpTransactions
-            .filter((tx) => tx.userId === partner.uid && tx.goalId === activeGoal.id && tx.dateKey === dateKey)
-            .reduce((sum, tx) => sum + tx.xpAmount, 0)
+        ? getSharedDailyScore({
+            goalId: activeGoal.id,
+            dateKey,
+            userId: partner.uid,
+            dailyResults,
+            completions,
+            transactions: xpTransactions,
+          })
         : 0;
 
       cumulativeXp += myDayXp;
@@ -82,7 +92,7 @@ export const AnalyticsPage: React.FC = () => {
         cumulativeXp,
       };
     });
-  }, [activeGoal, completions, currentUser, dateWindow, partner, xpTransactions]);
+  }, [activeGoal, completions, currentUser, dailyResults, dateWindow, partner, xpTransactions]);
 
   const summary = useMemo(() => {
     const startKey = dateWindow[0];
