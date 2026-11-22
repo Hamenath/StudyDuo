@@ -84,15 +84,8 @@ export const AuthScreen: React.FC = () => {
     dismissToast,
   } = useStudyDuo();
 
-  // Intro states: 'splash' -> 'walkthrough' -> 'auth'
-  const [introState, setIntroState] = useState<'splash' | 'walkthrough' | 'auth'>(() => {
-    try {
-      const seen = localStorage.getItem('studyduo_intro_completed_v1');
-      return seen ? 'auth' : 'splash';
-    } catch {
-      return 'splash';
-    }
-  });
+  // Intro states: always start with 'splash' so the liquid glass animation shows on every entry
+  const [introState, setIntroState] = useState<'splash' | 'walkthrough' | 'auth'>('splash');
 
   const [walkthroughIndex, setWalkthroughIndex] = useState(0);
   const [tab, setTab] = useState<'login' | 'register' | 'reset'>('login');
@@ -104,7 +97,7 @@ export const AuthScreen: React.FC = () => {
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState('');
 
-  // Handle splash timeout: show liquid glass logo reveal animation then proceed
+  // Handle splash timeout: show liquid glass logo reveal animation then proceed to walkthrough
   useEffect(() => {
     if (introState === 'splash') {
       const timer = setTimeout(() => {
@@ -115,11 +108,6 @@ export const AuthScreen: React.FC = () => {
   }, [introState]);
 
   const handleFinishWalkthrough = () => {
-    try {
-      localStorage.setItem('studyduo_intro_completed_v1', 'true');
-    } catch {
-      // ignore storage errors
-    }
     setIntroState('auth');
   };
 
@@ -320,214 +308,269 @@ export const AuthScreen: React.FC = () => {
     );
   }
 
-  // 3. CLEAN AUTH SCREEN (MATCHING USER'S SCREENSHOT PIXEL-PERFECT)
+  // 3. CLEAN AUTH SCREEN WITH CUTE OWL BRAND CARD ON THE LEFT & LOGIN BOX ON THE RIGHT
   return (
-    <div className="min-h-dvh bg-[#FAFAFC] flex flex-col items-center justify-center px-4 py-8 sm:py-12 select-none">
-      <motion.div
-        initial={{ opacity: 0, y: 16 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4 }}
-        className="w-full max-w-[420px] bg-white rounded-[28px] p-7 sm:p-9 shadow-[0_10px_30px_-15px_rgba(0,0,0,0.06)] border border-[#F3F4F6]"
-      >
-        {/* Header matching screenshot */}
-        <div className="mb-8">
-          <h1 className="text-[34px] sm:text-[38px] font-extrabold tracking-tight text-[#111827] leading-none mb-2.5">
-            {tab === 'login' ? 'Welcome' : tab === 'register' ? 'Create Account' : 'Reset Password'}
-          </h1>
-          <p className="text-[14px] text-[#6B7280] leading-snug">
-            {tab === 'login'
-              ? 'Access your account and continue your journey with us'
-              : tab === 'register'
-              ? 'Join StudyDuo to learn, track habits, and level up with a partner'
-              : 'Enter your email to receive a password reset link'}
-          </p>
-        </div>
-
-        {/* Auth Form */}
-        <form onSubmit={handleSubmit} className="space-y-4" noValidate>
-          {tab === 'register' && (
-            <div>
-              <label htmlFor="auth-fullname" className="block text-[13px] font-semibold text-[#374151] mb-1.5">
-                Full Name
-              </label>
-              <input
-                id="auth-fullname"
-                type="text"
-                value={fullName}
-                onChange={(e) => setFullName(e.target.value)}
-                placeholder="Enter your full name"
-                className="w-full h-12 rounded-xl bg-[#F3F4F6] px-4 text-[14px] text-[#111827] placeholder-[#9CA3AF] border-none focus:outline-none focus:ring-2 focus:ring-[#7651E8]/40 transition-all"
-              />
-            </div>
-          )}
-
-          <div>
-            <label htmlFor="auth-email" className="block text-[13px] font-semibold text-[#374151] mb-1.5">
-              Email Address
-            </label>
-            <input
-              id="auth-email"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="Enter your email address"
-              className="w-full h-12 rounded-xl bg-[#F3F4F6] px-4 text-[14px] text-[#111827] placeholder-[#9CA3AF] border-none focus:outline-none focus:ring-2 focus:ring-[#7651E8]/40 transition-all"
-            />
-          </div>
-
-          {tab !== 'reset' && (
-            <div>
-              <label htmlFor="auth-password" className="block text-[13px] font-semibold text-[#374151] mb-1.5">
-                Password
-              </label>
-              <div className="relative">
-                <input
-                  id="auth-password"
-                  type={showPassword ? 'text' : 'password'}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Enter your password"
-                  className="w-full h-12 rounded-xl bg-[#F3F4F6] pl-4 pr-11 text-[14px] text-[#111827] placeholder-[#9CA3AF] border-none focus:outline-none focus:ring-2 focus:ring-[#7651E8]/40 transition-all"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  aria-label={showPassword ? 'Hide password' : 'Show password'}
-                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[#9CA3AF] hover:text-[#4B5563] p-1 cursor-pointer transition-colors"
-                >
-                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* "Keep me signed in" & "Reset password" Row matching screenshot */}
-          {tab === 'login' && (
-            <div className="flex items-center justify-between pt-1">
-              <label className="flex items-center gap-2 cursor-pointer select-none">
-                <input
-                  type="checkbox"
-                  checked={keepSignedIn}
-                  onChange={(e) => setKeepSignedIn(e.target.checked)}
-                  className="hidden"
-                />
-                <div
-                  className={`h-4 w-4 rounded-full border flex items-center justify-center transition-all ${
-                    keepSignedIn ? 'border-[#7651E8] bg-[#7651E8]' : 'border-[#D1D5DB] bg-white'
-                  }`}
-                >
-                  {keepSignedIn && <div className="h-1.5 w-1.5 rounded-full bg-white" />}
-                </div>
-                <span className="text-[13px] text-[#4B5563]">Keep me signed in</span>
-              </label>
-
-              <button
-                type="button"
-                onClick={() => {
-                  setTab('reset');
-                  setFormError('');
-                }}
-                className="text-[13px] font-medium text-[#9333EA] hover:text-[#7E22CE] cursor-pointer transition-colors"
-              >
-                Reset password
-              </button>
-            </div>
-          )}
-
-          {formError && (
-            <p role="alert" className="text-xs font-semibold text-[#DC2626] pt-1">
-              {formError}
-            </p>
-          )}
-
-          {/* Solid Dark Sign In Button */}
-          <div className="pt-2">
-            <button
-              type="submit"
-              disabled={submitting}
-              className="w-full h-12 rounded-xl bg-[#111827] text-white font-bold text-[15px] hover:bg-black active:scale-[0.99] disabled:opacity-60 transition-all cursor-pointer flex items-center justify-center shadow-xs"
+    <div className="min-h-dvh bg-[#FAFAFC] flex flex-col items-center justify-center px-4 sm:px-6 py-8 sm:py-12 select-none">
+      <div className="w-full max-w-4xl grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+        {/* Left Side: Cute Owl Mascot Card */}
+        <motion.div
+          initial={{ opacity: 0, x: -24 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.45 }}
+          className="lg:col-span-6 flex flex-col items-center text-center p-6 sm:p-8 rounded-[36px] bg-gradient-to-b from-[#F2ECFF] to-[#EAE0FF] border border-[#E4D8FF] shadow-[0_16px_36px_-18px_rgba(118,81,232,0.18)]"
+        >
+          {/* Owl Mascot Image Stage */}
+          <div className="relative w-64 h-64 sm:w-72 sm:h-72 flex items-center justify-center p-2 mb-4">
+            <motion.div
+              animate={{ y: [0, -8, 0] }}
+              transition={{ repeat: Infinity, duration: 3.5, ease: 'easeInOut' }}
+              className="relative w-full h-full flex items-center justify-center"
             >
-              {submitting
-                ? 'Please wait...'
-                : tab === 'login'
-                ? 'Sign In'
-                : tab === 'register'
-                ? 'Create Account'
-                : 'Send Reset Link'}
-            </button>
-          </div>
-
-          {/* Divider: "Or continue with" */}
-          <div className="relative my-5 flex items-center justify-center">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-[#E5E7EB]" />
-            </div>
-            <span className="relative bg-white px-3 text-[12px] text-[#9CA3AF]">
-              Or continue with
+              <img
+                src={owlDuoMasterImg}
+                alt="Cute StudyDuo Scholar Owl Mascot with book and achievement star"
+                className="w-full h-full object-contain filter drop-shadow-lg"
+              />
+            </motion.div>
+            <span className="absolute -top-1 right-6 flex h-8 w-8 items-center justify-center rounded-full bg-[#FFB800] text-sm shadow-md animate-bounce">
+              ✨
             </span>
           </div>
 
-          {/* Clean Google Button matching screenshot */}
-          <button
-            type="button"
-            onClick={() => void signInWithGoogle()}
-            className="w-full h-12 rounded-xl bg-white border border-[#E5E7EB] hover:bg-[#F9FAFB] active:scale-[0.99] text-[#111827] font-semibold text-[14px] flex items-center justify-center gap-2.5 transition-all cursor-pointer shadow-xs"
-          >
-            <svg className="h-4 w-4" viewBox="0 0 24 24" aria-hidden="true">
-              <path
-                fill="#4285F4"
-                d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.665-5.17 3.665-9.17z"
-              />
-              <path
-                fill="#34A853"
-                d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.15C3.26 21.36 7.34 24 12 24z"
-              />
-              <path
-                fill="#FBBC05"
-                d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.25C.45 8.18 0 9.99 0 12s.45 3.82 1.25 5.42l4.03-3.15z"
-              />
-              <path
-                fill="#EA4335"
-                d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.34 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z"
-              />
-            </svg>
-            <span>Continue with Google</span>
-          </button>
-        </form>
+          <div className="inline-flex items-center gap-2 mb-2">
+            <span className="font-display text-2xl sm:text-3xl font-black tracking-tight text-[#111827]">
+              Study<span className="text-[#7651E8]">Duo</span>
+            </span>
+          </div>
 
-        {/* Footer Link matching screenshot */}
-        <div className="mt-7 text-center">
-          {tab === 'login' ? (
-            <p className="text-[13px] text-[#6B7280]">
-              New to our platform?{' '}
-              <button
-                type="button"
-                onClick={() => {
-                  setTab('register');
-                  setFormError('');
-                }}
-                className="font-semibold text-[#9333EA] hover:text-[#7E22CE] cursor-pointer"
-              >
-                Create Account
-              </button>
+          <h2 className="font-display text-xl sm:text-2xl font-bold text-[#111827] leading-snug max-w-sm">
+            Learning is twice as fun with your study partner!
+          </h2>
+
+          <p className="mt-2 text-xs sm:text-sm text-[#6B7280] leading-relaxed max-w-sm">
+            Track daily quests, earn XP, maintain streaks, and level up together with AI tutor guidance.
+          </p>
+
+          {/* Quick Mobile App Badge */}
+          <div className="mt-6 pt-4 border-t border-[#DDD0FA] w-full flex items-center justify-center gap-3">
+            <a
+              href="/StudyDuo-v1.0.0-release.apk"
+              download
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white/80 hover:bg-white text-xs font-bold text-[#7651E8] border border-[#D5C2FA] shadow-xs hover:shadow-sm transition-all"
+            >
+              <span className="text-sm">📱</span>
+              <span>Download Android APK (v1.0.0)</span>
+            </a>
+          </div>
+        </motion.div>
+
+        {/* Right Side: Clean White Login / Sign Up Card */}
+        <motion.div
+          initial={{ opacity: 0, x: 24 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.45 }}
+          className="lg:col-span-6 w-full max-w-[420px] mx-auto bg-white rounded-[28px] p-7 sm:p-9 shadow-[0_12px_32px_-16px_rgba(0,0,0,0.08)] border border-[#F3F4F6]"
+        >
+          {/* Header matching screenshot */}
+          <div className="mb-7">
+            <h1 className="text-[32px] sm:text-[36px] font-extrabold tracking-tight text-[#111827] leading-none mb-2.5">
+              {tab === 'login' ? 'Welcome' : tab === 'register' ? 'Create Account' : 'Reset Password'}
+            </h1>
+            <p className="text-[14px] text-[#6B7280] leading-snug">
+              {tab === 'login'
+                ? 'Access your account and continue your journey with us'
+                : tab === 'register'
+                ? 'Join StudyDuo to learn, track habits, and level up with a partner'
+                : 'Enter your email to receive a password reset link'}
             </p>
-          ) : (
-            <p className="text-[13px] text-[#6B7280]">
-              Already have an account?{' '}
+          </div>
+
+          {/* Auth Form */}
+          <form onSubmit={handleSubmit} className="space-y-4" noValidate>
+            {tab === 'register' && (
+              <div>
+                <label htmlFor="auth-fullname" className="block text-[13px] font-semibold text-[#374151] mb-1.5">
+                  Full Name
+                </label>
+                <input
+                  id="auth-fullname"
+                  type="text"
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
+                  placeholder="Enter your full name"
+                  className="w-full h-12 rounded-xl bg-[#F3F4F6] px-4 text-[14px] text-[#111827] placeholder-[#9CA3AF] border-none focus:outline-none focus:ring-2 focus:ring-[#7651E8]/40 transition-all"
+                />
+              </div>
+            )}
+
+            <div>
+              <label htmlFor="auth-email" className="block text-[13px] font-semibold text-[#374151] mb-1.5">
+                Email Address
+              </label>
+              <input
+                id="auth-email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="Enter your email address"
+                className="w-full h-12 rounded-xl bg-[#F3F4F6] px-4 text-[14px] text-[#111827] placeholder-[#9CA3AF] border-none focus:outline-none focus:ring-2 focus:ring-[#7651E8]/40 transition-all"
+              />
+            </div>
+
+            {tab !== 'reset' && (
+              <div>
+                <label htmlFor="auth-password" className="block text-[13px] font-semibold text-[#374151] mb-1.5">
+                  Password
+                </label>
+                <div className="relative">
+                  <input
+                    id="auth-password"
+                    type={showPassword ? 'text' : 'password'}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="Enter your password"
+                    className="w-full h-12 rounded-xl bg-[#F3F4F6] pl-4 pr-11 text-[14px] text-[#111827] placeholder-[#9CA3AF] border-none focus:outline-none focus:ring-2 focus:ring-[#7651E8]/40 transition-all"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    aria-label={showPassword ? 'Hide password' : 'Show password'}
+                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[#9CA3AF] hover:text-[#4B5563] p-1 cursor-pointer transition-colors"
+                  >
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* "Keep me signed in" & "Reset password" Row matching screenshot */}
+            {tab === 'login' && (
+              <div className="flex items-center justify-between pt-1">
+                <label className="flex items-center gap-2 cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={keepSignedIn}
+                    onChange={(e) => setKeepSignedIn(e.target.checked)}
+                    className="hidden"
+                  />
+                  <div
+                    className={`h-4 w-4 rounded-full border flex items-center justify-center transition-all ${
+                      keepSignedIn ? 'border-[#7651E8] bg-[#7651E8]' : 'border-[#D1D5DB] bg-white'
+                    }`}
+                  >
+                    {keepSignedIn && <div className="h-1.5 w-1.5 rounded-full bg-white" />}
+                  </div>
+                  <span className="text-[13px] text-[#4B5563]">Keep me signed in</span>
+                </label>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setTab('reset');
+                    setFormError('');
+                  }}
+                  className="text-[13px] font-medium text-[#9333EA] hover:text-[#7E22CE] cursor-pointer transition-colors"
+                >
+                  Reset password
+                </button>
+              </div>
+            )}
+
+            {formError && (
+              <p role="alert" className="text-xs font-semibold text-[#DC2626] pt-1">
+                {formError}
+              </p>
+            )}
+
+            {/* Solid Dark Sign In Button */}
+            <div className="pt-2">
               <button
-                type="button"
-                onClick={() => {
-                  setTab('login');
-                  setFormError('');
-                }}
-                className="font-semibold text-[#9333EA] hover:text-[#7E22CE] cursor-pointer"
+                type="submit"
+                disabled={submitting}
+                className="w-full h-12 rounded-xl bg-[#111827] text-white font-bold text-[15px] hover:bg-black active:scale-[0.99] disabled:opacity-60 transition-all cursor-pointer flex items-center justify-center shadow-xs"
               >
-                Sign In
+                {submitting
+                  ? 'Please wait...'
+                  : tab === 'login'
+                  ? 'Sign In'
+                  : tab === 'register'
+                  ? 'Create Account'
+                  : 'Send Reset Link'}
               </button>
-            </p>
-          )}
-        </div>
-      </motion.div>
+            </div>
+
+            {/* Divider: "Or continue with" */}
+            <div className="relative my-4 flex items-center justify-center">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-[#E5E7EB]" />
+              </div>
+              <span className="relative bg-white px-3 text-[12px] text-[#9CA3AF]">
+                Or continue with
+              </span>
+            </div>
+
+            {/* Clean Google Button matching screenshot */}
+            <button
+              type="button"
+              onClick={() => void signInWithGoogle()}
+              className="w-full h-12 rounded-xl bg-white border border-[#E5E7EB] hover:bg-[#F9FAFB] active:scale-[0.99] text-[#111827] font-semibold text-[14px] flex items-center justify-center gap-2.5 transition-all cursor-pointer shadow-xs"
+            >
+              <svg className="h-4 w-4" viewBox="0 0 24 24" aria-hidden="true">
+                <path
+                  fill="#4285F4"
+                  d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.665-5.17 3.665-9.17z"
+                />
+                <path
+                  fill="#34A853"
+                  d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.15C3.26 21.36 7.34 24 12 24z"
+                />
+                <path
+                  fill="#FBBC05"
+                  d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.25C.45 8.18 0 9.99 0 12s.45 3.82 1.25 5.42l4.03-3.15z"
+                />
+                <path
+                  fill="#EA4335"
+                  d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.34 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z"
+                />
+              </svg>
+              <span>Continue with Google</span>
+            </button>
+          </form>
+
+          {/* Footer Link matching screenshot */}
+          <div className="mt-6 text-center">
+            {tab === 'login' ? (
+              <p className="text-[13px] text-[#6B7280]">
+                New to our platform?{' '}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setTab('register');
+                    setFormError('');
+                  }}
+                  className="font-semibold text-[#9333EA] hover:text-[#7E22CE] cursor-pointer"
+                >
+                  Create Account
+                </button>
+              </p>
+            ) : (
+              <p className="text-[13px] text-[#6B7280]">
+                Already have an account?{' '}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setTab('login');
+                    setFormError('');
+                  }}
+                  className="font-semibold text-[#9333EA] hover:text-[#7E22CE] cursor-pointer"
+                >
+                  Sign In
+                </button>
+              </p>
+            )}
+          </div>
+        </motion.div>
+      </div>
 
       <ToastStack toasts={toasts} onDismiss={dismissToast} />
     </div>

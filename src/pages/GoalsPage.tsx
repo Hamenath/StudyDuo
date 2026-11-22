@@ -327,7 +327,10 @@ export const GoalsPage: React.FC = () => {
     e.preventDefault();
     if (!activeGoal) return;
     const created = await createInvitation(activeGoal.id, inviteeEmail);
-    if (created) setInviteeEmail('');
+    if (created) {
+      setInviteeEmail('');
+      setShowInviteModal(false);
+    }
   };
 
   const copyInviteLink = async (code: string) => {
