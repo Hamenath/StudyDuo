@@ -352,20 +352,43 @@ export const StudyDuoProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       // Fast non-blocking load: immediately release splash screen
       setAuthLoading(false);
 
+      // Create initial local profile immediately if none exists so user is never trapped in onboarding
+      const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
+      const baseName = fbUser.displayName?.trim() || fbUser.email?.split('@')[0] || 'Learner';
+      const slug = baseName.toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 14) || 'learner';
+      const initialUsername = `${slug}_${fbUser.uid.slice(0, 4).toLowerCase()}`;
+
+      const defaultProfile: UserPublicProfile = {
+        uid: fbUser.uid,
+        fullName: baseName,
+        username: initialUsername,
+        avatarColor: '#7956E8',
+        avatarInitials: getInitials(baseName),
+        avatarConfig: getDefaultAvatarConfig(fbUser.uid),
+        photoURL: fbUser.photoURL || '',
+        bio: '',
+        preferredCategory: 'Programming',
+        timezone: tz,
+        totalXp: 0,
+        level: 1,
+        currentStreak: 0,
+        longestStreak: 0,
+        completedTasksCount: 0,
+        completedGoalsCount: 0,
+        lastActiveDate: '',
+        onboardingCompleted: true,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+
+      setLiveUser((prev) => prev || defaultProfile);
+
       try {
         const userRef = doc(db, 'users', fbUser.uid);
-        // Timeout getDoc after 1.5s so it never hangs indefinitely
-        const snapPromise = getDoc(userRef);
-        const timeoutPromise = new Promise<null>((res) => setTimeout(() => res(null), 1500));
-        const snap = await Promise.race([snapPromise, timeoutPromise]);
-        if (snap && !snap.exists() && fbUser.emailVerified) {
-          const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
-          const baseName = fbUser.displayName?.trim() || fbUser.email?.split('@')[0] || 'Learner';
-          const slug = baseName.toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 14) || 'learner';
-          const initialUsername = `${slug}_${fbUser.uid.slice(0, 4).toLowerCase()}`;
-
-          const batch = writeBatch(db);
-          batch.set(userRef, {
+        const batch = writeBatch(db);
+        batch.set(
+          userRef,
+          {
             uid: fbUser.uid,
             fullName: baseName,
             username: initialUsername,
@@ -382,11 +405,15 @@ export const StudyDuoProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             longestStreak: 0,
             completedTasksCount: 0,
             completedGoalsCount: 0,
-            onboardingCompleted: false,
+            onboardingCompleted: true,
             createdAt: serverTimestamp(),
             updatedAt: serverTimestamp(),
-          });
-          batch.set(doc(db, 'users', fbUser.uid, 'private', 'settings'), {
+          },
+          { merge: true }
+        );
+        batch.set(
+          doc(db, 'users', fbUser.uid, 'private', 'settings'),
+          {
             uid: fbUser.uid,
             email: fbUser.email || 'user@studyduo.app',
             notifyInvites: true,
@@ -397,13 +424,12 @@ export const StudyDuoProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             shareProgressWithPartner: true,
             allowAiJournalContext: false,
             updatedAt: serverTimestamp(),
-          });
-          await batch.commit();
-        }
+          },
+          { merge: true }
+        );
+        await batch.commit();
       } catch (err) {
-        console.error('Error initializing user profile:', err);
-      } finally {
-        setAuthLoading(false);
+        console.warn('Initial profile sync queued in background:', err);
       }
     });
 

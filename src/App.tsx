@@ -79,7 +79,7 @@ const StudyDuoRouter: React.FC = () => {
   }
 
   if (mode === 'live') {
-    if (!firebaseUser || needsEmailVerification || !currentUser || needsOnboarding || showWelcomeChoice) {
+    if (!firebaseUser || needsEmailVerification) {
       return <AuthOnboardingFlow />;
     }
   }
