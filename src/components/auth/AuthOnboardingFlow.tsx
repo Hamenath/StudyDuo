@@ -20,6 +20,7 @@ import { extractInviteCode } from '../../lib/inviteShare';
 import { onboardingSchema, inviteCodeSchema } from '../../lib/validation';
 import { MascotImage, StudyDuoOwlMark, owlDuoMasterImg } from '../ui/MascotArtwork';
 import { Button, ToastStack } from '../ui/Primitives';
+import { GlassIconReveal } from '../ui/liquid-glass-logo-reveal';
 
 const AVATAR_COLORS = ['#7651E8', '#2FB368', '#E59A18', '#E05288', '#6B8AFD', '#38A89D'];
 const CATEGORIES = [
@@ -103,12 +104,12 @@ export const AuthScreen: React.FC = () => {
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState('');
 
-  // Handle splash timeout: show paired owl animation then proceed
+  // Handle splash timeout: show liquid glass logo reveal animation then proceed
   useEffect(() => {
     if (introState === 'splash') {
       const timer = setTimeout(() => {
         setIntroState('walkthrough');
-      }, 1600);
+      }, 3400);
       return () => clearTimeout(timer);
     }
   }, [introState]);
@@ -169,58 +170,55 @@ export const AuthScreen: React.FC = () => {
     }
   };
 
-  // 1. LOGO INTRO ANIMATION SCREEN
+  // 1. LIQUID GLASS LOGO INTRO ANIMATION SCREEN
   if (introState === 'splash') {
     return (
-      <div className="fixed inset-0 z-50 bg-[#FBF9FD] flex flex-col items-center justify-center p-6 select-none overflow-hidden">
+      <div className="fixed inset-0 z-50 bg-[#0B0C10] flex flex-col items-center justify-center p-6 select-none overflow-hidden">
+        {/* Full WebGL Liquid Glass Shader Animation */}
+        <div className="relative w-full max-w-md h-[340px] sm:h-[400px] flex items-center justify-center">
+          <GlassIconReveal
+            logo={owlDuoMasterImg}
+            label="StudyDuo Logo"
+            look="dark"
+            background="#0B0C10"
+            plateColor="#161822"
+            logoColor="#7651E8"
+            originalColors={true}
+            tileSize={260}
+            logoScale={0.7}
+            finalScale={0.9}
+            loop={false}
+            speed={1.05}
+            className="w-full h-full rounded-3xl"
+          />
+        </div>
+
+        {/* Animated Brand Typography */}
         <motion.div
-          initial={{ opacity: 0, scale: 0.7, y: 20 }}
-          animate={{ opacity: 1, scale: 1, y: 0 }}
-          transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-          className="flex flex-col items-center text-center"
+          initial={{ opacity: 0, y: 14 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.8, duration: 0.6 }}
+          className="flex flex-col items-center text-center mt-3 z-10"
         >
-          <div className="relative mb-6">
-            <motion.div
-              animate={{ rotate: [0, -4, 4, 0] }}
-              transition={{ repeat: Infinity, duration: 4, ease: 'easeInOut' }}
-              className="h-28 w-28 sm:h-32 sm:w-32 rounded-[32px] bg-gradient-to-tr from-[#7651E8] to-[#9D78FF] p-3 shadow-[0_20px_40px_-15px_rgba(118,81,232,0.4)] flex items-center justify-center"
-            >
-              <img
-                src={owlDuoMasterImg}
-                alt="StudyDuo paired owl mascot logo"
-                className="h-full w-full object-contain filter drop-shadow-sm"
-              />
-            </motion.div>
-            <motion.span
-              initial={{ scale: 0 }}
-              animate={{ scale: 1 }}
-              transition={{ delay: 0.3, type: 'spring' }}
-              className="absolute -top-1.5 -right-1.5 flex h-7 w-7 items-center justify-center rounded-full bg-[#FFB800] text-sm shadow-md"
-            >
-              ✨
-            </motion.span>
+          <div className="flex items-center gap-2 mb-1.5">
+            <span className="font-display text-3xl sm:text-4xl font-black tracking-tight text-white">
+              Study<span className="text-[#9D78FF]">Duo</span>
+            </span>
           </div>
 
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.25, duration: 0.5 }}
-            className="flex items-center gap-2 mb-2"
-          >
-            <span className="font-display text-3xl sm:text-4xl font-black tracking-tight text-[#111827]">
-              Study<span className="text-[#7651E8]">Duo</span>
-            </span>
-          </motion.div>
-
-          <motion.p
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.4, duration: 0.5 }}
-            className="text-xs sm:text-sm font-semibold text-[#8B8A99] tracking-wider uppercase"
-          >
+          <p className="text-xs sm:text-[13px] font-semibold text-[#8B8A99] tracking-widest uppercase">
             Learn &bull; Connect &bull; Level Up Together
-          </motion.p>
+          </p>
         </motion.div>
+
+        {/* Skip button in corner */}
+        <button
+          type="button"
+          onClick={() => setIntroState('walkthrough')}
+          className="absolute bottom-6 right-6 text-xs font-bold text-[#8B8A99] hover:text-white px-4 py-2 rounded-full border border-white/10 hover:border-white/20 transition-all cursor-pointer"
+        >
+          Skip Intro &rarr;
+        </button>
       </div>
     );
   }
