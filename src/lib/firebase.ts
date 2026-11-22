@@ -25,19 +25,8 @@ export const isFirebaseConfigured = Boolean(
 
 const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
 
-// Initialize Firestore. If database ID is configured and distinct from default, initialize with it.
-// Falls back to default instance if custom database ID fails or is omitted.
-export const db = (() => {
-  const customDbId = firebaseConfig.firestoreDatabaseId;
-  if (customDbId && customDbId !== '(default)' && customDbId !== '') {
-    try {
-      return getFirestore(app, customDbId);
-    } catch {
-      return getFirestore(app);
-    }
-  }
-  return getFirestore(app);
-})();
+// Initialize Firestore on standard default database
+export const db = getFirestore(app);
 
 export const auth = getAuth(app);
 export const googleProvider = new GoogleAuthProvider();
