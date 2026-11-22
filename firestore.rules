@@ -40,6 +40,36 @@ service cloud.firestore {
       return val is string && val.size() >= minLen && val.size() <= maxLen;
     }
 
+    function isValidCosmeticId(val) {
+      return val is string && val.size() >= 1 && val.size() <= 32 && val.matches('^[a-z0-9_]+$');
+    }
+
+    function isValidAvatarConfig(cfg) {
+      return cfg is map
+        && cfg.keys().hasAll([
+          'skinTone', 'faceStyle', 'hairStyle', 'hairColor', 'eyeStyle',
+          'outfit', 'outfitColor', 'hat', 'glasses', 'accessory',
+          'background', 'frame'
+        ])
+        && cfg.keys().hasOnly([
+          'skinTone', 'faceStyle', 'hairStyle', 'hairColor', 'eyeStyle',
+          'outfit', 'outfitColor', 'hat', 'glasses', 'accessory',
+          'background', 'frame'
+        ])
+        && isValidCosmeticId(cfg.skinTone)
+        && isValidCosmeticId(cfg.faceStyle)
+        && isValidCosmeticId(cfg.hairStyle)
+        && isValidCosmeticId(cfg.hairColor)
+        && isValidCosmeticId(cfg.eyeStyle)
+        && isValidCosmeticId(cfg.outfit)
+        && isValidCosmeticId(cfg.outfitColor)
+        && isValidCosmeticId(cfg.hat)
+        && isValidCosmeticId(cfg.glasses)
+        && isValidCosmeticId(cfg.accessory)
+        && isValidCosmeticId(cfg.background)
+        && isValidCosmeticId(cfg.frame);
+    }
+
     function getGoal(goalId) {
       return get(/databases/$(database)/documents/goals/$(goalId)).data;
     }
@@ -66,7 +96,7 @@ service cloud.firestore {
           'createdAt', 'updatedAt'
         ])
         && data.keys().hasOnly([
-          'uid', 'fullName', 'username', 'avatarColor', 'avatarInitials',
+          'uid', 'fullName', 'username', 'avatarColor', 'avatarInitials', 'avatarConfig',
           'photoURL', 'bio', 'preferredCategory', 'timezone',
           'totalXp', 'level', 'currentStreak', 'longestStreak',
           'completedTasksCount', 'completedGoalsCount', 'lastActiveDate',
@@ -78,6 +108,7 @@ service cloud.firestore {
         && data.username is string && data.username.size() >= 2 && data.username.size() <= 32 && data.username.matches('^[a-zA-Z0-9_]+$')
         && isOptionalString(data, 'avatarColor', 24)
         && isOptionalString(data, 'avatarInitials', 4)
+        && (!('avatarConfig' in data) || isValidAvatarConfig(data.avatarConfig))
         && isOptionalString(data, 'photoURL', 500)
         && isOptionalString(data, 'bio', 280)
         && isOptionalString(data, 'preferredCategory', 60)
@@ -165,7 +196,7 @@ service cloud.firestore {
         ])
         && data.keys().hasOnly([
           'uid', 'goalId', 'role', 'displayName', 'username',
-          'avatarColor', 'avatarInitials', 'goalXp', 'completedTasksCount',
+          'avatarColor', 'avatarInitials', 'avatarConfig', 'goalXp', 'completedTasksCount',
           'daysCompleted', 'currentStreak', 'longestStreak', 'joinedAt'
         ])
         && data.uid == userId
@@ -175,6 +206,7 @@ service cloud.firestore {
         && isNonEmptyString(data.username, 2, 32)
         && isOptionalString(data, 'avatarColor', 24)
         && isOptionalString(data, 'avatarInitials', 4)
+        && (!('avatarConfig' in data) || isValidAvatarConfig(data.avatarConfig))
         && data.goalXp is number && data.goalXp >= 0 && data.goalXp <= 10000000
         && data.completedTasksCount is number && data.completedTasksCount >= 0
         && data.daysCompleted is number && data.daysCompleted >= 0
@@ -460,9 +492,9 @@ service cloud.firestore {
         && incoming().createdAt == existing().createdAt
         && incoming().updatedAt == request.time
         && (
-          // Action 1: Edit profile & onboarding
+          // Action 1: Edit profile, onboarding, & customizable avatar (strictly self-only, cannot touch XP)
           incoming().diff(existing()).affectedKeys().hasOnly([
-            'fullName', 'username', 'avatarColor', 'avatarInitials', 'photoURL',
+            'fullName', 'username', 'avatarColor', 'avatarInitials', 'avatarConfig', 'photoURL',
             'bio', 'preferredCategory', 'timezone', 'onboardingCompleted', 'updatedAt'
           ]) ||
           // Action 2: Bounded XP / streak progression update (max 200 task + 30 daily bonus)
@@ -572,7 +604,7 @@ service cloud.firestore {
           && incoming().role == existing().role
           && incoming().joinedAt == existing().joinedAt
           && incoming().diff(existing()).affectedKeys().hasOnly([
-            'displayName', 'username', 'avatarColor', 'avatarInitials',
+            'displayName', 'username', 'avatarColor', 'avatarInitials', 'avatarConfig',
             'goalXp', 'completedTasksCount', 'daysCompleted', 'currentStreak', 'longestStreak'
           ])
           && incoming().goalXp >= existing().goalXp

@@ -1,3 +1,7 @@
+import type { AvatarConfig } from '../lib/avatarCatalog';
+
+export type { AvatarConfig };
+
 export type NavPage =
   | 'dashboard'
   | 'goals'
@@ -10,6 +14,7 @@ export type NavPage =
   | 'achievements'
   | 'notifications'
   | 'profile'
+  | 'avatar'
   | 'settings';
 
 export type DifficultyLevel = 'Beginner' | 'Intermediate' | 'Advanced';
@@ -23,6 +28,7 @@ export interface UserPublicProfile {
   username: string;
   avatarColor: string;
   avatarInitials: string;
+  avatarConfig?: AvatarConfig;
   photoURL?: string;
   bio: string;
   preferredCategory: string;
@@ -85,6 +91,7 @@ export interface Participant {
   username: string;
   avatarColor: string;
   avatarInitials: string;
+  avatarConfig?: AvatarConfig;
   goalXp: number;
   completedTasksCount: number;
   daysCompleted: number;
@@ -315,7 +322,7 @@ export interface AiQuizResponse {
 
 export interface DailyCelebrationEvent {
   id: string;
-  kind: 'streak_day_lit' | 'day_completed';
+  kind: 'streak_day_lit' | 'day_completed' | 'level_up';
   dayNumber: number;
   goalTitle: string;
   streakDays: number;
@@ -324,4 +331,7 @@ export interface DailyCelebrationEvent {
   partnerName?: string;
   xpEarned: number;
   bonusXp: number;
+  isLevelUp?: boolean;
+  newLevel?: number;
+  newLevelTitle?: string;
 }

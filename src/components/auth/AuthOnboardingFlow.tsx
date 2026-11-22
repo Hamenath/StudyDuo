@@ -15,7 +15,7 @@ import { onboardingSchema, inviteCodeSchema } from '../../lib/validation';
 import { StudyDuoBrandMark } from '../layout/AppShell';
 import { ToastStack } from '../ui/Primitives';
 
-const AVATAR_COLORS = ['#7956D8', '#38A879', '#4A7BE5', '#E08B3B', '#D95D7A', '#2E9CA6'];
+const AVATAR_COLORS = ['#7956E8', '#38B982', '#45C4D8', '#FFC857', '#A78BFA', '#2E9CA6'];
 const CATEGORIES = [
   'Programming',
   'Data Science & AI',
@@ -86,55 +86,60 @@ export const AuthScreen: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#F8F9FC] flex flex-col justify-center px-5 py-10">
+    <div className="min-h-screen bg-[#F8F7FF] flex flex-col justify-center px-5 py-10">
       <div className="w-full max-w-5xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
         {/* Left Brand Story Column */}
         <div className="lg:col-span-6 space-y-6">
           <div className="flex items-center gap-3">
             <StudyDuoBrandMark size={40} />
-            <span className="text-2xl font-bold tracking-tight text-[#242337]">StudyDuo</span>
+            <div>
+              <span className="text-2xl font-extrabold tracking-tight text-[#25243A] block leading-none">
+                StudyDuo
+              </span>
+              <span className="text-xs font-semibold text-[#7956E8]">Level Up Together.</span>
+            </div>
           </div>
 
           <div className="space-y-3">
-            <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-[#242337] leading-tight [text-wrap:balance]">
-              Learn Together. Grow Together.
+            <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-[#25243A] leading-tight [text-wrap:balance]">
+              StudyDuo — Level Up Together.
             </h1>
-            <p className="text-base text-[#66687A] leading-relaxed max-w-lg">
-              Build a structured learning roadmap, check off daily tasks independently with your study partner, earn XP, keep your duo streak alive, and get AI study coaching tailored to your progress.
+            <p className="text-base text-[#77768C] leading-relaxed max-w-lg">
+              Build a structured learning roadmap, conquer daily quests independently with your study partner, earn XP, unlock avatar cosmetics, and keep your duo streak alive.
             </p>
           </div>
 
           {pendingInviteCodeFromUrl && (
-            <div className="rounded-2xl bg-[#F0EBFF] border border-[#7956D8]/20 p-4">
-              <p className="text-sm font-semibold text-[#242337]">
-                You were invited to join a study goal!
+            <div className="rounded-2xl bg-[#F1EDFF] border border-[#7956E8]/25 p-4">
+              <p className="text-sm font-bold text-[#25243A]">
+                You were invited to join a study duo!
               </p>
-              <p className="mt-1 text-sm text-[#66687A]">
+              <p className="mt-1 text-sm text-[#77768C]">
                 Sign in to accept invitation code{' '}
-                <span className="font-mono font-semibold text-[#7956D8]">{pendingInviteCodeFromUrl}</span>.
+                <span className="font-mono font-bold text-[#7956E8]">{pendingInviteCodeFromUrl}</span>.
               </p>
             </div>
           )}
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
-            <div className="rounded-2xl bg-white border border-[#E9EAF0] p-4">
-              <Target className="h-5 w-5 text-[#7956D8] mb-2" />
-              <p className="text-sm font-semibold text-[#242337]">Shared Roadmaps</p>
-              <p className="mt-1 text-xs text-[#66687A] leading-relaxed">
-                Owner publishes phases & daily checklists; partners track completion independently.
+            <div className="sd-card p-4">
+              <Target className="h-5 w-5 text-[#7956E8] mb-2" />
+              <p className="text-sm font-bold text-[#25243A]">Shared Roadmaps</p>
+              <p className="mt-1 text-xs text-[#77768C] leading-relaxed">
+                Owner publishes milestones & daily quests; partners complete them independently.
               </p>
             </div>
-            <div className="rounded-2xl bg-white border border-[#E9EAF0] p-4">
-              <Users className="h-5 w-5 text-[#38A879] mb-2" />
-              <p className="text-sm font-semibold text-[#242337]">Friendly Competition</p>
-              <p className="mt-1 text-xs text-[#66687A] leading-relaxed">
-                Daily points, tie-aware leaderboards, lifetime XP levels, and duo streaks.
+            <div className="sd-card p-4">
+              <Users className="h-5 w-5 text-[#38B982] mb-2" />
+              <p className="text-sm font-bold text-[#25243A]">Duo Progression</p>
+              <p className="mt-1 text-xs text-[#77768C] leading-relaxed">
+                Daily XP, podium leaderboards, collectible badges, and customizable avatars.
               </p>
             </div>
-            <div className="rounded-2xl bg-white border border-[#E9EAF0] p-4">
-              <Sparkles className="h-5 w-5 text-[#7956D8] mb-2" />
-              <p className="text-sm font-semibold text-[#242337]">AI Study Coach</p>
-              <p className="mt-1 text-xs text-[#66687A] leading-relaxed">
+            <div className="sd-card p-4">
+              <Sparkles className="h-5 w-5 text-[#45C4D8] mb-2" />
+              <p className="text-sm font-bold text-[#25243A]">AI Study Coach</p>
+              <p className="mt-1 text-xs text-[#77768C] leading-relaxed">
                 Draft 60-day study plans, explain concepts, and generate practice quizzes.
               </p>
             </div>
@@ -143,20 +148,20 @@ export const AuthScreen: React.FC = () => {
 
         {/* Right Auth Card */}
         <div className="lg:col-span-6">
-          <div className="w-full max-w-md mx-auto rounded-3xl bg-white border border-[#E9EAF0] p-6 sm:p-8 shadow-sm">
+          <div className="w-full max-w-md mx-auto rounded-3xl bg-white border border-[#EAE7F8] p-6 sm:p-8 shadow-[0_14px_34px_-16px_rgba(37,36,58,0.14)]">
             <div className="space-y-1 mb-6">
-              <h2 className="text-xl font-bold text-[#242337]">
+              <h2 className="text-xl font-bold text-[#25243A]">
                 {tab === 'login'
                   ? 'Welcome back'
                   : tab === 'register'
                   ? 'Create your StudyDuo account'
                   : 'Reset your password'}
               </h2>
-              <p className="text-sm text-[#66687A]">
+              <p className="text-sm text-[#77768C]">
                 {tab === 'login'
-                  ? 'Sign in to sync your goals, checklists, and duo streak in real time.'
+                  ? 'Sign in to sync your quests, avatars, and duo streak in real time.'
                   : tab === 'register'
-                  ? 'Register with Google or email to start studying with a partner.'
+                  ? 'Register with Google or email to start leveling up with a partner.'
                   : 'Enter your email and we will send a password reset link.'}
               </p>
             </div>
@@ -165,7 +170,7 @@ export const AuthScreen: React.FC = () => {
             <button
               type="button"
               onClick={() => void signInWithGoogle()}
-              className="w-full min-h-[48px] flex items-center justify-center gap-3 rounded-xl bg-[#7956D8] px-4 py-3 text-sm font-semibold text-white hover:bg-[#6643C7] transition-colors shadow-sm"
+              className="w-full min-h-[48px] flex items-center justify-center gap-3 rounded-xl sd-gradient-primary px-4 py-3 text-sm font-semibold text-white hover:brightness-105 transition-all shadow-[0_8px_20px_-8px_rgba(121,86,232,0.55)]"
             >
               <svg className="h-4 w-4" viewBox="0 0 24 24" aria-hidden="true">
                 <path
@@ -306,14 +311,14 @@ export const AuthScreen: React.FC = () => {
             </form>
 
             {/* Interactive Preview Access */}
-            <div className="mt-6 pt-5 border-t border-[#E9EAF0] text-center">
-              <p className="text-xs text-[#66687A] mb-2.5">
+            <div className="mt-6 pt-5 border-t border-[#EAE7F8] text-center">
+              <p className="text-xs text-[#77768C] mb-2.5">
                 Want to explore the full duo workflow before signing in?
               </p>
               <button
                 type="button"
                 onClick={enterPreviewMode}
-                className="w-full min-h-[44px] inline-flex items-center justify-center gap-2 rounded-xl bg-[#F0EBFF] px-4 py-2.5 text-sm font-semibold text-[#7956D8] hover:bg-[#E4DAFF] transition-colors"
+                className="w-full min-h-[44px] inline-flex items-center justify-center gap-2 rounded-xl bg-[#F1EDFF] px-4 py-2.5 text-sm font-semibold text-[#7956E8] hover:bg-[#E6DFFF] transition-colors"
               >
                 Explore Interactive Preview
                 <ArrowRight className="h-4 w-4" />
@@ -649,7 +654,7 @@ export const WelcomeChoiceScreen: React.FC = () => {
           <button
             type="button"
             onClick={dismissWelcomeChoice}
-            className="min-h-[44px] px-4 text-sm font-medium text-[#66687A] hover:text-[#242337]"
+            className="min-h-[44px] px-4 text-sm font-medium text-[#77768C] hover:text-[#25243A]"
           >
             Skip for now and go to Dashboard
           </button>
@@ -658,3 +663,23 @@ export const WelcomeChoiceScreen: React.FC = () => {
     </div>
   );
 };
+
+export const AuthOnboardingFlow: React.FC = () => {
+  const { firebaseUser, needsEmailVerification, currentUser, needsOnboarding, showWelcomeChoice } =
+    useStudyDuo();
+
+  if (!firebaseUser) {
+    return <AuthScreen />;
+  }
+  if (needsEmailVerification) {
+    return <EmailVerificationGate />;
+  }
+  if (!currentUser || needsOnboarding) {
+    return <OnboardingFlow />;
+  }
+  if (showWelcomeChoice) {
+    return <WelcomeChoiceScreen />;
+  }
+  return <AuthScreen />;
+};
+

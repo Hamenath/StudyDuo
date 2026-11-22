@@ -1,5 +1,6 @@
 import type {
   AchievementDefinition,
+  AvatarConfig,
   DailyResult,
   Goal,
   JournalEntry,
@@ -591,6 +592,7 @@ export interface LeaderboardEntry {
   username: string;
   avatarColor: string;
   avatarInitials: string;
+  avatarConfig?: AvatarConfig;
   role: 'owner' | 'collaborator';
   points: number;
   dailyPoints: number;
@@ -673,6 +675,7 @@ export function computeLeaderboard(
       username: p.username,
       avatarColor: p.avatarColor,
       avatarInitials: p.avatarInitials,
+      avatarConfig: p.avatarConfig,
       role: p.role,
       points,
       dailyPoints,

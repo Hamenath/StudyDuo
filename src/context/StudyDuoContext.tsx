@@ -44,10 +44,17 @@ import {
   getInitials,
   getLevelInfo,
 } from '../lib/gamification';
+import {
+  canUserModifyAvatar,
+  getDefaultAvatarConfig,
+  sanitizeAvatarConfig,
+  validateAvatarConfigOwnership,
+} from '../lib/avatarCatalog';
 import type {
   AchievementUnlock,
   ActivityItem,
   AiSuggestedPhase,
+  AvatarConfig,
   DailyCelebrationEvent,
   DailyResult,
   DifficultyLevel,
@@ -185,6 +192,7 @@ interface StudyDuoContextValue {
     avatarColor: string;
   }) => Promise<void>;
   updateProfile: (patch: Partial<UserPublicProfile>) => Promise<void>;
+  saveAvatarConfig: (config: AvatarConfig) => Promise<boolean>;
   updatePrivateSettings: (patch: Partial<UserPrivateSettings>) => Promise<void>;
   deleteAccount: () => Promise<void>;
 
@@ -350,8 +358,9 @@ export const StudyDuoProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             uid: fbUser.uid,
             fullName: baseName,
             username: initialUsername,
-            avatarColor: '#7956D8',
+            avatarColor: '#7956E8',
             avatarInitials: getInitials(baseName),
+            avatarConfig: getDefaultAvatarConfig(fbUser.uid),
             photoURL: fbUser.photoURL || '',
             bio: '',
             preferredCategory: 'Programming',
@@ -407,8 +416,9 @@ export const StudyDuoProvider: React.FC<{ children: React.ReactNode }> = ({ chil
               uid: d.uid,
               fullName: d.fullName,
               username: d.username,
-              avatarColor: d.avatarColor || '#7956D8',
+              avatarColor: d.avatarColor || '#7956E8',
               avatarInitials: d.avatarInitials || getInitials(d.fullName || 'SD'),
+              avatarConfig: sanitizeAvatarConfig(d.avatarConfig, d.uid),
               photoURL: d.photoURL || '',
               bio: d.bio || '',
               preferredCategory: d.preferredCategory || 'Programming',
@@ -703,8 +713,9 @@ export const StudyDuoProvider: React.FC<{ children: React.ReactNode }> = ({ chil
                 role: d.role,
                 displayName: d.displayName,
                 username: d.username,
-                avatarColor: d.avatarColor || '#7956D8',
+                avatarColor: d.avatarColor || '#7956E8',
                 avatarInitials: d.avatarInitials || getInitials(d.displayName || 'SD'),
+                avatarConfig: sanitizeAvatarConfig(d.avatarConfig, d.uid),
                 goalXp: Number(d.goalXp || 0),
                 completedTasksCount: Number(d.completedTasksCount || 0),
                 daysCompleted: Number(d.daysCompleted || 0),
@@ -1293,6 +1304,87 @@ export const StudyDuoProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     [currentUser, liveGoals, mode, previewPersona, showToast]
   );
 
+  const saveAvatarConfig = useCallback(
+    async (config: AvatarConfig): Promise<boolean> => {
+      if (!currentUser) return false;
+      const actingUid = mode === 'live' ? firebaseUser?.uid : currentUser.uid;
+      if (!canUserModifyAvatar(actingUid, currentUser.uid)) {
+        showToast('You can only customize your own avatar.', 'error');
+        return false;
+      }
+
+      const validation = validateAvatarConfigOwnership(
+        config,
+        {
+          level: currentUser.level,
+          currentStreak: currentUser.currentStreak,
+          longestStreak: currentUser.longestStreak,
+          completedTasksCount: currentUser.completedTasksCount,
+          unlockedAchievementKeys: achievements.map((a) => a.achievementKey),
+        },
+        currentUser.uid
+      );
+
+      if (!validation.valid) {
+        const firstLocked = validation.lockedItems[0];
+        showToast(
+          `Locked item "${firstLocked.label}": ${firstLocked.requirement}.`,
+          'error'
+        );
+        return false;
+      }
+
+      const cleanConfig = validation.sanitizedConfig;
+
+      if (mode === 'preview') {
+        setPreviewState((prev) => {
+          const nextParticipantsByGoal = { ...prev.participantsByGoal };
+          for (const gId of Object.keys(nextParticipantsByGoal)) {
+            nextParticipantsByGoal[gId] = nextParticipantsByGoal[gId].map((p) =>
+              p.uid === currentUser.uid ? { ...p, avatarConfig: cleanConfig } : p
+            );
+          }
+          return {
+            ...prev,
+            ownerUser:
+              previewPersona === 'owner'
+                ? { ...prev.ownerUser, avatarConfig: cleanConfig, updatedAt: new Date().toISOString() }
+                : prev.ownerUser,
+            partnerUser:
+              previewPersona === 'partner'
+                ? { ...prev.partnerUser, avatarConfig: cleanConfig, updatedAt: new Date().toISOString() }
+                : prev.partnerUser,
+            participantsByGoal: nextParticipantsByGoal,
+          };
+        });
+        showToast('Avatar look saved!');
+        return true;
+      }
+
+      try {
+        await updateDoc(doc(db, 'users', currentUser.uid), {
+          avatarConfig: cleanConfig,
+          updatedAt: serverTimestamp(),
+        });
+        if (liveGoals.length > 0) {
+          await Promise.allSettled(
+            liveGoals.map((g) =>
+              updateDoc(doc(db, 'goals', g.id, 'participants', currentUser.uid), {
+                avatarConfig: cleanConfig,
+              })
+            )
+          );
+        }
+        showToast('Avatar saved across your profile and study duo!');
+        return true;
+      } catch (err) {
+        handleFirestoreError(err, OperationType.UPDATE, `users/${currentUser.uid}`);
+        return false;
+      }
+    },
+    [achievements, currentUser, firebaseUser?.uid, liveGoals, mode, previewPersona, showToast]
+  );
+
   const updatePrivateSettings = useCallback(
     async (patch: Partial<UserPrivateSettings>) => {
       if (!currentUser) return;
@@ -1379,6 +1471,7 @@ export const StudyDuoProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         username: currentUser.username,
         avatarColor: currentUser.avatarColor,
         avatarInitials: currentUser.avatarInitials,
+        avatarConfig: sanitizeAvatarConfig(currentUser.avatarConfig, currentUser.uid),
         goalXp: 0,
         completedTasksCount: 0,
         daysCompleted: 0,
@@ -2200,10 +2293,14 @@ export const StudyDuoProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             };
           });
 
-          if (completesWholeDay || isFirstCompletionToday) {
+          const prevLevelInfo = getLevelInfo(currentUser.totalXp);
+          const nextLevelInfo = getLevelInfo(currentUser.totalXp + totalAwarded);
+          const leveledUp = nextLevelInfo.level > prevLevelInfo.level;
+
+          if (leveledUp || completesWholeDay || isFirstCompletionToday) {
             setCelebrationEvent({
               id: makeId('cel'),
-              kind: completesWholeDay ? 'day_completed' : 'streak_day_lit',
+              kind: leveledUp ? 'level_up' : completesWholeDay ? 'day_completed' : 'streak_day_lit',
               dayNumber: task.dayNumber,
               goalTitle: target.title,
               streakDays: Math.max(1, projectedInd.currentStreak),
@@ -2212,6 +2309,9 @@ export const StudyDuoProvider: React.FC<{ children: React.ReactNode }> = ({ chil
               partnerName: partnerParticipant?.displayName,
               xpEarned: task.xpReward,
               bonusXp,
+              isLevelUp: leveledUp,
+              newLevel: leveledUp ? nextLevelInfo.level : undefined,
+              newLevelTitle: leveledUp ? nextLevelInfo.title : undefined,
             });
           }
 
@@ -2396,10 +2496,14 @@ export const StudyDuoProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           });
         }
 
-        if (completesWholeDay || isFirstCompletionToday) {
+        const prevLevelLive = getLevelInfo(currentUser.totalXp);
+        const nextLevelLive = getLevelInfo(currentUser.totalXp + totalAwarded);
+        const leveledUpLive = nextLevelLive.level > prevLevelLive.level;
+
+        if (leveledUpLive || completesWholeDay || isFirstCompletionToday) {
           setCelebrationEvent({
             id: makeId('cel'),
-            kind: completesWholeDay ? 'day_completed' : 'streak_day_lit',
+            kind: leveledUpLive ? 'level_up' : completesWholeDay ? 'day_completed' : 'streak_day_lit',
             dayNumber: task.dayNumber,
             goalTitle: target.title,
             streakDays: Math.max(1, txResult.currentStreak),
@@ -2408,6 +2512,9 @@ export const StudyDuoProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             partnerName: partnerParticipant?.displayName,
             xpEarned: task.xpReward,
             bonusXp,
+            isLevelUp: leveledUpLive,
+            newLevel: leveledUpLive ? nextLevelLive.level : undefined,
+            newLevelTitle: leveledUpLive ? nextLevelLive.title : undefined,
           });
         }
 
@@ -2605,6 +2712,7 @@ export const StudyDuoProvider: React.FC<{ children: React.ReactNode }> = ({ chil
                       username: currentUser.username,
                       avatarColor: currentUser.avatarColor,
                       avatarInitials: currentUser.avatarInitials,
+                      avatarConfig: sanitizeAvatarConfig(currentUser.avatarConfig, currentUser.uid),
                       goalXp: 0,
                       completedTasksCount: 0,
                       daysCompleted: 0,
@@ -2663,6 +2771,7 @@ export const StudyDuoProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           username: currentUser.username,
           avatarColor: currentUser.avatarColor,
           avatarInitials: currentUser.avatarInitials,
+          avatarConfig: sanitizeAvatarConfig(currentUser.avatarConfig, currentUser.uid),
           goalXp: 0,
           completedTasksCount: 0,
           daysCompleted: 0,
@@ -3102,6 +3211,7 @@ export const StudyDuoProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     logout,
     completeOnboarding,
     updateProfile,
+    saveAvatarConfig,
     updatePrivateSettings,
     deleteAccount,
     createGoal,

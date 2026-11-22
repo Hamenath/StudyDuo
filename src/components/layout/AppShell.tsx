@@ -1,63 +1,76 @@
-import React, { useMemo } from 'react';
+import React, { useEffect, useState } from 'react';
+import { motion } from 'motion/react';
 import {
   Award,
   BarChart3,
   Bell,
   BookOpen,
+  CheckCircle2,
   CheckSquare,
   Flame,
   Home,
-  Hourglass,
+  LogOut,
+  Map as MapIcon,
+  Palette,
   Settings,
   Sparkles,
-  Target,
   Trophy,
   User,
   Users,
-  LogIn,
+  WifiOff,
+  X,
 } from 'lucide-react';
 import { useStudyDuo } from '../../context/StudyDuoContext';
-import { computeDuoStreakStatus } from '../../lib/gamification';
+import { getLevelInfo } from '../../lib/gamification';
 import type { NavPage } from '../../types/studyduo';
-import { Avatar, OfflineIndicator, PWAInstallButton, ToastStack } from '../ui/Primitives';
+import { Avatar } from '../ui/Primitives';
 import { DailyCelebrationOverlay } from '../ui/DailyCelebrationOverlay';
 
-interface NavItemConfig {
+export const StudyDuoBrandMark: React.FC<{ size?: number }> = ({ size = 32 }) => (
+  <span
+    style={{ width: size, height: size }}
+    className="inline-flex shrink-0 items-center justify-center rounded-xl sd-gradient-primary text-white shadow-[0_6px_16px_-4px_rgba(121,86,232,0.5)]"
+    aria-hidden="true"
+  >
+    <Sparkles style={{ width: Math.round(size * 0.52), height: Math.round(size * 0.52) }} />
+  </span>
+);
+
+interface NavItem {
   id: NavPage;
   label: string;
-  shortLabel: string;
-  icon: React.ComponentType<{ className?: string }>;
-  section: 'core' | 'tools' | 'account';
+  icon: React.ReactNode;
 }
 
-const NAV_ITEMS: NavItemConfig[] = [
-  { id: 'dashboard', label: 'Dashboard', shortLabel: 'Home', icon: Home, section: 'core' },
-  { id: 'goals', label: 'My Goals', shortLabel: 'Goals', icon: Target, section: 'core' },
-  { id: 'checklist', label: 'Daily Checklist', shortLabel: 'Checklist', icon: CheckSquare, section: 'core' },
-  { id: 'leaderboard', label: 'Leaderboard', shortLabel: 'Rank', icon: Trophy, section: 'core' },
-  { id: 'groups', label: 'Study Groups', shortLabel: 'Groups', icon: Users, section: 'core' },
-  { id: 'analytics', label: 'Analytics', shortLabel: 'Stats', icon: BarChart3, section: 'tools' },
-  { id: 'journal', label: 'Learning Journal', shortLabel: 'Journal', icon: BookOpen, section: 'tools' },
-  { id: 'ai', label: 'AI Study Assistant', shortLabel: 'AI Tutor', icon: Sparkles, section: 'tools' },
-  { id: 'achievements', label: 'Achievements', shortLabel: 'Badges', icon: Award, section: 'account' },
-  { id: 'notifications', label: 'Notifications', shortLabel: 'Alerts', icon: Bell, section: 'account' },
-  { id: 'profile', label: 'Profile', shortLabel: 'Profile', icon: User, section: 'account' },
-  { id: 'settings', label: 'Settings', shortLabel: 'Settings', icon: Settings, section: 'account' },
+const DESKTOP_MAIN_NAV: NavItem[] = [
+  { id: 'dashboard', label: 'Home', icon: <Home className="h-4 w-4" /> },
+  { id: 'checklist', label: 'Quest Center', icon: <CheckSquare className="h-4 w-4" /> },
+  { id: 'goals', label: 'Roadmap', icon: <MapIcon className="h-4 w-4" /> },
+  { id: 'groups', label: 'Duo', icon: <Users className="h-4 w-4" /> },
+  { id: 'leaderboard', label: 'Leaderboard', icon: <Trophy className="h-4 w-4" /> },
+  { id: 'achievements', label: 'Achievements', icon: <Award className="h-4 w-4" /> },
 ];
 
-const MOBILE_TABS: NavPage[] = ['dashboard', 'goals', 'checklist', 'leaderboard', 'profile'];
+const DESKTOP_STUDIO_NAV: NavItem[] = [
+  { id: 'avatar', label: 'Avatar Studio', icon: <Palette className="h-4 w-4" /> },
+  { id: 'ai', label: 'AI Coach', icon: <Sparkles className="h-4 w-4" /> },
+  { id: 'journal', label: 'Journal', icon: <BookOpen className="h-4 w-4" /> },
+  { id: 'analytics', label: 'Analytics', icon: <BarChart3 className="h-4 w-4" /> },
+];
 
-export const StudyDuoBrandMark: React.FC<{ size?: number }> = ({ size = 28 }) => (
-  <svg width={size} height={size} viewBox="0 0 512 512" fill="none" aria-hidden="true" className="shrink-0">
-    <rect width="512" height="512" rx="120" fill="#7956D8" />
-    <rect x="136" y="138" width="118" height="236" rx="28" fill="#FFFFFF" />
-    <rect x="258" y="138" width="118" height="236" rx="28" fill="#F0EBFF" />
-    <circle cx="195" cy="216" r="20" fill="#7956D8" />
-    <circle cx="317" cy="216" r="20" fill="#38A879" />
-    <path d="M174 288L192 306L218 274" stroke="#7956D8" strokeWidth="18" strokeLinecap="round" strokeLinejoin="round" />
-    <path d="M296 288L314 306L340 274" stroke="#38A879" strokeWidth="18" strokeLinecap="round" strokeLinejoin="round" />
-  </svg>
-);
+const DESKTOP_ACCOUNT_NAV: NavItem[] = [
+  { id: 'notifications', label: 'Notifications', icon: <Bell className="h-4 w-4" /> },
+  { id: 'profile', label: 'Profile', icon: <User className="h-4 w-4" /> },
+  { id: 'settings', label: 'Settings', icon: <Settings className="h-4 w-4" /> },
+];
+
+const MOBILE_TABS: NavItem[] = [
+  { id: 'dashboard', label: 'Home', icon: <Home className="h-5 w-5" /> },
+  { id: 'goals', label: 'Roadmap', icon: <MapIcon className="h-5 w-5" /> },
+  { id: 'groups', label: 'Duo', icon: <Users className="h-5 w-5" /> },
+  { id: 'leaderboard', label: 'Ranks', icon: <Trophy className="h-5 w-5" /> },
+  { id: 'profile', label: 'Profile', icon: <User className="h-5 w-5" /> },
+];
 
 export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const {
@@ -66,222 +79,179 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) 
     switchPreviewPersona,
     exitPreviewMode,
     currentUser,
-    activeGoal,
-    participants,
-    completions,
     activePage,
     setActivePage,
     unreadNotificationCount,
-    celebrationEvent,
-    dismissCelebration,
+    logout,
     toasts,
     dismissToast,
   } = useStudyDuo();
 
-  const duoStreak = useMemo(() => {
-    if (!currentUser) return null;
-    const partner = participants.find((p) => p.uid !== currentUser.uid);
-    return computeDuoStreakStatus({
-      participantIds: activeGoal?.participantIds || [currentUser.uid],
-      currentUserId: currentUser.uid,
-      partnerName: partner?.displayName,
-      completions,
-      restDays: activeGoal?.restDays || [],
-      timezone: activeGoal?.timezone || currentUser.timezone || 'UTC',
-      groupStreak: activeGoal?.groupStreak || 0,
-    });
-  }, [activeGoal, completions, currentUser, participants]);
+  const [isOffline, setIsOffline] = useState<boolean>(
+    typeof navigator !== 'undefined' ? !navigator.onLine : false
+  );
 
-  const streakCount = currentUser?.currentStreak || 0;
-  const streakNeedsAction =
-    duoStreak?.state === 'waiting_on_you' || duoStreak?.state === 'at_risk';
-  const streakIsLit = Boolean(duoStreak?.myStudiedToday);
+  useEffect(() => {
+    const goOffline = () => setIsOffline(true);
+    const goOnline = () => setIsOffline(false);
+    window.addEventListener('offline', goOffline);
+    window.addEventListener('online', goOnline);
+    return () => {
+      window.removeEventListener('offline', goOffline);
+      window.removeEventListener('online', goOnline);
+    };
+  }, []);
 
-  const renderStreakPill = (compact = false) => {
-    if (!currentUser) return null;
-    const statusDesc = duoStreak?.headline || `${streakCount} day study streak`;
+  const levelInfo = getLevelInfo(currentUser?.totalXp || 0);
+
+  const renderDesktopButton = (item: NavItem) => {
+    const active = activePage === item.id;
     return (
       <button
+        key={item.id}
         type="button"
-        onClick={() => setActivePage(streakNeedsAction ? 'checklist' : 'dashboard')}
-        title={`${streakCount}-day study streak · ${statusDesc}`}
-        aria-label={`Study streak: ${streakCount} days. ${statusDesc}`}
-        className={`inline-flex items-center gap-1 rounded-xl border px-2.5 transition-colors shrink-0 ${
-          compact ? 'min-h-[36px] py-1' : 'min-h-[34px] py-1'
-        } ${
-          streakIsLit
-            ? 'bg-[#FFF6E5] border-[#F3BD59]/55 text-[#9A6A0A] hover:bg-[#FFEDC8]'
-            : streakNeedsAction
-            ? 'bg-[#FFF1EC] border-[#E87A4E]/45 text-[#B44A22] hover:bg-[#FFE6DC]'
-            : 'bg-[#F8F9FC] border-[#E9EAF0] text-[#66687A] hover:bg-[#F0EBFF]/60 hover:text-[#242337]'
+        onClick={() => setActivePage(item.id)}
+        className={`relative flex w-full items-center justify-between gap-2.5 rounded-xl px-3 py-2.5 text-sm font-semibold transition-colors cursor-pointer ${
+          active
+            ? 'text-[#7956E8]'
+            : 'text-[#66647B] hover:bg-[#F6F4FF] hover:text-[#25243A]'
         }`}
       >
-        <Flame
-          className={`h-4 w-4 shrink-0 ${
-            streakIsLit
-              ? 'text-[#E58A2B] fill-[#F3BD59]'
-              : streakNeedsAction
-              ? 'text-[#D95B2B]'
-              : 'text-[#88899B]'
-          }`}
-        />
-        <span className="font-mono text-xs font-bold tabular-nums leading-none">
-          {streakCount}
-          {!compact ? 'd' : ''}
+        {active && (
+          <motion.span
+            layoutId="desktopSidebarActive"
+            className="absolute inset-0 rounded-xl bg-[#F1EDFF]"
+            transition={{ type: 'spring', stiffness: 400, damping: 32 }}
+          />
+        )}
+        <span className="relative z-10 flex items-center gap-2.5">
+          <span className={active ? 'text-[#7956E8]' : 'text-[#8987A0]'}>{item.icon}</span>
+          <span>{item.label}</span>
         </span>
-        {streakNeedsAction && (
-          <Hourglass className="h-3 w-3 text-[#D95B2B] shrink-0" aria-hidden="true" />
+        {item.id === 'notifications' && unreadNotificationCount > 0 && (
+          <span className="relative z-10 flex h-5 min-w-5 items-center justify-center rounded-full bg-[#7956E8] px-1.5 text-[10px] font-bold text-white tabular-nums">
+            {unreadNotificationCount}
+          </span>
         )}
       </button>
     );
   };
 
-  const renderNavSection = (title: string, section: NavItemConfig['section']) => (
-    <div className="space-y-1">
-      <p className="px-3 text-xs font-medium text-[#88899B]">{title}</p>
-      {NAV_ITEMS.filter((item) => item.section === section).map((item) => {
-        const Icon = item.icon;
-        const isActive = activePage === item.id;
-        return (
-          <button
-            key={item.id}
-            type="button"
-            onClick={() => setActivePage(item.id)}
-            aria-current={isActive ? 'page' : undefined}
-            className={`w-full min-h-[44px] flex items-center justify-between gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors whitespace-nowrap ${
-              isActive
-                ? 'bg-[#F0EBFF] text-[#7956D8] font-semibold'
-                : 'text-[#66687A] hover:bg-[#F8F9FC] hover:text-[#242337]'
-            }`}
-          >
-            <span className="flex items-center gap-3 min-w-0">
-              <Icon className={`h-[18px] w-[18px] shrink-0 ${isActive ? 'text-[#7956D8]' : 'text-[#88899B]'}`} />
-              <span className="truncate">{item.label}</span>
-            </span>
-            {item.id === 'notifications' && unreadNotificationCount > 0 && (
-              <span className="font-mono text-xs font-semibold text-[#7956D8] tabular-nums">
-                {unreadNotificationCount}
-              </span>
-            )}
-          </button>
-        );
-      })}
-    </div>
-  );
-
   return (
-    <div className="min-h-screen bg-[#F8F9FC] text-[#242337] flex flex-col lg:flex-row">
-      {/* Desktop Left Sidebar */}
-      <aside className="hidden lg:flex lg:w-[260px] lg:shrink-0 lg:flex-col lg:fixed lg:inset-y-0 bg-white border-r border-[#E9EAF0] z-30">
-        <div className="h-16 px-4 flex items-center justify-between gap-2 border-b border-[#E9EAF0]">
+    <div className="min-h-dvh bg-[#F8F7FF] text-[#25243A] flex">
+      {/* Desktop Sidebar */}
+      <aside className="hidden lg:flex lg:w-64 lg:flex-col lg:fixed lg:inset-y-0 lg:left-0 border-r border-[#EAE7F8] bg-white z-30">
+        {/* Brand */}
+        <div className="flex items-center gap-3 px-5 py-5 border-b border-[#F2EFFA]">
           <button
             type="button"
             onClick={() => setActivePage('dashboard')}
-            className="flex items-center gap-2.5 min-w-0 text-left"
+            className="flex items-center gap-3 text-left cursor-pointer group"
           >
-            <StudyDuoBrandMark size={30} />
-            <span className="text-lg font-bold tracking-tight text-[#242337] whitespace-nowrap">
-              StudyDuo
-            </span>
+            <div className="flex h-10 w-10 items-center justify-center rounded-2xl sd-gradient-primary text-white shadow-[0_4px_14px_rgba(121,86,232,0.32)] group-hover:scale-105 transition-transform">
+              <Sparkles className="h-5 w-5" />
+            </div>
+            <div>
+              <div className="text-base font-extrabold tracking-tight text-[#25243A]">StudyDuo</div>
+              <div className="text-[11px] font-medium text-[#77768C]">Level Up Together.</div>
+            </div>
           </button>
-          {renderStreakPill(false)}
         </div>
 
-        <nav aria-label="Main navigation" className="flex-1 overflow-y-auto px-3 py-4 space-y-5">
-          {renderNavSection('Study Workspace', 'core')}
-          {renderNavSection('Insights & AI', 'tools')}
-          {renderNavSection('Account', 'account')}
+        {/* Navigation Links */}
+        <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-5" aria-label="Primary navigation">
+          <div className="space-y-1">
+            <p className="px-3 text-[10px] font-bold uppercase tracking-wider text-[#9A98B0]">
+              Adventure
+            </p>
+            {DESKTOP_MAIN_NAV.map(renderDesktopButton)}
+          </div>
+
+          <div className="space-y-1">
+            <p className="px-3 text-[10px] font-bold uppercase tracking-wider text-[#9A98B0]">
+              Studio & Tools
+            </p>
+            {DESKTOP_STUDIO_NAV.map(renderDesktopButton)}
+          </div>
+
+          <div className="space-y-1">
+            <p className="px-3 text-[10px] font-bold uppercase tracking-wider text-[#9A98B0]">
+              Account
+            </p>
+            {DESKTOP_ACCOUNT_NAV.map(renderDesktopButton)}
+          </div>
         </nav>
 
-        <div className="p-3 border-t border-[#E9EAF0] space-y-2.5">
-          <PWAInstallButton />
-          {currentUser && (
+        {/* Player Identity Footer */}
+        {currentUser && (
+          <div className="border-t border-[#F2EFFA] p-3.5 space-y-2.5 bg-[#FCFBFF]">
             <button
               type="button"
-              onClick={() => setActivePage('profile')}
-              className="w-full flex items-center gap-3 rounded-xl p-2 hover:bg-[#F8F9FC] transition-colors text-left"
+              onClick={() => setActivePage('avatar')}
+              className="flex w-full items-center gap-3 rounded-2xl border border-[#EAE7F8] bg-white p-2.5 text-left hover:border-[#CFC6F7] transition-colors cursor-pointer"
+              title="Open Avatar Studio"
             >
               <Avatar
-                name={currentUser.fullName}
                 initials={currentUser.avatarInitials}
                 color={currentUser.avatarColor}
-                photoURL={currentUser.photoURL}
+                avatarConfig={currentUser.avatarConfig}
+                seedKey={currentUser.uid}
                 size="sm"
               />
               <div className="min-w-0 flex-1">
-                <p className="text-sm font-semibold text-[#242337] truncate">{currentUser.fullName}</p>
-                <p className="text-xs text-[#66687A] font-mono tabular-nums truncate">
-                  Lvl {currentUser.level} · {currentUser.totalXp} XP
+                <p className="truncate text-xs font-bold text-[#25243A]">{currentUser.fullName}</p>
+                <p className="text-[11px] font-medium text-[#7956E8] tabular-nums">
+                  Lv.{levelInfo.level} · {currentUser.totalXp.toLocaleString()} XP
                 </p>
               </div>
+              <span className="flex items-center gap-0.5 rounded-lg bg-[#FFF7E0] px-1.5 py-1 text-[11px] font-bold text-[#A56D06] tabular-nums">
+                <Flame className="h-3 w-3 text-[#FFC857] fill-[#FFC857]" />
+                {currentUser.currentStreak}
+              </span>
             </button>
-          )}
-        </div>
-      </aside>
 
-      {/* Main Column */}
-      <div className="flex-1 flex flex-col min-w-0 lg:pl-[260px]">
-        {/* Mobile Compact Top Header (56px height, optimized down to 320px) */}
-        <header className="lg:hidden sticky top-0 z-30 h-14 bg-white/95 backdrop-blur-md border-b border-[#E9EAF0] px-3.5 sm:px-5 flex items-center justify-between gap-2">
-          <button
-            type="button"
-            onClick={() => setActivePage('dashboard')}
-            className="flex items-center gap-2 min-h-[44px] whitespace-nowrap shrink-0"
-          >
-            <StudyDuoBrandMark size={26} />
-            <span className="text-base font-bold tracking-tight text-[#242337]">StudyDuo</span>
-          </button>
-
-          <div className="flex items-center gap-1 shrink-0">
-            {renderStreakPill(true)}
             <button
               type="button"
-              onClick={() => setActivePage('ai')}
-              aria-label="Open AI Study Assistant"
-              className={`min-h-[44px] min-w-[40px] sm:min-w-[44px] flex items-center justify-center rounded-xl transition-colors ${
-                activePage === 'ai' ? 'bg-[#F0EBFF] text-[#7956D8]' : 'text-[#66687A] hover:bg-[#F8F9FC]'
-              }`}
+              onClick={mode === 'preview' ? exitPreviewMode : logout}
+              className="flex w-full items-center justify-center gap-1.5 rounded-xl py-2 text-xs font-semibold text-[#77768C] hover:bg-[#F3F0FF] hover:text-[#25243A] transition-colors cursor-pointer"
             >
-              <Sparkles className="h-5 w-5" />
-            </button>
-            <button
-              type="button"
-              onClick={() => setActivePage('notifications')}
-              aria-label={`Notifications (${unreadNotificationCount} unread)`}
-              className={`relative min-h-[44px] min-w-[40px] sm:min-w-[44px] flex items-center justify-center rounded-xl transition-colors ${
-                activePage === 'notifications'
-                  ? 'bg-[#F0EBFF] text-[#7956D8]'
-                  : 'text-[#66687A] hover:bg-[#F8F9FC]'
-              }`}
-            >
-              <Bell className="h-5 w-5" />
-              {unreadNotificationCount > 0 && (
-                <span className="absolute top-2 right-1.5 sm:right-2 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-[#7956D8] px-1 text-[10px] font-bold text-white tabular-nums">
-                  {unreadNotificationCount}
-                </span>
-              )}
+              <LogOut className="h-3.5 w-3.5" />
+              {mode === 'preview' ? 'Sign In with Real Account' : 'Sign Out'}
             </button>
           </div>
-        </header>
+        )}
+      </aside>
 
-        {/* Interactive Preview Mode Switcher Strip (non-sticky so it doesn't eat viewport) */}
+      {/* Main Content Area */}
+      <div className="flex-1 lg:pl-64 flex flex-col min-w-0">
+        {/* Offline Warning Banner */}
+        {isOffline && (
+          <div className="bg-[#FFF7E0] border-b border-[#FFE099] px-4 py-2 text-xs font-semibold text-[#8A5A00] flex items-center justify-center gap-2">
+            <WifiOff className="h-3.5 w-3.5 shrink-0" />
+            <span>You are offline. Changes will resume syncing once your connection returns.</span>
+          </div>
+        )}
+
+        {/* Interactive Preview Mode Banner */}
         {mode === 'preview' && (
-          <div className="bg-[#F0EBFF]/75 border-b border-[#7956D8]/15 px-3.5 sm:px-5 lg:px-8 py-2.5">
-            <div className="max-w-6xl mx-auto flex flex-wrap items-center justify-between gap-2.5">
-              <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-[#242337]">
-                <span className="font-semibold text-[#7956D8]">Interactive Preview</span>
-                <span aria-hidden="true" className="text-[#88899B] hidden sm:inline">·</span>
-                <span className="text-[#66687A] hidden sm:inline">Test duo roles live or sign in to save to Firestore</span>
+          <div className="bg-[#F3EFFF] border-b border-[#E3DCFA] px-3 sm:px-4 py-2 text-xs text-[#25243A]">
+            <div className="mx-auto max-w-6xl flex flex-wrap items-center justify-between gap-2">
+              <div className="flex items-center gap-2 min-w-0">
+                <span className="h-2 w-2 rounded-full bg-[#7956E8] shrink-0" />
+                <span className="font-bold text-[#7956E8]">Preview Duo</span>
+                <span className="hidden md:inline text-[#6E6C85]">
+                  Switch players to test independent quests, custom avatars, & owner/partner permissions.
+                </span>
               </div>
-              <div className="flex items-center gap-2 flex-wrap">
-                <div className="inline-flex rounded-xl bg-white p-0.5 border border-[#E9EAF0]" role="group" aria-label="Switch preview persona">
+              <div className="flex items-center gap-1.5">
+                <div className="inline-flex rounded-xl bg-white p-0.5 border border-[#DFD8F8]">
                   <button
                     type="button"
                     onClick={() => switchPreviewPersona('owner')}
-                    className={`px-2.5 sm:px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors whitespace-nowrap ${
+                    className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-colors cursor-pointer ${
                       previewPersona === 'owner'
-                        ? 'bg-[#7956D8] text-white'
-                        : 'text-[#66687A] hover:text-[#242337]'
+                        ? 'bg-[#7956E8] text-white'
+                        : 'text-[#6E6C85] hover:text-[#25243A]'
                     }`}
                   >
                     Alex (Owner)
@@ -289,10 +259,10 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) 
                   <button
                     type="button"
                     onClick={() => switchPreviewPersona('partner')}
-                    className={`px-2.5 sm:px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors whitespace-nowrap ${
+                    className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-colors cursor-pointer ${
                       previewPersona === 'partner'
-                        ? 'bg-[#38A879] text-white'
-                        : 'text-[#66687A] hover:text-[#242337]'
+                        ? 'bg-[#38B982] text-white'
+                        : 'text-[#6E6C85] hover:text-[#25243A]'
                     }`}
                   >
                     Maya (Partner)
@@ -301,9 +271,8 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) 
                 <button
                   type="button"
                   onClick={exitPreviewMode}
-                  className="inline-flex items-center gap-1.5 rounded-xl bg-white border border-[#E9EAF0] px-2.5 sm:px-3 py-1.5 text-xs font-semibold text-[#242337] hover:bg-[#F8F9FC] transition-colors whitespace-nowrap"
+                  className="rounded-xl bg-white px-2.5 py-1 text-[11px] font-bold text-[#7956E8] border border-[#DDD4FA] hover:bg-[#F7F5FF] cursor-pointer"
                 >
-                  <LogIn className="h-3.5 w-3.5 text-[#7956D8]" />
                   Sign In
                 </button>
               </div>
@@ -311,50 +280,153 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) 
           </div>
         )}
 
-        {/* Main Scrollable Content */}
-        <main className="flex-1 w-full max-w-6xl mx-auto px-3.5 sm:px-6 lg:px-8 pt-5 sm:pt-6 pb-24 lg:pb-12">
-          {children}
+        {/* Mobile Compact Top Header (50px) */}
+        <header className="lg:hidden sticky top-0 z-20 flex items-center justify-between gap-2 border-b border-[#EAE7F8] bg-white/95 px-3.5 h-[50px]">
+          <button
+            type="button"
+            onClick={() => setActivePage('dashboard')}
+            className="flex items-center gap-2 cursor-pointer min-w-0"
+          >
+            <div className="flex h-7 w-7 items-center justify-center rounded-lg sd-gradient-primary text-white shadow-sm shrink-0">
+              <Sparkles className="h-3.5 w-3.5" />
+            </div>
+            <span className="text-sm font-extrabold tracking-tight text-[#25243A] truncate">
+              StudyDuo
+            </span>
+          </button>
+
+          <div className="flex items-center gap-1.5 shrink-0">
+            {currentUser && (
+              <button
+                type="button"
+                onClick={() => setActivePage('checklist')}
+                className="flex items-center gap-1 rounded-xl bg-[#FFF7E0] border border-[#FFE39E] px-2 py-1 text-xs font-bold text-[#9A6406] cursor-pointer tabular-nums min-h-[34px]"
+                title="Today's Quests & Streak"
+              >
+                <Flame className="h-3.5 w-3.5 text-[#F59E0B] fill-[#FFC857]" />
+                <span>{currentUser.currentStreak}d</span>
+              </button>
+            )}
+
+            <button
+              type="button"
+              onClick={() => setActivePage('checklist')}
+              className={`flex h-8 w-8 items-center justify-center rounded-xl transition-colors cursor-pointer ${
+                activePage === 'checklist'
+                  ? 'bg-[#7956E8] text-white'
+                  : 'bg-[#F4F1FE] text-[#7956E8]'
+              }`}
+              aria-label="Open Quest Center"
+              title="Quest Center"
+            >
+              <CheckSquare className="h-4 w-4" />
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setActivePage('notifications')}
+              className="relative flex h-8 w-8 items-center justify-center rounded-xl bg-[#F6F5FB] text-[#66647B] hover:text-[#25243A] cursor-pointer"
+              aria-label="Notifications"
+            >
+              <Bell className="h-4 w-4" />
+              {unreadNotificationCount > 0 && (
+                <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-[#7956E8] ring-2 ring-white" />
+              )}
+            </button>
+          </div>
+        </header>
+
+        {/* Page Container with Smooth Transition */}
+        <main className="flex-1 w-full max-w-6xl mx-auto px-3.5 sm:px-6 py-4 sm:py-6 pb-28 lg:pb-10 min-w-0">
+          <motion.div
+            key={activePage}
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
+          >
+            {children}
+          </motion.div>
         </main>
       </div>
 
-      {/* Mobile Fixed 5-Tab Bottom Navigation Bar */}
+      {/* Floating Rounded Mobile Bottom Navigation */}
       <nav
-        aria-label="Mobile bottom navigation"
-        className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-[#E9EAF0] pb-safe"
+        aria-label="Mobile navigation"
+        className="lg:hidden fixed inset-x-3 bottom-2 z-30 pb-safe pointer-events-none"
       >
-        <div className="grid grid-cols-5 h-16 max-w-lg mx-auto">
-          {MOBILE_TABS.map((tabId) => {
-            const item = NAV_ITEMS.find((n) => n.id === tabId)!;
-            const Icon = item.icon;
-            const isActive =
-              activePage === tabId ||
-              (tabId === 'profile' &&
-                ['settings', 'achievements', 'notifications', 'journal', 'analytics', 'groups', 'ai'].includes(
-                  activePage
-                ));
-            return (
-              <button
-                key={tabId}
-                type="button"
-                onClick={() => setActivePage(tabId)}
-                aria-current={activePage === tabId ? 'page' : undefined}
-                className={`min-h-[44px] flex flex-col items-center justify-center gap-1 transition-colors ${
-                  isActive ? 'text-[#7956D8]' : 'text-[#88899B]'
-                }`}
-              >
-                <Icon className="h-5 w-5" />
-                <span className={`text-[10px] sm:text-[11px] leading-none whitespace-nowrap ${isActive ? 'font-semibold' : 'font-medium'}`}>
-                  {item.shortLabel}
-                </span>
-              </button>
-            );
-          })}
+        <div className="pointer-events-auto mx-auto max-w-md rounded-2xl border border-[#E5E0F8] bg-white/95 px-1 py-1 shadow-[0_12px_32px_rgba(121,86,232,0.16),0_2px_8px_rgba(37,36,58,0.06)]">
+          <div className="grid grid-cols-5 gap-0.5">
+            {MOBILE_TABS.map((tab) => {
+              const active =
+                activePage === tab.id ||
+                (tab.id === 'profile' && (activePage === 'avatar' || activePage === 'settings' || activePage === 'achievements')) ||
+                (tab.id === 'dashboard' && activePage === 'checklist');
+              return (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => setActivePage(tab.id)}
+                  className={`relative flex flex-col items-center justify-center gap-0.5 rounded-xl py-1 min-h-[44px] transition-colors cursor-pointer ${
+                    active ? 'text-[#7956E8]' : 'text-[#83819A] hover:text-[#25243A]'
+                  }`}
+                  aria-current={active ? 'page' : undefined}
+                >
+                  {active && (
+                    <motion.span
+                      layoutId="mobileFloatingNavActive"
+                      className="absolute inset-0.5 rounded-xl bg-[#F1EDFF]"
+                      transition={{ type: 'spring', stiffness: 420, damping: 32 }}
+                    />
+                  )}
+                  <span className="relative z-10">{tab.icon}</span>
+                  <span className="relative z-10 text-[10px] font-bold leading-none">
+                    {tab.label}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
         </div>
       </nav>
 
-      <DailyCelebrationOverlay event={celebrationEvent} onDismiss={dismissCelebration} />
-      <OfflineIndicator />
-      <ToastStack toasts={toasts} onDismiss={dismissToast} />
+      {/* Celebration Modal Overlay */}
+      <DailyCelebrationOverlay />
+
+      {/* Toast Stack (positioned bottom-right on desktop, above floating nav on mobile) */}
+      <div
+        aria-live="polite"
+        className="fixed bottom-[76px] right-3 left-3 sm:left-auto sm:right-5 lg:bottom-6 lg:right-6 z-50 flex flex-col gap-2 sm:max-w-xs pointer-events-none"
+      >
+        {toasts.map((t) => (
+          <motion.div
+            key={t.id}
+            initial={{ opacity: 0, y: 8, scale: 0.96 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 6 }}
+            transition={{ duration: 0.18 }}
+            className={`pointer-events-auto flex items-start gap-2.5 rounded-2xl border px-3.5 py-3 shadow-lg text-xs font-semibold ${
+              t.tone === 'error'
+                ? 'bg-[#FFF3F4] border-[#F6C8CD] text-[#A82C38]'
+                : t.tone === 'info'
+                ? 'bg-[#F3F0FF] border-[#DBD2FA] text-[#5B3CC4]'
+                : 'bg-white border-[#EAE7F8] text-[#25243A]'
+            }`}
+          >
+            {t.tone === 'success' && (
+              <CheckCircle2 className="h-4 w-4 text-[#38B982] shrink-0 mt-0.5" />
+            )}
+            <span className="flex-1 leading-snug">{t.message}</span>
+            <button
+              type="button"
+              onClick={() => dismissToast(t.id)}
+              className="text-[#8E8CA6] hover:text-[#25243A] cursor-pointer"
+              aria-label="Dismiss notification"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+          </motion.div>
+        ))}
+      </div>
     </div>
   );
 };
