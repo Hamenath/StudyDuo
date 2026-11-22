@@ -349,10 +349,16 @@ export const StudyDuoProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         setMode('live');
       }
 
+      // Fast non-blocking load: immediately release splash screen
+      setAuthLoading(false);
+
       try {
         const userRef = doc(db, 'users', fbUser.uid);
-        const snap = await getDoc(userRef);
-        if (!snap.exists() && fbUser.emailVerified) {
+        // Timeout getDoc after 1.5s so it never hangs indefinitely
+        const snapPromise = getDoc(userRef);
+        const timeoutPromise = new Promise<null>((res) => setTimeout(() => res(null), 1500));
+        const snap = await Promise.race([snapPromise, timeoutPromise]);
+        if (snap && !snap.exists() && fbUser.emailVerified) {
           const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
           const baseName = fbUser.displayName?.trim() || fbUser.email?.split('@')[0] || 'Learner';
           const slug = baseName.toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 14) || 'learner';

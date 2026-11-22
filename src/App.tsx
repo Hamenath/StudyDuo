@@ -1,4 +1,4 @@
-import React, { Suspense, lazy } from 'react';
+import React, { Suspense, lazy, useEffect, useState } from 'react';
 import { StudyDuoProvider, useStudyDuo } from './context/StudyDuoContext';
 import { AuthOnboardingFlow } from './components/auth/AuthOnboardingFlow';
 import { AppShell } from './components/layout/AppShell';
@@ -52,7 +52,19 @@ const StudyDuoRouter: React.FC = () => {
     activePage,
   } = useStudyDuo();
 
-  if (authLoading && mode === 'live') {
+  const [showLoading, setShowLoading] = useState(authLoading && mode === 'live');
+
+  useEffect(() => {
+    if (!authLoading || mode !== 'live') {
+      setShowLoading(false);
+      return;
+    }
+    // Hard cap loading screen to max 800ms so it never hangs
+    const t = setTimeout(() => setShowLoading(false), 800);
+    return () => clearTimeout(t);
+  }, [authLoading, mode]);
+
+  if (showLoading && mode === 'live') {
     return (
       <div className="min-h-dvh bg-[#F8F5FF] flex items-center justify-center p-6">
         <div className="w-full max-w-xs rounded-[28px] bg-white border border-[#F0EDF5] p-8 text-center shadow-[0_10px_28px_-12px_rgba(118,81,232,0.12)]">
