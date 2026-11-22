@@ -6,7 +6,10 @@
 
 <p align="center">
   <strong>Study together, stay consistent, level up together.</strong><br/>
-  An AI-powered, gamified study planner designed for dual learning partners, study buddies, and self-directed students.
+  An AI-powered, gamified study planner designed for dual learning partners, study buddies, and self-directed students.<br/><br/>
+  <a href="https://study-duo-taupe.vercel.app/" target="_blank">
+    <strong>🌐 Live Production Web App: https://study-duo-taupe.vercel.app/</strong>
+  </a>
 </p>
 
 ---
