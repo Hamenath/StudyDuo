@@ -11,9 +11,9 @@ import {
   XAxis,
   YAxis,
 } from 'recharts';
-import { BarChart3, CheckCircle2, Clock, Flame, TrendingUp } from 'lucide-react';
+import { CheckCircle2, Clock, Flame, TrendingUp } from 'lucide-react';
 import { useStudyDuo } from '../context/StudyDuoContext';
-import { EmptyState } from '../components/ui/Primitives';
+import { Card, EmptyState } from '../components/ui/Primitives';
 import { addDaysToDateKey, getDateKeyInTimezone, getSharedDailyScore } from '../lib/gamification';
 
 type RangeDays = 7 | 14 | 30;
@@ -49,7 +49,6 @@ export const AnalyticsPage: React.FC = () => {
     if (!currentUser || !activeGoal) return [];
     let cumulativeXp = 0;
 
-    // Seed cumulative XP prior to window
     const startKey = dateWindow[0];
     for (const tx of xpTransactions) {
       if (tx.userId === currentUser.uid && tx.goalId === activeGoal.id && tx.dateKey < startKey) {
@@ -120,16 +119,16 @@ export const AnalyticsPage: React.FC = () => {
 
   if (!activeGoal || !currentUser) {
     return (
-      <div className="space-y-6">
+      <div className="space-y-5">
         <header>
-          <h1 className="text-2xl font-bold text-[#242337] tracking-tight">Analytics</h1>
-          <p className="mt-1 text-sm text-[#66687A]">Honest trends built directly from your completed tasks.</p>
+          <h1 className="font-display text-2xl sm:text-3xl font-black text-[#20202A] tracking-tight">Analytics</h1>
+          <p className="mt-1 text-sm text-[#777783]">Honest trends built directly from your completed tasks.</p>
         </header>
         <EmptyState
-          icon={<BarChart3 className="h-6 w-6" />}
+          mascot="science"
           title="No goal selected"
           description="Create or join a study goal to track your daily completion rate, XP curve, and duo pace."
-          actionLabel="Go to Goals"
+          actionLabel="Go to Roadmap"
           onAction={() => setActivePage('goals')}
         />
       </div>
@@ -139,25 +138,25 @@ export const AnalyticsPage: React.FC = () => {
   const hasAnyData = completions.length > 0 || xpTransactions.some((t) => t.goalId === activeGoal.id);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       <header className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-[#242337] tracking-tight">Analytics</h1>
-          <p className="mt-1 text-sm text-[#66687A]">
+          <h1 className="font-display text-2xl sm:text-3xl font-black text-[#20202A] tracking-tight">Analytics</h1>
+          <p className="mt-1 text-sm text-[#777783]">
             {activeGoal.title} · Real study metrics across the last {rangeDays} days
           </p>
         </div>
 
-        <div className="inline-flex rounded-xl border border-[#E9EAF0] bg-white p-1">
+        <div className="inline-flex rounded-full border border-[#F0EDF5] bg-white p-1 self-start sm:self-auto shadow-xs">
           {([7, 14, 30] as RangeDays[]).map((daysOpt) => (
             <button
               key={daysOpt}
               type="button"
               onClick={() => setRangeDays(daysOpt)}
-              className={`min-h-[38px] rounded-lg px-3.5 text-xs font-semibold font-mono transition-colors ${
+              className={`min-h-[38px] rounded-full px-4 text-xs font-extrabold font-mono transition-colors cursor-pointer ${
                 rangeDays === daysOpt
-                  ? 'bg-[#7956D8] text-white'
-                  : 'text-[#66687A] hover:text-[#242337]'
+                  ? 'bg-[#7651E8] text-white'
+                  : 'text-[#777783] hover:text-[#20202A]'
               }`}
             >
               {daysOpt}D
@@ -166,69 +165,77 @@ export const AnalyticsPage: React.FC = () => {
         </div>
       </header>
 
-      {/* Summary KPIs */}
+      {/* 4 Pastel Summary KPIs */}
       <section className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="rounded-2xl border border-[#E9EAF0] bg-white p-4 sm:p-5">
+        <div className="rounded-[24px] bg-[#E2F5E9] p-4 sm:p-5">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-[#66687A]">Tasks Completed</span>
-            <CheckCircle2 className="h-4 w-4 text-[#38A879]" />
+            <span className="text-xs font-bold text-[#1F874D]">Tasks Completed</span>
+            <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-white text-[#2FB368]">
+              <CheckCircle2 className="h-4 w-4" />
+            </span>
           </div>
-          <p className="mt-2 text-2xl sm:text-3xl font-bold text-[#242337] font-mono tabular-nums">
+          <p className="mt-2 font-display text-2xl sm:text-3xl font-black text-[#20202A] tabular-nums">
             {summary.tasksCount}
           </p>
-          <p className="mt-1 text-xs text-[#66687A]">Last {rangeDays} days</p>
+          <p className="mt-0.5 text-xs font-medium text-[#1F874D]">Last {rangeDays} days</p>
         </div>
 
-        <div className="rounded-2xl border border-[#E9EAF0] bg-white p-4 sm:p-5">
+        <div className="rounded-[24px] bg-[#E9DFFF] p-4 sm:p-5">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-[#66687A]">XP Earned</span>
-            <TrendingUp className="h-4 w-4 text-[#7956D8]" />
+            <span className="text-xs font-bold text-[#6842DE]">XP Earned</span>
+            <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-white text-[#7651E8]">
+              <TrendingUp className="h-4 w-4" />
+            </span>
           </div>
-          <p className="mt-2 text-2xl sm:text-3xl font-bold text-[#242337] font-mono tabular-nums">
+          <p className="mt-2 font-display text-2xl sm:text-3xl font-black text-[#20202A] tabular-nums">
             {summary.totalXpWindow}
           </p>
-          <p className="mt-1 text-xs text-[#66687A]">Verified transactions</p>
+          <p className="mt-0.5 text-xs font-medium text-[#6842DE]">Verified transactions</p>
         </div>
 
-        <div className="rounded-2xl border border-[#E9EAF0] bg-white p-4 sm:p-5">
+        <div className="rounded-[24px] bg-[#FFF0C9] p-4 sm:p-5">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-[#66687A]">Consistency</span>
-            <Flame className="h-4 w-4 text-[#F3BD59]" />
+            <span className="text-xs font-bold text-[#8A5A00]">Consistency</span>
+            <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-white text-[#E59A18]">
+              <Flame className="h-4 w-4" />
+            </span>
           </div>
-          <p className="mt-2 text-2xl sm:text-3xl font-bold text-[#242337] font-mono tabular-nums">
+          <p className="mt-2 font-display text-2xl sm:text-3xl font-black text-[#20202A] tabular-nums">
             {summary.consistencyPct}%
           </p>
-          <p className="mt-1 text-xs text-[#66687A] font-mono tabular-nums">
+          <p className="mt-0.5 text-xs font-medium text-[#8A5A00] tabular-nums">
             {summary.activeDays} of {rangeDays} days active
           </p>
         </div>
 
-        <div className="rounded-2xl border border-[#E9EAF0] bg-white p-4 sm:p-5">
+        <div className="rounded-[24px] bg-[#FFE8F0] p-4 sm:p-5">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-[#66687A]">Study Time</span>
-            <Clock className="h-4 w-4 text-[#7956D8]" />
+            <span className="text-xs font-bold text-[#BE3469]">Study Time</span>
+            <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-white text-[#E05288]">
+              <Clock className="h-4 w-4" />
+            </span>
           </div>
-          <p className="mt-2 text-2xl sm:text-3xl font-bold text-[#242337] font-mono tabular-nums">
+          <p className="mt-2 font-display text-2xl sm:text-3xl font-black text-[#20202A] tabular-nums">
             {summary.totalMinutes}m
           </p>
-          <p className="mt-1 text-xs text-[#66687A]">Estimated task duration</p>
+          <p className="mt-0.5 text-xs font-medium text-[#BE3469]">Estimated task duration</p>
         </div>
       </section>
 
       {!hasAnyData ? (
         <EmptyState
-          icon={<BarChart3 className="h-6 w-6" />}
+          mascot="science"
           title="No completed tasks recorded yet"
-          description="StudyDuo never fabricates charts. Check off your first task in Daily Checklist and your real completion and XP curves will appear immediately."
-          actionLabel="Open Daily Checklist"
+          description="StudyDuo never fabricates charts. Check off your first task in Quest Center and your real completion and XP curves will appear immediately."
+          actionLabel="Open Quest Center"
           onAction={() => setActivePage('checklist')}
         />
       ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
           {/* Cumulative XP Growth */}
-          <section className="rounded-2xl border border-[#E9EAF0] bg-white p-5 sm:p-6">
-            <h2 className="text-base font-semibold text-[#242337]">Your Cumulative XP Growth</h2>
-            <p className="mt-0.5 text-xs text-[#66687A]">
+          <Card>
+            <h2 className="font-display text-base font-black text-[#20202A]">Your Cumulative XP Growth</h2>
+            <p className="mt-0.5 text-xs text-[#777783]">
               Tracks your earned XP progression across the selected window.
             </p>
             <div className="mt-5 h-64 w-full">
@@ -236,18 +243,18 @@ export const AnalyticsPage: React.FC = () => {
                 <AreaChart data={chartData} margin={{ top: 8, right: 12, left: -18, bottom: 0 }}>
                   <defs>
                     <linearGradient id="xpPurpleGrad" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#7956D8" stopOpacity={0.28} />
-                      <stop offset="95%" stopColor="#7956D8" stopOpacity={0.02} />
+                      <stop offset="5%" stopColor="#7651E8" stopOpacity={0.28} />
+                      <stop offset="95%" stopColor="#7651E8" stopOpacity={0.02} />
                     </linearGradient>
                   </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#E9EAF0" vertical={false} />
-                  <XAxis dataKey="label" tick={{ fontSize: 11, fill: '#66687A' }} axisLine={false} tickLine={false} />
-                  <YAxis tick={{ fontSize: 11, fill: '#66687A' }} axisLine={false} tickLine={false} />
+                  <CartesianGrid strokeDasharray="3 3" stroke="#F0EDF5" vertical={false} />
+                  <XAxis dataKey="label" tick={{ fontSize: 11, fill: '#777783' }} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fontSize: 11, fill: '#777783' }} axisLine={false} tickLine={false} />
                   <Tooltip
                     contentStyle={{
                       backgroundColor: '#FFFFFF',
-                      borderColor: '#E9EAF0',
-                      borderRadius: '12px',
+                      borderColor: '#F0EDF5',
+                      borderRadius: '16px',
                       fontSize: '12px',
                     }}
                   />
@@ -255,86 +262,86 @@ export const AnalyticsPage: React.FC = () => {
                     type="monotone"
                     dataKey="cumulativeXp"
                     name="Cumulative XP"
-                    stroke="#7956D8"
-                    strokeWidth={2.5}
+                    stroke="#7651E8"
+                    strokeWidth={3}
                     fill="url(#xpPurpleGrad)"
                   />
                 </AreaChart>
               </ResponsiveContainer>
             </div>
-          </section>
+          </Card>
 
           {/* Daily Task Completion Comparison */}
-          <section className="rounded-2xl border border-[#E9EAF0] bg-white p-5 sm:p-6">
-            <h2 className="text-base font-semibold text-[#242337]">Daily Tasks Completed</h2>
-            <p className="mt-0.5 text-xs text-[#66687A]">
+          <Card>
+            <h2 className="font-display text-base font-black text-[#20202A]">Daily Tasks Completed</h2>
+            <p className="mt-0.5 text-xs text-[#777783]">
               {partner ? `You vs ${partner.displayName.split(' ')[0]} per day` : 'Tasks completed per day'}
             </p>
             <div className="mt-5 h-64 w-full">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={chartData} margin={{ top: 8, right: 12, left: -20, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#E9EAF0" vertical={false} />
-                  <XAxis dataKey="label" tick={{ fontSize: 11, fill: '#66687A' }} axisLine={false} tickLine={false} />
-                  <YAxis allowDecimals={false} tick={{ fontSize: 11, fill: '#66687A' }} axisLine={false} tickLine={false} />
+                  <CartesianGrid strokeDasharray="3 3" stroke="#F0EDF5" vertical={false} />
+                  <XAxis dataKey="label" tick={{ fontSize: 11, fill: '#777783' }} axisLine={false} tickLine={false} />
+                  <YAxis allowDecimals={false} tick={{ fontSize: 11, fill: '#777783' }} axisLine={false} tickLine={false} />
                   <Tooltip
                     contentStyle={{
                       backgroundColor: '#FFFFFF',
-                      borderColor: '#E9EAF0',
-                      borderRadius: '12px',
+                      borderColor: '#F0EDF5',
+                      borderRadius: '16px',
                       fontSize: '12px',
                     }}
                   />
                   <Legend wrapperStyle={{ fontSize: '12px' }} />
-                  <Bar dataKey="myTasks" name="You" fill="#7956D8" radius={[6, 6, 0, 0]} maxBarSize={24} />
+                  <Bar dataKey="myTasks" name="You" fill="#7651E8" radius={[8, 8, 0, 0]} maxBarSize={24} />
                   {partner && (
                     <Bar
                       dataKey="partnerTasks"
                       name={partner.displayName.split(' ')[0]}
-                      fill="#38A879"
-                      radius={[6, 6, 0, 0]}
+                      fill="#2FB368"
+                      radius={[8, 8, 0, 0]}
                       maxBarSize={24}
                     />
                   )}
                 </BarChart>
               </ResponsiveContainer>
             </div>
-          </section>
+          </Card>
 
           {/* Daily XP Comparison */}
-          <section className="lg:col-span-2 rounded-2xl border border-[#E9EAF0] bg-white p-5 sm:p-6">
-            <h2 className="text-base font-semibold text-[#242337]">Daily XP Comparison</h2>
-            <p className="mt-0.5 text-xs text-[#66687A]">
+          <Card className="lg:col-span-2">
+            <h2 className="font-display text-base font-black text-[#20202A]">Daily XP Comparison</h2>
+            <p className="mt-0.5 text-xs text-[#777783]">
               Side-by-side daily XP pace to keep both partners motivated.
             </p>
             <div className="mt-5 h-64 w-full">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={chartData} margin={{ top: 8, right: 12, left: -16, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#E9EAF0" vertical={false} />
-                  <XAxis dataKey="label" tick={{ fontSize: 11, fill: '#66687A' }} axisLine={false} tickLine={false} />
-                  <YAxis tick={{ fontSize: 11, fill: '#66687A' }} axisLine={false} tickLine={false} />
+                  <CartesianGrid strokeDasharray="3 3" stroke="#F0EDF5" vertical={false} />
+                  <XAxis dataKey="label" tick={{ fontSize: 11, fill: '#777783' }} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fontSize: 11, fill: '#777783' }} axisLine={false} tickLine={false} />
                   <Tooltip
                     contentStyle={{
                       backgroundColor: '#FFFFFF',
-                      borderColor: '#E9EAF0',
-                      borderRadius: '12px',
+                      borderColor: '#F0EDF5',
+                      borderRadius: '16px',
                       fontSize: '12px',
                     }}
                   />
                   <Legend wrapperStyle={{ fontSize: '12px' }} />
-                  <Bar dataKey="myXp" name="Your XP" fill="#7956D8" radius={[6, 6, 0, 0]} maxBarSize={26} />
+                  <Bar dataKey="myXp" name="Your XP" fill="#7651E8" radius={[8, 8, 0, 0]} maxBarSize={26} />
                   {partner && (
                     <Bar
                       dataKey="partnerXp"
                       name={`${partner.displayName.split(' ')[0]}'s XP`}
-                      fill="#F3BD59"
-                      radius={[6, 6, 0, 0]}
+                      fill="#FFC857"
+                      radius={[8, 8, 0, 0]}
                       maxBarSize={26}
                     />
                   )}
                 </BarChart>
               </ResponsiveContainer>
             </div>
-          </section>
+          </Card>
         </div>
       )}
     </div>

@@ -8,12 +8,10 @@ import {
   Edit3,
   Eye,
   EyeOff,
-  Flag,
   Link2,
   Lock,
   Plus,
   Sparkles,
-  Target,
   Trash2,
   UserPlus,
   Users,
@@ -32,6 +30,7 @@ import {
   ModalSheet,
   ProgressBar,
 } from '../components/ui/Primitives';
+import { getSubjectTheme, MascotImage, SubjectCardMotif } from '../components/ui/MascotArtwork';
 
 const CATEGORIES = [
   'Programming',
@@ -119,7 +118,7 @@ export const GoalsPage: React.FC = () => {
     return new Set(completions.filter((c) => c.userId === currentUser.uid).map((c) => c.taskId));
   }, [completions, currentUser]);
 
-  // Compute adventure roadmap nodes with completion %, task counts, target dates, and status
+  // Compute roadmap nodes with completion %, task counts, target dates, and status
   const roadmapNodes = useMemo(() => {
     const sorted = [...phases].sort((a, b) => a.order - b.order);
     let foundCurrent = false;
@@ -292,16 +291,16 @@ export const GoalsPage: React.FC = () => {
       {/* Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div className="min-w-0">
-          <h1 className="text-2xl font-extrabold tracking-tight text-[#242424]">
+          <h1 className="font-display text-2xl sm:text-3xl font-black tracking-tight text-[#20202A]">
             Learning Roadmap
           </h1>
-          <p className="mt-0.5 text-sm text-[#888888]">
+          <p className="mt-0.5 text-sm text-[#777783]">
             Follow your connected milestones and level up with your study partner.
           </p>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
           <Button variant="secondary" size="sm" onClick={() => setShowJoinModal(true)}>
-            <Link2 className="h-4 w-4 text-[#7956E8]" />
+            <Link2 className="h-4 w-4 text-[#7651E8]" />
             Join with Code
           </Button>
           <Button size="sm" onClick={() => setShowCreateGoal(true)}>
@@ -313,7 +312,7 @@ export const GoalsPage: React.FC = () => {
 
       {goals.length === 0 ? (
         <EmptyState
-          icon={<Target className="h-6 w-6" />}
+          mascot="brain"
           title="Start your first learning goal"
           description="Define your subject, duration, and daily study target — then invite a partner to stay accountable together."
           actionLabel="Create Study Goal"
@@ -321,47 +320,62 @@ export const GoalsPage: React.FC = () => {
         />
       ) : (
         <>
-          {/* Goal Switcher Cards */}
+          {/* Pastel Goal Switcher Cards */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {goals.map((g) => {
+            {goals.map((g, idx) => {
               const selected = g.id === activeGoal?.id;
               const ownedByMe = g.ownerId === currentUser?.uid;
+              const theme = getSubjectTheme(g.category, idx);
               return (
                 <button
                   key={g.id}
                   type="button"
                   onClick={() => setSelectedGoalId(g.id)}
-                  className={`text-left rounded-2xl bg-white border p-5 transition-colors cursor-pointer ${
+                  style={{ backgroundColor: theme.cardBg }}
+                  className={`sd-pastel-card text-left p-5 transition-all cursor-pointer relative overflow-hidden ${
                     selected
-                      ? 'border-[#7956E8] bg-[#FBF9FF]'
-                      : 'border-[#EEEEF2] hover:border-[#D4CCFA]'
+                      ? 'ring-2 ring-[#7651E8] ring-offset-2 ring-offset-[#F8F5FF]'
+                      : 'opacity-90 hover:opacity-100'
                   }`}
                 >
-                  <div className="flex items-center justify-between gap-2 text-xs text-[#888888]">
-                    <span className="truncate">
-                      {g.category} · {g.difficulty} · {g.durationDays}d
+                  <div className="flex items-center justify-between gap-2">
+                    <span
+                      style={{ color: theme.statusText }}
+                      className="inline-flex items-center rounded-full bg-white px-3 py-0.5 text-[11px] font-extrabold truncate"
+                    >
+                      {g.category} · {g.difficulty}
                     </span>
                     <span
-                      className={`font-bold shrink-0 ${
-                        ownedByMe ? 'text-[#7956E8]' : 'text-[#3C8F00]'
+                      className={`inline-flex items-center rounded-full bg-white px-2.5 py-0.5 text-[11px] font-extrabold shrink-0 ${
+                        ownedByMe ? 'text-[#7651E8]' : 'text-[#1F874D]'
                       }`}
                     >
                       {ownedByMe ? 'Owner' : 'Partner'}
                     </span>
                   </div>
-                  <h2 className="mt-1.5 text-base font-extrabold text-[#242424] leading-snug">
-                    {g.title}
-                  </h2>
-                  {g.description && (
-                    <p className="mt-1 text-xs sm:text-sm text-[#888888] line-clamp-2">
-                      {g.description}
-                    </p>
-                  )}
-                  <div className="mt-3.5 pt-3 border-t border-[#EEEEF2] flex items-center justify-between text-xs text-[#888888] tabular-nums">
+
+                  <div className="mt-3.5 flex items-center gap-3.5">
+                    <MascotImage mascot={theme.mascot} className="h-16 w-16 shrink-0" rounded="rounded-2xl" />
+                    <div className="min-w-0 flex-1">
+                      <h2 className="font-display text-lg font-black text-[#20202A] leading-snug line-clamp-2">
+                        {g.title}
+                      </h2>
+                      {g.description && (
+                        <p className="mt-1 text-xs text-[#5C5C6C] line-clamp-2">
+                          {g.description}
+                        </p>
+                      )}
+                    </div>
+                    <div className="hidden sm:block shrink-0 opacity-80">
+                      <SubjectCardMotif themeId={theme.id} />
+                    </div>
+                  </div>
+
+                  <div className="mt-4 pt-3 border-t border-white/60 flex items-center justify-between text-xs font-bold text-[#4F4D60] tabular-nums">
                     <span>
-                      {g.startDate} → {g.targetDate}
+                      {g.startDate} → {g.targetDate} ({g.durationDays}d)
                     </span>
-                    <span>
+                    <span className="rounded-full bg-white/85 px-2.5 py-0.5 text-[#20202A]">
                       {g.participantIds.length}/{g.maxParticipants} learners
                     </span>
                   </div>
@@ -377,8 +391,8 @@ export const GoalsPage: React.FC = () => {
               <section className="lg:col-span-8 space-y-4">
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <div>
-                    <h2 className="text-lg font-extrabold text-[#242424]">Milestones</h2>
-                    <p className="text-xs text-[#888888] mt-0.5">
+                    <h2 className="font-display text-xl font-black text-[#20202A]">Milestones</h2>
+                    <p className="text-xs text-[#777783] mt-0.5">
                       {isOwner
                         ? 'You own this roadmap. Add, reorder, and publish milestones for your partner.'
                         : 'Read-only official roadmap maintained by the goal owner.'}
@@ -387,7 +401,7 @@ export const GoalsPage: React.FC = () => {
                   {isOwner ? (
                     <div className="flex items-center gap-2 flex-wrap">
                       <Button variant="secondary" size="sm" onClick={() => setActivePage('ai')}>
-                        <Sparkles className="h-3.5 w-3.5 text-[#7956E8]" />
+                        <Sparkles className="h-3.5 w-3.5 text-[#7651E8]" />
                         AI Draft Plan
                       </Button>
                       <Button size="sm" onClick={openNewPhase}>
@@ -396,8 +410,8 @@ export const GoalsPage: React.FC = () => {
                       </Button>
                     </div>
                   ) : (
-                    <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#888888]">
-                      <Lock className="h-3.5 w-3.5 text-[#7956E8]" />
+                    <span className="inline-flex items-center gap-1.5 rounded-full bg-white border border-[#F0EDF5] px-3 py-1 text-xs font-bold text-[#777783]">
+                      <Lock className="h-3.5 w-3.5 text-[#7651E8]" />
                       Owner-managed
                     </span>
                   )}
@@ -405,7 +419,7 @@ export const GoalsPage: React.FC = () => {
 
                 {roadmapNodes.length === 0 ? (
                   <EmptyState
-                    icon={<Flag className="h-6 w-6" />}
+                    mascot="science"
                     title="No roadmap milestones yet"
                     description={
                       isOwner
@@ -416,49 +430,49 @@ export const GoalsPage: React.FC = () => {
                     onAction={isOwner ? openNewPhase : undefined}
                   />
                 ) : (
-                  <div className="relative pl-10 sm:pl-11 space-y-3.5">
-                    {/* Clean Neutral Vertical Connector Line */}
+                  <div className="relative pl-10 sm:pl-11 space-y-4">
+                    {/* Soft Lavender Vertical Connector Line */}
                     <div
                       aria-hidden="true"
-                      className="absolute left-[15px] sm:left-[17px] top-6 bottom-6 w-0.5 bg-[#E4E4EC]"
+                      className="absolute left-[15px] sm:left-[17px] top-6 bottom-6 w-1 rounded-full bg-[#E9DFFF]"
                     />
 
                     {roadmapNodes.map(({ phase, taskCount, completedCount, pct, targetDate, state }, idx) => {
-                      const stateText =
+                      const stateChip =
                         state === 'completed'
-                          ? { label: 'Completed', cls: 'text-[#3C8F00]' }
+                          ? { label: 'Completed', cls: 'bg-[#E2F5E9] text-[#1F874D]' }
                           : state === 'current'
-                          ? { label: 'Current', cls: 'text-[#7956E8]' }
+                          ? { label: 'In Progress', cls: 'bg-[#E9DFFF] text-[#6842DE]' }
                           : state === 'locked'
-                          ? { label: 'Draft', cls: 'text-[#888888]' }
-                          : { label: 'Upcoming', cls: 'text-[#5C5C6E]' };
+                          ? { label: 'Draft', cls: 'bg-[#FFE8F0] text-[#BE3469]' }
+                          : { label: 'Up Next', cls: 'bg-[#FFF0C9] text-[#B47100]' };
 
                       return (
                         <article
                           key={phase.id}
-                          className={`relative rounded-2xl border bg-white p-4 sm:p-5 transition-colors ${
+                          className={`relative rounded-[24px] border bg-white p-5 transition-all shadow-[0_6px_20px_-14px_rgba(118,81,232,0.12)] ${
                             state === 'current'
-                              ? 'border-[#7956E8]'
+                              ? 'border-[#CBB8FA]'
                               : state === 'completed'
-                              ? 'border-[#D5F0BE]'
-                              : 'border-[#EEEEF2]'
+                              ? 'border-[#CBEBD7]'
+                              : 'border-[#F0EDF5]'
                           }`}
                         >
-                          {/* Clean Step Node Marker */}
+                          {/* Step Node Marker */}
                           <div
                             aria-hidden="true"
                             className={`absolute -left-10 sm:-left-11 top-5 flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-full border-2 text-xs font-extrabold ${
                               state === 'completed'
-                                ? 'border-[#58CC02] bg-[#58CC02] text-white'
+                                ? 'border-[#2FB368] bg-[#2FB368] text-white'
                                 : state === 'current'
-                                ? 'border-[#7956E8] bg-[#7956E8] text-white'
+                                ? 'border-[#7651E8] bg-[#7651E8] text-white'
                                 : state === 'locked'
-                                ? 'border-[#EEEEF2] bg-[#F7F8FA] text-[#888888]'
-                                : 'border-[#D8D8E4] bg-white text-[#5C5C6E]'
+                                ? 'border-[#F0EDF5] bg-[#F8F5FF] text-[#8B8A99]'
+                                : 'border-[#F3D283] bg-[#FFF0C9] text-[#B47100]'
                             }`}
                           >
                             {state === 'completed' ? (
-                              <Check className="h-4 w-4 stroke-[2.75]" />
+                              <Check className="h-4 w-4 stroke-[3]" />
                             ) : state === 'locked' ? (
                               <Lock className="h-3.5 w-3.5" />
                             ) : (
@@ -468,29 +482,25 @@ export const GoalsPage: React.FC = () => {
 
                           <div className="flex items-start justify-between gap-2">
                             <div className="min-w-0">
-                              <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs">
-                                <span className={`font-bold ${stateText.cls}`}>
-                                  {stateText.label}
+                              <div className="flex flex-wrap items-center gap-2 text-xs">
+                                <span className={`rounded-full px-2.5 py-0.5 text-[11px] font-extrabold ${stateChip.cls}`}>
+                                  {stateChip.label}
                                 </span>
-                                <span className="text-[#D4D4DE]">·</span>
-                                <span className="font-mono text-[#888888] tabular-nums">
+                                <span className="font-mono text-[#777783] tabular-nums">
                                   Days {String(phase.startDay).padStart(2, '0')}–{String(phase.endDay).padStart(2, '0')}
                                 </span>
                                 {targetDate && (
-                                  <>
-                                    <span className="text-[#D4D4DE]">·</span>
-                                    <span className="inline-flex items-center gap-1 text-[#888888] tabular-nums">
-                                      <Calendar className="h-3 w-3" />
-                                      {targetDate}
-                                    </span>
-                                  </>
+                                  <span className="inline-flex items-center gap-1 text-[#777783] tabular-nums">
+                                    <Calendar className="h-3 w-3" />
+                                    {targetDate}
+                                  </span>
                                 )}
                               </div>
-                              <h3 className="mt-1 text-base font-extrabold text-[#242424] leading-snug">
+                              <h3 className="mt-1.5 font-display text-lg font-black text-[#20202A] leading-snug">
                                 {phase.title}
                               </h3>
                               {phase.description && (
-                                <p className="mt-1 text-xs sm:text-sm text-[#888888] leading-relaxed">
+                                <p className="mt-1 text-xs sm:text-sm text-[#777783] leading-relaxed">
                                   {phase.description}
                                 </p>
                               )}
@@ -503,7 +513,7 @@ export const GoalsPage: React.FC = () => {
                                   disabled={idx === 0}
                                   onClick={() => void reorderPhase(activeGoal.id, phase.id, 'up')}
                                   aria-label={`Move ${phase.title} up`}
-                                  className="min-h-[34px] min-w-[34px] flex items-center justify-center rounded-lg text-[#888888] hover:bg-[#F7F8FA] hover:text-[#242424] disabled:opacity-30 cursor-pointer"
+                                  className="min-h-[34px] min-w-[34px] flex items-center justify-center rounded-full text-[#777783] hover:bg-[#F8F5FF] hover:text-[#20202A] disabled:opacity-30 cursor-pointer"
                                 >
                                   <ArrowUp className="h-4 w-4" />
                                 </button>
@@ -512,7 +522,7 @@ export const GoalsPage: React.FC = () => {
                                   disabled={idx === roadmapNodes.length - 1}
                                   onClick={() => void reorderPhase(activeGoal.id, phase.id, 'down')}
                                   aria-label={`Move ${phase.title} down`}
-                                  className="min-h-[34px] min-w-[34px] flex items-center justify-center rounded-lg text-[#888888] hover:bg-[#F7F8FA] hover:text-[#242424] disabled:opacity-30 cursor-pointer"
+                                  className="min-h-[34px] min-w-[34px] flex items-center justify-center rounded-full text-[#777783] hover:bg-[#F8F5FF] hover:text-[#20202A] disabled:opacity-30 cursor-pointer"
                                 >
                                   <ArrowDown className="h-4 w-4" />
                                 </button>
@@ -525,10 +535,10 @@ export const GoalsPage: React.FC = () => {
                                     })
                                   }
                                   aria-label={phase.isPublished ? `Unpublish ${phase.title}` : `Publish ${phase.title}`}
-                                  className="min-h-[34px] min-w-[34px] flex items-center justify-center rounded-lg text-[#888888] hover:bg-[#F7F8FA] cursor-pointer"
+                                  className="min-h-[34px] min-w-[34px] flex items-center justify-center rounded-full text-[#777783] hover:bg-[#F8F5FF] cursor-pointer"
                                 >
                                   {phase.isPublished ? (
-                                    <Eye className="h-4 w-4 text-[#3C8F00]" />
+                                    <Eye className="h-4 w-4 text-[#2FB368]" />
                                   ) : (
                                     <EyeOff className="h-4 w-4" />
                                   )}
@@ -537,7 +547,7 @@ export const GoalsPage: React.FC = () => {
                                   type="button"
                                   onClick={() => openEditPhase(phase)}
                                   aria-label={`Edit ${phase.title}`}
-                                  className="min-h-[34px] min-w-[34px] flex items-center justify-center rounded-lg text-[#888888] hover:bg-[#F7F8FA] hover:text-[#242424] cursor-pointer"
+                                  className="min-h-[34px] min-w-[34px] flex items-center justify-center rounded-full text-[#777783] hover:bg-[#F8F5FF] hover:text-[#20202A] cursor-pointer"
                                 >
                                   <Edit3 className="h-4 w-4" />
                                 </button>
@@ -545,7 +555,7 @@ export const GoalsPage: React.FC = () => {
                                   type="button"
                                   onClick={() => setPhaseToDelete(phase)}
                                   aria-label={`Delete ${phase.title}`}
-                                  className="min-h-[34px] min-w-[34px] flex items-center justify-center rounded-lg text-[#DC2626] hover:bg-[#FEF2F2] cursor-pointer"
+                                  className="min-h-[34px] min-w-[34px] flex items-center justify-center rounded-full text-[#C82D4F] hover:bg-[#FFF0F3] cursor-pointer"
                                 >
                                   <Trash2 className="h-4 w-4" />
                                 </button>
@@ -553,34 +563,34 @@ export const GoalsPage: React.FC = () => {
                             )}
                           </div>
 
-                          {/* Thin Progress Bar */}
+                          {/* Progress Bar */}
                           <div className="mt-3.5 space-y-1.5">
                             <div className="flex items-center justify-between text-xs">
-                              <span className="font-medium text-[#888888] tabular-nums">
+                              <span className="font-semibold text-[#777783] tabular-nums">
                                 {taskCount > 0
                                   ? `${completedCount}/${taskCount} quests completed`
                                   : 'No quests assigned yet'}
                               </span>
-                              <span className="font-bold text-[#242424] tabular-nums">{pct}%</span>
+                              <span className="font-extrabold text-[#20202A] tabular-nums">{pct}%</span>
                             </div>
                             <ProgressBar
                               percent={pct}
                               color={
                                 state === 'completed'
-                                  ? '#58CC02'
+                                  ? '#2FB368'
                                   : state === 'current'
-                                  ? '#7956E8'
-                                  : '#A78BFA'
+                                  ? '#7651E8'
+                                  : '#E59A18'
                               }
-                              height="h-2"
+                              height="h-2.5"
                             />
                           </div>
 
                           {phase.objectives.length > 0 && (
-                            <ul className="mt-3 space-y-1 text-xs sm:text-sm text-[#4A4A5A]">
+                            <ul className="mt-3 space-y-1.5 text-xs sm:text-sm text-[#4F4D60]">
                               {phase.objectives.map((obj, oIdx) => (
                                 <li key={oIdx} className="flex items-start gap-2">
-                                  <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-[#C4C4D0] shrink-0" />
+                                  <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-[#7651E8] shrink-0" />
                                   <span>{obj}</span>
                                 </li>
                               ))}
@@ -588,17 +598,17 @@ export const GoalsPage: React.FC = () => {
                           )}
 
                           {phase.milestoneTitle && (
-                            <div className="mt-3.5 pt-3 border-t border-[#EEEEF2] flex flex-wrap items-center justify-between gap-2 text-xs">
-                              <span className="text-[#888888]">
+                            <div className="mt-4 pt-3 border-t border-[#F0EDF5] flex flex-wrap items-center justify-between gap-2 text-xs">
+                              <span className="text-[#777783]">
                                 Milestone:{' '}
-                                <strong className="font-bold text-[#242424]">
+                                <strong className="font-extrabold text-[#20202A]">
                                   {phase.milestoneTitle}
                                 </strong>
                               </span>
                               <button
                                 type="button"
                                 onClick={() => setActivePage('checklist')}
-                                className="font-bold text-[#7956E8] hover:underline cursor-pointer"
+                                className="rounded-full bg-[#E9DFFF] px-3 py-1 font-extrabold text-[#7651E8] hover:bg-[#DFD2FF] transition-colors cursor-pointer"
                               >
                                 Open Quest Center
                               </button>
@@ -615,15 +625,15 @@ export const GoalsPage: React.FC = () => {
               <aside className="lg:col-span-4 space-y-4">
                 <Card className="space-y-4">
                   <div className="flex items-center justify-between">
-                    <h3 className="text-base font-bold text-[#242424]">Study Duo</h3>
-                    <span className="text-xs font-bold text-[#7956E8] tabular-nums">
+                    <h3 className="font-display text-base font-black text-[#20202A]">Study Duo</h3>
+                    <span className="rounded-full bg-[#E9DFFF] px-2.5 py-0.5 text-xs font-extrabold text-[#7651E8] tabular-nums">
                       {participants.length}/{activeGoal.maxParticipants}
                     </span>
                   </div>
 
-                  <div className="divide-y divide-[#EEEEF2]">
+                  <div className="space-y-2.5">
                     {participants.map((p) => (
-                      <div key={p.uid} className="flex items-center justify-between gap-3 py-2.5 first:pt-0 last:pb-0">
+                      <div key={p.uid} className="flex items-center justify-between gap-3 rounded-2xl bg-[#F8F5FF] p-3">
                         <div className="flex items-center gap-3 min-w-0">
                           <Avatar
                             name={p.displayName}
@@ -634,16 +644,16 @@ export const GoalsPage: React.FC = () => {
                             size="sm"
                           />
                           <div className="min-w-0">
-                            <p className="text-sm font-bold text-[#242424] truncate">
+                            <p className="text-sm font-extrabold text-[#20202A] truncate">
                               {p.displayName}
                               {p.uid === currentUser?.uid ? ' (You)' : ''}
                             </p>
-                            <p className="text-xs text-[#888888] truncate">
+                            <p className="text-xs text-[#777783] truncate">
                               @{p.username} · {p.role === 'owner' ? 'Owner' : 'Partner'}
                             </p>
                           </div>
                         </div>
-                        <span className="text-xs font-extrabold text-[#7956E8] tabular-nums shrink-0">
+                        <span className="rounded-full bg-white px-2.5 py-0.5 text-xs font-extrabold text-[#7651E8] tabular-nums shrink-0">
                           {p.goalXp} XP
                         </span>
                       </div>
@@ -652,12 +662,12 @@ export const GoalsPage: React.FC = () => {
 
                   {isOwner && (
                     <Button
-                      variant="secondary"
+                      variant="primary"
                       fullWidth
                       disabled={activeGoal.participantIds.length >= activeGoal.maxParticipants}
                       onClick={() => setShowInviteModal(true)}
                     >
-                      <UserPlus className="h-4 w-4 text-[#7956E8]" />
+                      <UserPlus className="h-4 w-4" />
                       {activeGoal.participantIds.length >= activeGoal.maxParticipants
                         ? 'Duo Roster Full (2/2)'
                         : 'Invite Study Partner'}
@@ -667,38 +677,38 @@ export const GoalsPage: React.FC = () => {
 
                 {isOwner && goalInvitations.length > 0 && (
                   <Card className="space-y-3">
-                    <h3 className="text-sm font-bold text-[#242424]">Invitations</h3>
-                    <div className="divide-y divide-[#EEEEF2]">
+                    <h3 className="font-display text-sm font-black text-[#20202A]">Invitations</h3>
+                    <div className="divide-y divide-[#F0EDF5]">
                       {goalInvitations.map((inv) => (
                         <div key={inv.id} className="py-3 first:pt-0 last:pb-0 space-y-2">
                           <div className="flex items-center justify-between gap-2">
-                            <span className="font-mono text-sm font-bold text-[#242424]">
+                            <span className="font-mono text-sm font-bold text-[#20202A]">
                               {inv.code}
                             </span>
                             <span
-                              className={`text-xs font-bold capitalize ${
+                              className={`rounded-full px-2.5 py-0.5 text-[11px] font-extrabold capitalize ${
                                 inv.status === 'accepted'
-                                  ? 'text-[#3C8F00]'
+                                  ? 'bg-[#E2F5E9] text-[#1F874D]'
                                   : inv.status === 'pending'
-                                  ? 'text-[#7956E8]'
-                                  : 'text-[#888888]'
+                                  ? 'bg-[#E9DFFF] text-[#7651E8]'
+                                  : 'bg-[#F4F2F8] text-[#777783]'
                               }`}
                             >
                               {inv.status}
                             </span>
                           </div>
                           {inv.inviteeEmail && (
-                            <p className="text-xs text-[#888888] truncate">For: {inv.inviteeEmail}</p>
+                            <p className="text-xs text-[#777783] truncate">For: {inv.inviteeEmail}</p>
                           )}
                           {inv.status === 'pending' && (
                             <div className="flex items-center gap-2">
                               <button
                                 type="button"
                                 onClick={() => void copyInviteLink(inv.code)}
-                                className="min-h-[36px] flex-1 inline-flex items-center justify-center gap-1.5 rounded-xl border border-[#EEEEF2] bg-[#F7F8FA] px-2.5 text-xs font-semibold text-[#242424] hover:bg-[#EFEFF5] cursor-pointer"
+                                className="min-h-[36px] flex-1 inline-flex items-center justify-center gap-1.5 rounded-full border border-[#F0EDF5] bg-[#F8F5FF] px-3 text-xs font-bold text-[#20202A] hover:bg-[#E9DFFF] cursor-pointer"
                               >
                                 {copiedCode === inv.code ? (
-                                  <Check className="h-3.5 w-3.5 text-[#3C8F00]" />
+                                  <Check className="h-3.5 w-3.5 text-[#1F874D]" />
                                 ) : (
                                   <Copy className="h-3.5 w-3.5" />
                                 )}
@@ -708,7 +718,7 @@ export const GoalsPage: React.FC = () => {
                                 type="button"
                                 onClick={() => void cancelInvitation(inv.id)}
                                 aria-label={`Cancel invite ${inv.code}`}
-                                className="min-h-[36px] inline-flex items-center justify-center gap-1 rounded-xl px-2.5 text-xs font-semibold text-[#DC2626] hover:bg-[#FEF2F2] cursor-pointer"
+                                className="min-h-[36px] inline-flex items-center justify-center gap-1 rounded-full px-3 text-xs font-bold text-[#C82D4F] hover:bg-[#FFF0F3] cursor-pointer"
                               >
                                 <XCircle className="h-3.5 w-3.5" />
                                 Cancel

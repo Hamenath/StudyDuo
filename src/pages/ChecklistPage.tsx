@@ -7,7 +7,6 @@ import {
   BookOpen,
   Calendar,
   Check,
-  CheckSquare,
   Coffee,
   Copy,
   Edit3,
@@ -18,6 +17,7 @@ import {
   Lock,
   MessageSquare,
   Plus,
+  Star,
   Trash2,
   Youtube,
 } from 'lucide-react';
@@ -40,6 +40,7 @@ import {
   ModalSheet,
   ProgressBar,
 } from '../components/ui/Primitives';
+import { getSubjectTheme, MascotImage, SubjectCardMotif } from '../components/ui/MascotArtwork';
 
 const XP_PRESETS = [
   { label: 'Small (10 XP)', value: DEFAULT_XP_PRESETS.small },
@@ -283,7 +284,7 @@ export const ChecklistPage: React.FC = () => {
   if (!activeGoal) {
     return (
       <EmptyState
-        icon={<CheckSquare className="h-5 w-5" />}
+        mascot="coding"
         title="No active checklist yet"
         description="Create a learning goal or join with a partner invite code to open your Quest Center."
         actionLabel="Go to Roadmap"
@@ -292,19 +293,21 @@ export const ChecklistPage: React.FC = () => {
     );
   }
 
+  const subjectTheme = getSubjectTheme(activeGoal.category, 0);
+
   return (
     <div className="space-y-5">
-      {/* Header */}
+      {/* Header Row */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div className="min-w-0">
-          <h1 className="text-2xl font-extrabold text-[#242424]">Quest Center</h1>
-          <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-[#888888]">
+          <h1 className="font-display text-2xl sm:text-3xl font-black text-[#20202A]">Quest Center</h1>
+          <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs font-medium text-[#777783]">
             {goals.length > 1 ? (
               <select
                 aria-label="Select active goal"
                 value={activeGoal.id}
                 onChange={(e) => setSelectedGoalId(e.target.value)}
-                className="rounded-lg border border-[#EEEEF2] bg-white px-2.5 py-1 text-xs font-semibold text-[#242424]"
+                className="rounded-full border border-[#F0EDF5] bg-white px-3 py-1 text-xs font-bold text-[#20202A]"
               >
                 {goals.map((g) => (
                   <option key={g.id} value={g.id}>
@@ -313,7 +316,7 @@ export const ChecklistPage: React.FC = () => {
                 ))}
               </select>
             ) : (
-              <span className="font-semibold text-[#242424]">{activeGoal.title}</span>
+              <span className="font-bold text-[#20202A]">{activeGoal.title}</span>
             )}
             {activeDay && (
               <>
@@ -332,14 +335,14 @@ export const ChecklistPage: React.FC = () => {
             Add Quest
           </Button>
         ) : (
-          <div className="inline-flex items-center gap-1.5 text-xs text-[#888888]">
-            <Lock className="h-3.5 w-3.5 text-[#7956E8] shrink-0" />
+          <div className="inline-flex items-center gap-1.5 rounded-full bg-white border border-[#F0EDF5] px-3.5 py-1.5 text-xs font-semibold text-[#777783]">
+            <Lock className="h-3.5 w-3.5 text-[#7651E8] shrink-0" />
             <span>Official quests set by owner · Independent XP</span>
           </div>
         )}
       </div>
 
-      {/* Compact Day Selector */}
+      {/* Rounded Day Selector Pills */}
       <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1">
         {days.map((day) => {
           const isSelected = activeDay?.id === day.id;
@@ -350,20 +353,20 @@ export const ChecklistPage: React.FC = () => {
               key={day.id}
               type="button"
               onClick={() => setSelectedDayId(day.id)}
-              className={`min-h-[44px] px-3.5 py-1.5 rounded-xl border text-left transition-colors shrink-0 cursor-pointer ${
+              className={`min-h-[46px] px-4 py-2 rounded-2xl border text-left transition-all shrink-0 cursor-pointer ${
                 isSelected
-                  ? 'bg-[#7956E8] border-[#7956E8] text-white'
-                  : 'bg-white border-[#EEEEF2] text-[#242424] hover:border-[#D4D4DC]'
+                  ? 'bg-[#7651E8] border-[#7651E8] text-white shadow-[0_8px_18px_-10px_rgba(118,81,232,0.7)]'
+                  : 'bg-white border-[#F0EDF5] text-[#20202A] hover:border-[#D8C8FA]'
               }`}
             >
-              <div className="flex items-center gap-1">
-                <span className="text-xs font-bold leading-none tabular-nums">
+              <div className="flex items-center gap-1.5">
+                <span className="text-xs font-extrabold leading-none tabular-nums">
                   Day {day.dayNumber}
                 </span>
-                {isRest && <Coffee className="h-3 w-3 opacity-80" />}
-                {isFuture && !isOwner && <Lock className="h-3 w-3 opacity-70" />}
+                {isRest && <Coffee className="h-3 w-3 opacity-85" />}
+                {isFuture && !isOwner && <Lock className="h-3 w-3 opacity-75" />}
               </div>
-              <p className={`mt-1 text-[11px] leading-none tabular-nums ${isSelected ? 'text-white/80' : 'text-[#888888]'}`}>
+              <p className={`mt-1 text-[11px] leading-none tabular-nums ${isSelected ? 'text-white/85' : 'text-[#777783]'}`}>
                 {day.date.slice(5)}
                 {!day.isPublished ? ' · Draft' : ''}
               </p>
@@ -375,7 +378,7 @@ export const ChecklistPage: React.FC = () => {
           <button
             type="button"
             onClick={() => setShowAddDayModal(true)}
-            className="min-h-[44px] px-3 py-1.5 rounded-xl border border-dashed border-[#A78BFA] bg-white text-xs font-semibold text-[#7956E8] hover:bg-[#F3F0FF] transition-colors inline-flex items-center gap-1 shrink-0 whitespace-nowrap cursor-pointer"
+            className="min-h-[46px] px-4 py-2 rounded-2xl border-2 border-dashed border-[#CBB8FA] bg-white text-xs font-extrabold text-[#7651E8] hover:bg-[#E9DFFF]/50 transition-colors inline-flex items-center gap-1 shrink-0 whitespace-nowrap cursor-pointer"
           >
             <Plus className="h-3.5 w-3.5" />
             Add Day
@@ -384,85 +387,121 @@ export const ChecklistPage: React.FC = () => {
       </div>
 
       {isPlannedRestDay && (
-        <div className="flex items-center gap-2.5 rounded-xl border border-[#EEEEF2] bg-white px-4 py-3 text-xs text-[#242424]">
+        <div className="flex items-center gap-2.5 rounded-2xl bg-[#FFF0C9] px-4 py-3 text-xs font-bold text-[#8A5A00]">
           <span aria-hidden="true">☕</span>
           <span>Planned rest day — your individual and duo streaks stay safely protected today.</span>
         </div>
       )}
 
       {isFutureDay && !isOwner && (
-        <div className="flex items-center gap-2.5 rounded-xl border border-[#EEEEF2] bg-white px-4 py-3 text-xs text-[#666666]">
-          <Lock className="h-3.5 w-3.5 text-[#7956E8] shrink-0" />
+        <div className="flex items-center gap-2.5 rounded-2xl bg-[#E9DFFF]/70 px-4 py-3 text-xs font-semibold text-[#5C44A8]">
+          <Lock className="h-3.5 w-3.5 text-[#7651E8] shrink-0" />
           <span>Scheduled for {activeDay?.date} — preview upcoming quests ahead of time.</span>
         </div>
       )}
 
-      {/* Daily Progress Bar & Owner Day Actions */}
+      {/* Pastel Subject Daily Progress Banner */}
       {activeDay && (
-        <Card className="space-y-3">
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <div className="min-w-0">
-              <h2 className="text-base font-extrabold text-[#242424]">{activeDay.title}</h2>
-              <p className="mt-0.5 text-xs text-[#888888] tabular-nums">
-                {myCompletedCount}/{dayTasks.length} completed · {availableXp} XP pool (+30 XP bonus)
-              </p>
+        <div
+          style={{ backgroundColor: subjectTheme.cardBg }}
+          className="rounded-[28px] p-5 sm:p-6 space-y-4 relative overflow-hidden"
+        >
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div className="flex items-center gap-4 min-w-0">
+              <MascotImage
+                mascot={subjectTheme.mascot}
+                className="h-18 w-18 sm:h-20 sm:w-20 shrink-0"
+                rounded="rounded-[20px]"
+              />
+              <div className="min-w-0">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span
+                    style={{ color: subjectTheme.statusText }}
+                    className="inline-flex items-center rounded-full bg-white px-2.5 py-0.5 text-[11px] font-extrabold"
+                  >
+                    {dailyPct === 100 && dayTasks.length > 0
+                      ? 'Completed'
+                      : isFutureDay
+                      ? 'Upcoming'
+                      : 'In Progress'}
+                  </span>
+                  <span className="inline-flex items-center gap-1 rounded-full bg-white px-2.5 py-0.5 text-[11px] font-extrabold text-[#20202A] tabular-nums">
+                    <Star className="h-3 w-3 fill-[#FFC857] text-[#FFC857]" />
+                    {availableXp} XP Pool
+                  </span>
+                </div>
+                <h2 className="mt-1.5 font-display text-lg sm:text-xl font-black text-[#20202A] truncate">
+                  {activeDay.title}
+                </h2>
+                <p className="text-xs font-semibold text-[#5C5C6C] tabular-nums">
+                  {myCompletedCount}/{dayTasks.length} quests completed · +30 XP daily bonus
+                </p>
+              </div>
             </div>
 
-            {isOwner && (
-              <div className="flex items-center gap-2 flex-wrap">
-                <button
-                  type="button"
-                  onClick={() => void toggleRestDay(activeGoal.id, activeDay.date)}
-                  className={`min-h-[36px] inline-flex items-center gap-1.5 rounded-xl border px-3 text-xs font-semibold transition-colors cursor-pointer ${
-                    isPlannedRestDay
-                      ? 'bg-[#F3F0FF] border-[#A78BFA] text-[#7956E8]'
-                      : 'bg-white border-[#EEEEF2] text-[#666666] hover:text-[#242424]'
-                  }`}
-                >
-                  <Coffee className="h-3.5 w-3.5" />
-                  {isPlannedRestDay ? 'Rest Day On' : 'Rest Day'}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => void toggleDayPublished(activeGoal.id, activeDay.id, !activeDay.isPublished)}
-                  className={`min-h-[36px] inline-flex items-center gap-1.5 rounded-xl border px-3 text-xs font-semibold transition-colors cursor-pointer ${
-                    activeDay.isPublished
-                      ? 'bg-[#EFFAE6] border-[#CDEFA9] text-[#3C8F00]'
-                      : 'bg-[#F3F0FF] border-[#DDD4FA] text-[#7956E8]'
-                  }`}
-                >
-                  {activeDay.isPublished ? <Eye className="h-3.5 w-3.5" /> : <EyeOff className="h-3.5 w-3.5" />}
-                  {activeDay.isPublished ? 'Published' : 'Publish Day'}
-                </button>
+            <div className="flex items-center gap-2 flex-wrap z-10">
+              {isOwner && (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => void toggleRestDay(activeGoal.id, activeDay.date)}
+                    className={`min-h-[36px] inline-flex items-center gap-1.5 rounded-full px-3.5 text-xs font-bold transition-colors cursor-pointer ${
+                      isPlannedRestDay
+                        ? 'bg-[#7651E8] text-white'
+                        : 'bg-white text-[#20202A] hover:bg-[#F8F5FF]'
+                    }`}
+                  >
+                    <Coffee className="h-3.5 w-3.5" />
+                    {isPlannedRestDay ? 'Rest Day On' : 'Rest Day'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => void toggleDayPublished(activeGoal.id, activeDay.id, !activeDay.isPublished)}
+                    className={`min-h-[36px] inline-flex items-center gap-1.5 rounded-full px-3.5 text-xs font-bold transition-colors cursor-pointer ${
+                      activeDay.isPublished
+                        ? 'bg-[#2FB368] text-white'
+                        : 'bg-white text-[#7651E8]'
+                    }`}
+                  >
+                    {activeDay.isPublished ? <Eye className="h-3.5 w-3.5" /> : <EyeOff className="h-3.5 w-3.5" />}
+                    {activeDay.isPublished ? 'Published' : 'Publish Day'}
+                  </button>
+                </>
+              )}
+              <div className="hidden md:block">
+                <SubjectCardMotif themeId={subjectTheme.id} />
               </div>
-            )}
+            </div>
           </div>
 
-          <ProgressBar
-            percent={dailyPct}
-            color={dailyPct === 100 ? '#58CC02' : '#7956E8'}
-            height="h-2"
-          />
+          <div className="flex items-center gap-3">
+            <div className="flex-1">
+              <ProgressBar
+                percent={dailyPct}
+                color={dailyPct === 100 ? '#2FB368' : subjectTheme.progressFill}
+                trackColor="#FFFFFF"
+                height="h-3"
+              />
+            </div>
+            <span className="text-xs font-black text-[#20202A] tabular-nums">{dailyPct}%</span>
+          </div>
 
-          <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-[#888888]">
-            <span className="font-semibold text-[#242424] tabular-nums">
-              {dailyPct}% complete
-            </span>
-            {partner && (
-              <span className="inline-flex items-center gap-1.5 tabular-nums">
-                <Avatar
-                  name={partner.displayName}
-                  initials={partner.avatarInitials}
-                  color={partner.avatarColor}
-                  avatarConfig={partner.avatarConfig}
-                  seedKey={partner.uid}
-                  size="xs"
-                />
-                {partner.displayName.split(' ')[0]}: {partnerCompletedCount}/{publishedCount || dayTasks.length}
+          {partner && (
+            <div className="flex items-center gap-2 text-xs font-bold text-[#20202A]">
+              <Avatar
+                name={partner.displayName}
+                initials={partner.avatarInitials}
+                color={partner.avatarColor}
+                avatarConfig={partner.avatarConfig}
+                seedKey={partner.uid}
+                size="xs"
+              />
+              <span className="tabular-nums">
+                {partner.displayName.split(' ')[0]}: {partnerCompletedCount}/{publishedCount || dayTasks.length} done today
               </span>
-            )}
-          </div>
-        </Card>
+            </div>
+          )}
+        </div>
       )}
 
       {/* Friendly Completion Feedback Strip */}
@@ -473,7 +512,7 @@ export const ChecklistPage: React.FC = () => {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -4 }}
             transition={{ duration: 0.18 }}
-            className="flex items-center justify-between rounded-xl border border-[#CDEFA9] bg-[#EFFAE6] px-4 py-2.5 text-xs font-bold text-[#3C8F00]"
+            className="flex items-center justify-between rounded-2xl border border-[#CBEBD7] bg-[#E2F5E9] px-4 py-3 text-xs font-extrabold text-[#1F874D]"
           >
             <span>{justCompleted.message}</span>
             <span className="tabular-nums">+{justCompleted.xp} XP</span>
@@ -481,10 +520,10 @@ export const ChecklistPage: React.FC = () => {
         )}
       </AnimatePresence>
 
-      {/* Clean Checklist Container */}
+      {/* Clean Rounded Checklist Task Cards */}
       {dayTasks.length === 0 ? (
         <EmptyState
-          icon={<Calendar className="h-5 w-5" />}
+          mascot="language"
           title="No quests on this day yet"
           description={
             isOwner
@@ -495,207 +534,217 @@ export const ChecklistPage: React.FC = () => {
           onAction={isOwner ? openNewTaskEditor : undefined}
         />
       ) : (
-        <Card padding="none" className="overflow-hidden">
-          <div className="divide-y divide-[#EEEEF2]" data-testid="checklist-tasks">
-            {dayTasks.map((task, idx) => {
-              const myDone = currentUser
-                ? completionSet.has(buildCompletionId(task.id, currentUser.uid))
-                : false;
-              const partnerDone = partner
-                ? completionSet.has(buildCompletionId(task.id, partner.uid))
-                : false;
-              const isJustDone = justCompleted?.id === task.id;
-              const safeYt = sanitizeExternalUrl(task.youtubeUrl);
-              const safeChatgpt = sanitizeExternalUrl(task.chatgptUrl);
+        <div className="space-y-3" data-testid="checklist-tasks">
+          {dayTasks.map((task, idx) => {
+            const myDone = currentUser
+              ? completionSet.has(buildCompletionId(task.id, currentUser.uid))
+              : false;
+            const partnerDone = partner
+              ? completionSet.has(buildCompletionId(task.id, partner.uid))
+              : false;
+            const isJustDone = justCompleted?.id === task.id;
+            const safeYt = sanitizeExternalUrl(task.youtubeUrl);
+            const safeChatgpt = sanitizeExternalUrl(task.chatgptUrl);
 
-              return (
-                <article
-                  key={task.id}
-                  className={`relative p-4 sm:px-5 transition-colors ${
-                    myDone ? 'bg-[#FAFEF7]' : 'bg-white'
-                  }`}
-                >
-                  <div className="flex items-start gap-3">
-                    {/* Crisp Animated Checkbox */}
-                    <motion.button
-                      type="button"
-                      whileTap={{ scale: 0.9 }}
-                      onClick={() => void handleCompleteQuest(task, idx)}
-                      aria-label={myDone ? `Completed ${task.title}` : `Mark "${task.title}" complete`}
-                      aria-pressed={myDone}
-                      className={`mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl transition-colors cursor-pointer ${
-                        myDone ? 'text-white' : 'hover:bg-[#F7F8FA]'
+            const statusBadge = myDone
+              ? { label: 'Completed', cls: 'bg-[#E2F5E9] text-[#1F874D]' }
+              : !task.isPublished
+              ? { label: 'Draft', cls: 'bg-[#FFE8F0] text-[#BE3469]' }
+              : isFutureDay
+              ? { label: 'Upcoming', cls: 'bg-[#FFF0C9] text-[#B47100]' }
+              : { label: 'Not Started', cls: 'bg-[#E9DFFF] text-[#6842DE]' };
+
+            return (
+              <article
+                key={task.id}
+                className={`rounded-[24px] border p-4 sm:p-5 transition-all ${
+                  myDone
+                    ? 'bg-[#F5FCF7] border-[#CBEBD7]'
+                    : 'bg-white border-[#F0EDF5] shadow-[0_6px_20px_-14px_rgba(118,81,232,0.12)]'
+                }`}
+              >
+                <div className="flex items-start gap-3.5">
+                  {/* Animated Round Checkbox */}
+                  <motion.button
+                    type="button"
+                    whileTap={{ scale: 0.9 }}
+                    onClick={() => void handleCompleteQuest(task, idx)}
+                    aria-label={myDone ? `Completed ${task.title}` : `Mark "${task.title}" complete`}
+                    aria-pressed={myDone}
+                    className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-full hover:bg-[#F8F5FF] transition-colors cursor-pointer"
+                  >
+                    <span
+                      className={`flex h-7 w-7 items-center justify-center rounded-full border-2 transition-colors duration-150 ${
+                        myDone
+                          ? 'bg-[#2FB368] border-[#2FB368] text-white'
+                          : 'bg-white border-[#D4CCE9] text-transparent hover:border-[#7651E8]'
                       }`}
                     >
-                      <span
-                        className={`flex h-6 w-6 items-center justify-center rounded-lg border-2 transition-colors duration-150 ${
-                          myDone
-                            ? 'bg-[#58CC02] border-[#58CC02] text-white'
-                            : 'bg-white border-[#CFCFD8] text-transparent'
-                        }`}
+                      <Check className="h-4 w-4 stroke-[3]" />
+                    </span>
+                  </motion.button>
+
+                  <div className="flex-1 min-w-0">
+                    <div className="flex flex-wrap items-start justify-between gap-2">
+                      <button
+                        type="button"
+                        onClick={() => openTaskDetail(task)}
+                        className="flex items-start gap-2.5 text-left group min-w-0 cursor-pointer"
                       >
-                        <Check className="h-3.5 w-3.5 stroke-[3]" />
-                      </span>
-                    </motion.button>
-
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-start justify-between gap-2">
-                        <button
-                          type="button"
-                          onClick={() => openTaskDetail(task)}
-                          className="flex items-start gap-2 text-left group min-w-0 cursor-pointer"
+                        <span
+                          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-[#F8F5FF] text-base select-none"
+                          aria-hidden="true"
                         >
-                          <span className="text-base leading-snug shrink-0 select-none" aria-hidden="true">
-                            {getTaskEmoji(task.title, task.priority)}
-                          </span>
-                          <h3
-                            className={`text-sm sm:text-[15px] font-bold leading-snug group-hover:text-[#7956E8] transition-colors ${
-                              myDone ? 'text-[#888888] line-through' : 'text-[#242424]'
-                            }`}
-                          >
-                            {task.title}
-                          </h3>
-                        </button>
+                          {getTaskEmoji(task.title, task.priority)}
+                        </span>
+                        <h3
+                          className={`font-display text-base font-extrabold leading-snug group-hover:text-[#7651E8] transition-colors pt-0.5 ${
+                            myDone ? 'text-[#8B8A99] line-through' : 'text-[#20202A]'
+                          }`}
+                        >
+                          {task.title}
+                        </h3>
+                      </button>
 
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        <span className={`rounded-full px-2.5 py-0.5 text-[11px] font-extrabold ${statusBadge.cls}`}>
+                          {statusBadge.label}
+                        </span>
                         <motion.span
                           key={isJustDone ? `xp-pop-${task.id}` : `xp-idle-${task.id}`}
                           initial={isJustDone ? { scale: 1.18 } : false}
                           animate={{ scale: 1 }}
                           transition={{ duration: 0.22 }}
-                          className={`shrink-0 text-xs font-bold tabular-nums whitespace-nowrap ${
-                            myDone ? 'text-[#3C8F00]' : 'text-[#7956E8]'
+                          className={`rounded-full px-2.5 py-0.5 text-xs font-extrabold tabular-nums whitespace-nowrap ${
+                            myDone ? 'bg-[#E2F5E9] text-[#1F874D]' : 'bg-[#FFF0C9] text-[#B47100]'
                           }`}
                         >
                           +{task.xpReward} XP
                         </motion.span>
                       </div>
+                    </div>
 
-                      {task.shortDescription && (
-                        <p className="mt-1 text-xs sm:text-sm text-[#666666] leading-relaxed">
-                          {task.shortDescription}
-                        </p>
+                    {task.shortDescription && (
+                      <p className="mt-1.5 text-xs sm:text-sm text-[#777783] leading-relaxed">
+                        {task.shortDescription}
+                      </p>
+                    )}
+
+                    {/* Clean Inline Metadata */}
+                    <div className="mt-2.5 flex flex-wrap items-center gap-x-2.5 gap-y-1 text-xs font-medium text-[#777783] tabular-nums">
+                      <span>⏱️ {task.estimatedMinutes} min</span>
+                      <span aria-hidden="true">·</span>
+                      <span className="capitalize">
+                        {task.priority === 'low' ? 'Easy' : task.priority === 'high' ? 'Hard' : 'Medium'}
+                      </span>
+                      {partner && (
+                        <>
+                          <span aria-hidden="true">·</span>
+                          <span className={partnerDone ? 'text-[#1F874D] font-bold' : 'text-[#777783]'}>
+                            {partner.displayName.split(' ')[0]}: {partnerDone ? 'Completed' : 'Pending'}
+                          </span>
+                        </>
                       )}
+                    </div>
 
-                      {/* Unboxed Inline Metadata */}
-                      <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-[#888888] tabular-nums">
-                        <span>{task.estimatedMinutes} min</span>
-                        <span aria-hidden="true">·</span>
-                        <span className="capitalize">{task.priority === 'low' ? 'Easy' : task.priority === 'high' ? 'Hard' : 'Medium'}</span>
-                        {!task.isPublished && (
-                          <>
-                            <span aria-hidden="true">·</span>
-                            <span className="text-[#FF9600] font-semibold">Draft</span>
-                          </>
+                    {/* Action Links & Owner Tools */}
+                    <div className="mt-3 pt-3 border-t border-[#F0EDF5] flex flex-wrap items-center justify-between gap-2">
+                      <div className="flex flex-wrap items-center gap-2 text-xs font-bold">
+                        <button
+                          type="button"
+                          onClick={() => openTaskDetail(task)}
+                          className="inline-flex items-center gap-1.5 rounded-full bg-[#F8F5FF] px-3 py-1.5 text-[#7651E8] hover:bg-[#E9DFFF] transition-colors cursor-pointer"
+                        >
+                          <BookOpen className="h-3.5 w-3.5" />
+                          Notes
+                        </button>
+
+                        {safeYt && (
+                          <a
+                            href={safeYt}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1.5 rounded-full bg-[#FFF0F3] px-3 py-1.5 text-[#C82D4F] hover:bg-[#FFE3E9] transition-colors"
+                          >
+                            <Youtube className="h-3.5 w-3.5" />
+                            Video
+                          </a>
                         )}
-                        {partner && (
-                          <>
-                            <span aria-hidden="true">·</span>
-                            <span className={partnerDone ? 'text-[#3C8F00] font-medium' : 'text-[#888888]'}>
-                              {partner.displayName.split(' ')[0]}: {partnerDone ? 'Done' : 'Pending'}
-                            </span>
-                          </>
+
+                        {safeChatgpt && (
+                          <a
+                            href={safeChatgpt}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1.5 rounded-full bg-[#E2F5E9] px-3 py-1.5 text-[#1F874D] hover:bg-[#D1EEDD] transition-colors"
+                          >
+                            <MessageSquare className="h-3.5 w-3.5" />
+                            ChatGPT
+                          </a>
                         )}
                       </div>
 
-                      {/* Quiet Action Links & Owner Tools */}
-                      <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
-                        <div className="flex flex-wrap items-center gap-3 text-xs font-semibold">
+                      {isOwner && (
+                        <div className="flex items-center gap-0.5">
                           <button
                             type="button"
-                            onClick={() => openTaskDetail(task)}
-                            className="inline-flex items-center gap-1 text-[#7956E8] hover:underline cursor-pointer py-1"
+                            disabled={idx === 0}
+                            onClick={() => void reorderTask(activeGoal.id, task.dayId, task.id, 'up')}
+                            aria-label={`Move "${task.title}" up`}
+                            className="min-h-[34px] min-w-[34px] flex items-center justify-center rounded-full text-[#777783] hover:bg-[#F8F5FF] hover:text-[#20202A] disabled:opacity-30 cursor-pointer"
                           >
-                            <BookOpen className="h-3.5 w-3.5" />
-                            Notes
+                            <ArrowUp className="h-3.5 w-3.5" />
                           </button>
-
-                          {safeYt && (
-                            <a
-                              href={safeYt}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="inline-flex items-center gap-1 text-[#555555] hover:text-[#242424] py-1"
-                            >
-                              <Youtube className="h-3.5 w-3.5 text-[#E5484D]" />
-                              Video
-                            </a>
-                          )}
-
-                          {safeChatgpt && (
-                            <a
-                              href={safeChatgpt}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="inline-flex items-center gap-1 text-[#555555] hover:text-[#242424] py-1"
-                            >
-                              <MessageSquare className="h-3.5 w-3.5 text-[#58CC02]" />
-                              ChatGPT
-                            </a>
-                          )}
+                          <button
+                            type="button"
+                            disabled={idx === dayTasks.length - 1}
+                            onClick={() => void reorderTask(activeGoal.id, task.dayId, task.id, 'down')}
+                            aria-label={`Move "${task.title}" down`}
+                            className="min-h-[34px] min-w-[34px] flex items-center justify-center rounded-full text-[#777783] hover:bg-[#F8F5FF] hover:text-[#20202A] disabled:opacity-30 cursor-pointer"
+                          >
+                            <ArrowDown className="h-3.5 w-3.5" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => openEditTaskEditor(task)}
+                            aria-label={`Edit "${task.title}"`}
+                            className="min-h-[34px] min-w-[34px] flex items-center justify-center rounded-full text-[#777783] hover:bg-[#F8F5FF] hover:text-[#20202A] cursor-pointer"
+                          >
+                            <Edit3 className="h-3.5 w-3.5" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => void duplicateTask(activeGoal.id, task)}
+                            aria-label={`Duplicate "${task.title}"`}
+                            className="min-h-[34px] min-w-[34px] flex items-center justify-center rounded-full text-[#777783] hover:bg-[#F8F5FF] hover:text-[#20202A] cursor-pointer"
+                          >
+                            <Copy className="h-3.5 w-3.5" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => void archiveTask(activeGoal.id, task)}
+                            aria-label={`Archive "${task.title}"`}
+                            className="min-h-[34px] min-w-[34px] flex items-center justify-center rounded-full text-[#777783] hover:bg-[#F8F5FF] hover:text-[#20202A] cursor-pointer"
+                          >
+                            <Archive className="h-3.5 w-3.5" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setTaskToDelete(task)}
+                            aria-label={`Delete "${task.title}"`}
+                            className="min-h-[34px] min-w-[34px] flex items-center justify-center rounded-full text-[#C82D4F] hover:bg-[#FFF0F3] cursor-pointer"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </button>
                         </div>
-
-                        {isOwner && (
-                          <div className="flex items-center gap-0.5">
-                            <button
-                              type="button"
-                              disabled={idx === 0}
-                              onClick={() => void reorderTask(activeGoal.id, task.dayId, task.id, 'up')}
-                              aria-label={`Move "${task.title}" up`}
-                              className="min-h-[34px] min-w-[34px] flex items-center justify-center rounded-lg text-[#888888] hover:bg-[#F7F8FA] hover:text-[#242424] disabled:opacity-30 cursor-pointer"
-                            >
-                              <ArrowUp className="h-3.5 w-3.5" />
-                            </button>
-                            <button
-                              type="button"
-                              disabled={idx === dayTasks.length - 1}
-                              onClick={() => void reorderTask(activeGoal.id, task.dayId, task.id, 'down')}
-                              aria-label={`Move "${task.title}" down`}
-                              className="min-h-[34px] min-w-[34px] flex items-center justify-center rounded-lg text-[#888888] hover:bg-[#F7F8FA] hover:text-[#242424] disabled:opacity-30 cursor-pointer"
-                            >
-                              <ArrowDown className="h-3.5 w-3.5" />
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => openEditTaskEditor(task)}
-                              aria-label={`Edit "${task.title}"`}
-                              className="min-h-[34px] min-w-[34px] flex items-center justify-center rounded-lg text-[#888888] hover:bg-[#F7F8FA] hover:text-[#242424] cursor-pointer"
-                            >
-                              <Edit3 className="h-3.5 w-3.5" />
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => void duplicateTask(activeGoal.id, task)}
-                              aria-label={`Duplicate "${task.title}"`}
-                              className="min-h-[34px] min-w-[34px] flex items-center justify-center rounded-lg text-[#888888] hover:bg-[#F7F8FA] hover:text-[#242424] cursor-pointer"
-                            >
-                              <Copy className="h-3.5 w-3.5" />
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => void archiveTask(activeGoal.id, task)}
-                              aria-label={`Archive "${task.title}"`}
-                              className="min-h-[34px] min-w-[34px] flex items-center justify-center rounded-lg text-[#888888] hover:bg-[#F7F8FA] hover:text-[#242424] cursor-pointer"
-                            >
-                              <Archive className="h-3.5 w-3.5" />
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => setTaskToDelete(task)}
-                              aria-label={`Delete "${task.title}"`}
-                              className="min-h-[34px] min-w-[34px] flex items-center justify-center rounded-lg text-[#E5484D] hover:bg-[#FFF5F5] cursor-pointer"
-                            >
-                              <Trash2 className="h-3.5 w-3.5" />
-                            </button>
-                          </div>
-                        )}
-                      </div>
+                      )}
                     </div>
                   </div>
-                </article>
-              );
-            })}
-          </div>
-        </Card>
+                </div>
+              </article>
+            );
+          })}
+        </div>
       )}
 
       {/* Quest Detail Sheet */}

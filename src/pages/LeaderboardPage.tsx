@@ -1,8 +1,9 @@
 import React, { useMemo, useState } from 'react';
-import { Trophy, UserPlus } from 'lucide-react';
+import { UserPlus } from 'lucide-react';
 import { useStudyDuo } from '../context/StudyDuoContext';
 import { computeLeaderboard, getDateKeyInTimezone } from '../lib/gamification';
 import { Avatar, Button, Card, EmptyState } from '../components/ui/Primitives';
+import { MascotImage } from '../components/ui/MascotArtwork';
 
 type LeaderboardTab = 'today' | 'week' | 'overall';
 
@@ -66,7 +67,7 @@ export const LeaderboardPage: React.FC = () => {
   if (!activeGoal) {
     return (
       <EmptyState
-        icon={<Trophy className="h-6 w-6" />}
+        mascot="owl"
         title="No active leaderboard yet"
         description="Join or create a study goal to compare daily, weekly, and overall XP with your study partner."
         actionLabel="Go to Roadmap"
@@ -82,13 +83,13 @@ export const LeaderboardPage: React.FC = () => {
 
   return (
     <div className="space-y-5">
-      {/* Header & Clean Segmented Tabs */}
+      {/* Header & Rounded Pill Tabs */}
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-extrabold tracking-tight text-[#242424]">
+          <h1 className="font-display text-2xl sm:text-3xl font-black tracking-tight text-[#20202A]">
             Leaderboard
           </h1>
-          <p className="mt-0.5 text-sm text-[#888888]">
+          <p className="mt-0.5 text-sm text-[#777783]">
             {activeGoal.title} · Fair, tie-aware XP standings
           </p>
         </div>
@@ -96,7 +97,7 @@ export const LeaderboardPage: React.FC = () => {
         <div
           role="tablist"
           aria-label="Leaderboard timeframe"
-          className="inline-flex rounded-xl border border-[#EEEEF2] bg-white p-1 self-start sm:self-auto"
+          className="inline-flex rounded-full border border-[#F0EDF5] bg-white p-1 self-start sm:self-auto shadow-xs"
         >
           {TABS.map((t) => {
             const active = tab === t.id;
@@ -107,10 +108,10 @@ export const LeaderboardPage: React.FC = () => {
                 role="tab"
                 aria-selected={active}
                 onClick={() => setTab(t.id)}
-                className={`min-h-[36px] rounded-lg px-3.5 text-xs font-bold transition-colors cursor-pointer ${
+                className={`min-h-[38px] rounded-full px-4 text-xs font-extrabold transition-colors cursor-pointer ${
                   active
-                    ? 'bg-[#7956E8] text-white'
-                    : 'text-[#888888] hover:text-[#242424]'
+                    ? 'bg-[#7651E8] text-white'
+                    : 'text-[#777783] hover:text-[#20202A]'
                 }`}
               >
                 {t.label}
@@ -120,25 +121,40 @@ export const LeaderboardPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Compact Top-3 Highlight Strip (no oversized cartoon podium) */}
+      {/* Pastel Yellow Leaders Showcase */}
       {rankings.length === 0 ? (
         <EmptyState
-          icon={<Trophy className="h-6 w-6" />}
+          mascot="owl"
           title="No participants ranked yet"
           description="Complete quests to appear on the leaderboard."
         />
       ) : (
-        <Card>
-          <div className="flex items-center justify-between gap-2 mb-4">
-            <h2 className="text-sm font-bold text-[#242424]">
-              {tab === 'today'
-                ? `Today's Leaders (${todayKey})`
-                : tab === 'week'
-                ? '7-Day Leaders'
-                : 'All-Time Leaders'}
-            </h2>
+        <div className="rounded-[28px] bg-[#FFF0C9] p-5 sm:p-6 space-y-4">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <MascotImage
+                mascot="owl"
+                className="h-14 w-14 shrink-0 ring-2 ring-white shadow-xs"
+                rounded="rounded-full"
+                seamless={false}
+              />
+              <div>
+                <h2 className="font-display text-lg font-black text-[#20202A]">
+                  {tab === 'today'
+                    ? `Today's Leaders (${todayKey})`
+                    : tab === 'week'
+                    ? '7-Day Leaders'
+                    : 'All-Time Leaders'}
+                </h2>
+                <p className="text-xs font-semibold text-[#8A5A00]">
+                  Every quest counts toward your daily crown!
+                </p>
+              </div>
+            </div>
             {isTiedTop && (
-              <span className="text-xs font-bold text-[#B26A00]">🤝 Tied for #1</span>
+              <span className="rounded-full bg-white px-3 py-1 text-xs font-extrabold text-[#B47100]">
+                🤝 Tied for #1
+              </span>
             )}
           </div>
 
@@ -155,13 +171,11 @@ export const LeaderboardPage: React.FC = () => {
               return (
                 <div
                   key={entry.uid}
-                  className={`flex items-center gap-3 rounded-xl border p-3.5 ${
-                    isFirst
-                      ? 'border-[#F5D782] bg-[#FFFDF5]'
-                      : 'border-[#EEEEF2] bg-white'
+                  className={`flex items-center gap-3 rounded-[22px] p-4 shadow-[0_6px_18px_-12px_rgba(32,32,42,0.14)] ${
+                    isFirst ? 'bg-white ring-2 ring-[#FFC857]' : 'bg-white/90'
                   }`}
                 >
-                  <span className="text-xl leading-none shrink-0" aria-hidden="true">
+                  <span className="text-2xl leading-none shrink-0" aria-hidden="true">
                     {RANK_MEDAL(entry.rank)}
                   </span>
                   <Avatar
@@ -173,19 +187,19 @@ export const LeaderboardPage: React.FC = () => {
                     size="sm"
                   />
                   <div className="min-w-0 flex-1">
-                    <p className="text-sm font-bold text-[#242424] truncate">
+                    <p className="text-sm font-extrabold text-[#20202A] truncate">
                       {entry.displayName.split(' ')[0]}
                       {isMe ? ' (You)' : ''}
                     </p>
-                    <p className="text-xs text-[#888888] tabular-nums">
+                    <p className="text-xs text-[#777783] tabular-nums">
                       Lv.{entry.level} · 🔥 {entry.currentStreak}d
                     </p>
                   </div>
                   <div className="text-right shrink-0">
-                    <p className="text-sm font-extrabold text-[#7956E8] tabular-nums">
+                    <p className="font-display text-base font-black text-[#7651E8] tabular-nums">
                       {entry.points.toLocaleString()}
                     </p>
-                    <p className="text-[10px] font-semibold text-[#888888]">XP</p>
+                    <p className="text-[10px] font-bold text-[#777783]">XP</p>
                   </div>
                 </div>
               );
@@ -195,37 +209,39 @@ export const LeaderboardPage: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setActivePage('groups')}
-                className="flex items-center justify-center gap-2 rounded-xl border border-dashed border-[#D8D4EC] bg-[#FAFAFC] p-3.5 text-xs font-semibold text-[#7956E8] hover:bg-[#F5F2FF] transition-colors cursor-pointer"
+                className="flex items-center justify-center gap-2 rounded-[22px] border-2 border-dashed border-[#E6C575] bg-white/75 p-4 text-xs font-extrabold text-[#8A5A00] hover:bg-white transition-colors cursor-pointer"
               >
                 <UserPlus className="h-4 w-4" />
                 Invite Study Partner
               </button>
             )}
           </div>
-        </Card>
+        </div>
       )}
 
-      {/* Clean Standings List + Daily Winner History */}
+      {/* Standings List + Daily Winner History */}
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-12 items-start">
         {/* Standings (7 cols) */}
         <Card padding="none" className="lg:col-span-7 overflow-hidden">
-          <div className="flex items-center justify-between gap-2 px-5 py-4 border-b border-[#EEEEF2]">
-            <h2 className="text-base font-bold text-[#242424]">Standings</h2>
-            <span className="text-xs font-medium text-[#888888] capitalize">{tab} XP</span>
+          <div className="flex items-center justify-between gap-2 px-5 py-4 border-b border-[#F0EDF5]">
+            <h2 className="font-display text-base font-black text-[#20202A]">Standings</h2>
+            <span className="rounded-full bg-[#F8F5FF] px-3 py-0.5 text-xs font-bold text-[#7651E8] capitalize">
+              {tab} XP
+            </span>
           </div>
 
-          <div className="divide-y divide-[#EEEEF2]">
+          <div className="divide-y divide-[#F0EDF5]">
             {rankings.map((entry) => {
               const isMe = entry.uid === currentUser?.uid;
               return (
                 <div
                   key={entry.uid}
                   className={`flex items-center justify-between gap-3 px-5 py-3.5 ${
-                    isMe ? 'bg-[#FAF8FF]' : 'bg-white'
+                    isMe ? 'bg-[#F8F5FF]' : 'bg-white'
                   }`}
                 >
                   <div className="flex items-center gap-3 min-w-0">
-                    <span className="w-7 text-center text-sm font-extrabold text-[#242424] tabular-nums shrink-0">
+                    <span className="flex h-8 w-8 items-center justify-center rounded-full bg-[#E9DFFF]/70 text-xs font-black text-[#7651E8] tabular-nums shrink-0">
                       #{entry.rank}
                     </span>
                     <Avatar
@@ -237,24 +253,24 @@ export const LeaderboardPage: React.FC = () => {
                       size="sm"
                     />
                     <div className="min-w-0">
-                      <p className="truncate text-sm font-bold text-[#242424]">
+                      <p className="truncate text-sm font-extrabold text-[#20202A]">
                         {entry.displayName}
                         {isMe && (
-                          <span className="ml-1.5 text-xs font-semibold text-[#7956E8]">(You)</span>
+                          <span className="ml-1.5 text-xs font-bold text-[#7651E8]">(You)</span>
                         )}
                       </p>
-                      <p className="text-xs text-[#888888] truncate">
+                      <p className="text-xs text-[#777783] truncate">
                         Lv.{entry.level} {entry.levelTitle} · 🔥 {entry.currentStreak}d
                       </p>
                     </div>
                   </div>
 
                   <div className="text-right shrink-0">
-                    <p className="text-sm font-extrabold text-[#7956E8] tabular-nums">
+                    <p className="text-sm font-black text-[#7651E8] tabular-nums">
                       {entry.points.toLocaleString()} XP
                     </p>
                     {entry.isTied && (
-                      <p className="text-[11px] font-semibold text-[#B26A00]">Tied</p>
+                      <p className="text-[11px] font-bold text-[#B47100]">Tied</p>
                     )}
                   </div>
                 </div>
@@ -266,16 +282,16 @@ export const LeaderboardPage: React.FC = () => {
         {/* Winner History (5 cols) */}
         <Card className="lg:col-span-5 space-y-4">
           <div>
-            <h2 className="text-base font-bold text-[#242424]">Daily Winner History</h2>
-            <p className="text-xs text-[#888888] mt-0.5">Recorded in goal timezone ({tz})</p>
+            <h2 className="font-display text-base font-black text-[#20202A]">Daily Winner History</h2>
+            <p className="text-xs text-[#777783] mt-0.5">Recorded in goal timezone ({tz})</p>
           </div>
 
           {sortedHistory.length === 0 ? (
-            <div className="rounded-xl border border-dashed border-[#EEEEF2] bg-[#F7F8FA] p-5 text-center text-xs text-[#888888]">
+            <div className="rounded-2xl border border-dashed border-[#E4DAFA] bg-[#F8F5FF] p-5 text-center text-xs text-[#777783]">
               Complete today&apos;s quests to record your first daily winner entry.
             </div>
           ) : (
-            <div className="divide-y divide-[#EEEEF2]">
+            <div className="divide-y divide-[#F0EDF5]">
               {sortedHistory.slice(0, 8).map((res) => {
                 const winnerNames = res.winnerIds
                   .map((id) => participantById.get(id)?.displayName.split(' ')[0] || 'Player')
@@ -286,11 +302,11 @@ export const LeaderboardPage: React.FC = () => {
                     className="py-3 first:pt-0 last:pb-0 flex items-center justify-between gap-3"
                   >
                     <div className="min-w-0">
-                      <p className="font-mono text-xs font-bold text-[#242424] tabular-nums">
+                      <p className="font-mono text-xs font-bold text-[#20202A] tabular-nums">
                         {res.dateKey}
                         {res.dateKey === todayKey ? ' · Today' : ''}
                       </p>
-                      <p className="text-xs text-[#888888] truncate mt-0.5">
+                      <p className="text-xs text-[#777783] truncate mt-0.5">
                         {res.winnerIds.length === 0
                           ? 'No XP recorded'
                           : res.isTie
@@ -298,13 +314,13 @@ export const LeaderboardPage: React.FC = () => {
                           : `Winner: ${winnerNames}`}
                       </p>
                     </div>
-                    <div className="flex items-center gap-2 shrink-0 text-xs font-bold tabular-nums text-[#5C5C6E]">
+                    <div className="flex items-center gap-2 shrink-0 text-xs font-bold tabular-nums text-[#5C5C6C]">
                       {Object.entries(res.scores).map(([uid, score]) => {
                         const p = participantById.get(uid);
                         return (
-                          <span key={uid}>
+                          <span key={uid} className="rounded-full bg-[#F8F5FF] px-2 py-0.5">
                             {p ? p.displayName.split(' ')[0].slice(0, 1) : '?'}:{' '}
-                            <span className="text-[#7956E8]">{score}</span>
+                            <span className="text-[#7651E8]">{score}</span>
                           </span>
                         );
                       })}
@@ -315,7 +331,7 @@ export const LeaderboardPage: React.FC = () => {
             </div>
           )}
 
-          <Button variant="secondary" size="sm" fullWidth onClick={() => setActivePage('checklist')}>
+          <Button variant="primary" size="sm" fullWidth withArrowCircle onClick={() => setActivePage('checklist')}>
             Earn XP in Quest Center
           </Button>
         </Card>

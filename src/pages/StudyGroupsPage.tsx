@@ -4,10 +4,10 @@ import {
   Copy,
   Pencil,
   UserPlus,
-  Users,
 } from 'lucide-react';
 import { useStudyDuo } from '../context/StudyDuoContext';
 import { Avatar, Button, Card, EmptyState, ModalSheet, ProgressBar } from '../components/ui/Primitives';
+import { MascotImage } from '../components/ui/MascotArtwork';
 import { canManageGoal, getLevelInfo } from '../lib/gamification';
 
 export const StudyGroupsPage: React.FC = () => {
@@ -100,11 +100,11 @@ export const StudyGroupsPage: React.FC = () => {
     return (
       <div className="space-y-5">
         <header>
-          <h1 className="text-2xl font-extrabold text-[#242424] tracking-tight">Study Duo</h1>
-          <p className="mt-1 text-sm text-[#888888]">Collaborate with a dedicated study partner.</p>
+          <h1 className="font-display text-2xl sm:text-3xl font-black text-[#20202A] tracking-tight">Study Duo</h1>
+          <p className="mt-1 text-sm text-[#777783]">Collaborate with a dedicated study partner.</p>
         </header>
         <EmptyState
-          icon={<Users className="h-6 w-6" />}
+          mascot="language"
           title="No study duo yet"
           description="Create a shared learning goal or accept a partner invitation to form your StudyDuo group."
           actionLabel="Create or Join a Goal"
@@ -116,13 +116,13 @@ export const StudyGroupsPage: React.FC = () => {
 
   return (
     <div className="space-y-5">
-      {/* Clean Page Header */}
+      {/* Header */}
       <header className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div className="min-w-0">
-          <h1 className="text-2xl font-extrabold text-[#242424] tracking-tight truncate">
+          <h1 className="font-display text-2xl sm:text-3xl font-black text-[#20202A] tracking-tight truncate">
             {activeGoal.groupName || activeGoal.title}
           </h1>
-          <p className="mt-0.5 text-sm text-[#888888]">
+          <p className="mt-0.5 text-sm text-[#777783]">
             {participants.length}/{activeGoal.maxParticipants} learners · {activeGoal.category} ·{' '}
             {activeGoal.durationDays}-day goal
           </p>
@@ -130,7 +130,7 @@ export const StudyGroupsPage: React.FC = () => {
         <div className="flex items-center gap-2 shrink-0">
           {isOwner && (
             <Button variant="secondary" size="sm" onClick={handleOpenEditGroup}>
-              <Pencil className="h-3.5 w-3.5" />
+              <Pencil className="h-3.5 w-3.5 text-[#7651E8]" />
               Rename Duo
             </Button>
           )}
@@ -140,98 +140,114 @@ export const StudyGroupsPage: React.FC = () => {
         </div>
       </header>
 
-      {/* Main Collaborative Duo Card */}
-      <Card padding="none" className="overflow-hidden">
-        <div className="p-5 sm:p-6">
-          {/* Shared Goal & Progress */}
-          <div className="flex flex-wrap items-baseline justify-between gap-2 mb-2">
+      {/* Pastel Collaborative Duo Hero Card */}
+      <div className="rounded-[28px] bg-[#E9DFFF] p-5 sm:p-6 space-y-5">
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div className="flex items-center gap-3.5 min-w-0">
+            <MascotImage mascot="brain" className="h-16 w-16 shrink-0" rounded="rounded-2xl" />
             <div className="min-w-0">
-              <p className="text-xs font-semibold text-[#888888]">Shared Goal</p>
-              <h2 className="text-base font-extrabold text-[#242424] truncate">{activeGoal.title}</h2>
+              <span className="inline-flex items-center rounded-full bg-white px-2.5 py-0.5 text-[11px] font-extrabold text-[#6842DE]">
+                Shared Goal
+              </span>
+              <h2 className="mt-1 font-display text-lg sm:text-xl font-black text-[#20202A] truncate">
+                {activeGoal.title}
+              </h2>
+              <p className="text-xs font-medium text-[#5C5C6C]">{motivationalLine}</p>
             </div>
-            <span className="text-sm font-extrabold text-[#3C8F00] tabular-nums">
-              {sharedProgress}% complete
-            </span>
           </div>
-          <ProgressBar percent={sharedProgress} color="#58CC02" height="h-2" />
-          <p className="mt-2.5 text-xs text-[#5C5C6E]">{motivationalLine}</p>
 
-          {/* Both Avatars Side-by-Side */}
-          <div className="mt-5 grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {participants.map((member) => {
-              const lvl = getLevelInfo(member.goalXp);
-              const isMe = member.uid === currentUser.uid;
-              return (
-                <div
-                  key={member.uid}
-                  className={`flex items-center gap-3.5 rounded-xl border p-3.5 ${
-                    isMe ? 'border-[#D9CEFF] bg-[#FBF9FF]' : 'border-[#EEEEF2] bg-white'
-                  }`}
-                >
-                  <Avatar
-                    name={member.displayName}
-                    initials={member.avatarInitials}
-                    color={member.avatarColor}
-                    avatarConfig={member.avatarConfig}
-                    seedKey={member.uid}
-                    size="md"
-                  />
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-1.5">
-                      <p className="text-sm font-bold text-[#242424] truncate">
-                        {member.displayName}
-                      </p>
-                      {isMe && (
-                        <span className="text-[11px] font-bold text-[#7956E8] shrink-0">You</span>
-                      )}
-                    </div>
-                    <p className="text-xs text-[#888888] truncate">
-                      Lv.{lvl.level} · {member.role === 'owner' ? 'Goal Owner' : 'Study Partner'}
-                    </p>
-                    <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs tabular-nums text-[#5C5C6E]">
-                      <span className="font-bold text-[#7956E8]">{member.goalXp} XP</span>
-                      <span>✅ {member.completedTasksCount}</span>
-                      <span className="text-[#D97706] font-semibold">🔥 {member.currentStreak}d</span>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+          <span className="rounded-full bg-white px-3.5 py-1.5 text-sm font-black text-[#1F874D] tabular-nums shrink-0 shadow-xs">
+            {sharedProgress}% complete
+          </span>
         </div>
 
-        {/* Hairline-Divided Summary Strip */}
-        <div className="grid grid-cols-3 divide-x divide-[#EEEEF2] border-t border-[#EEEEF2] bg-[#FAFAFC]">
-          <div className="px-4 py-3 text-center">
-            <p className="text-[11px] font-medium text-[#888888]">Duo Streak</p>
-            <p className="mt-0.5 text-base font-extrabold text-[#242424] tabular-nums">
+        <ProgressBar percent={sharedProgress} color="#7651E8" trackColor="#FFFFFF" height="h-3" />
+
+        {/* Both Avatars Side-by-Side */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+          {participants.map((member, idx) => {
+            const lvl = getLevelInfo(member.goalXp);
+            const isMe = member.uid === currentUser.uid;
+            return (
+              <div
+                key={member.uid}
+                className={`flex items-center gap-3.5 rounded-[22px] p-4 shadow-[0_6px_18px_-12px_rgba(32,32,42,0.12)] ${
+                  idx === 0 ? 'bg-white' : 'bg-[#FFFDF5]'
+                }`}
+              >
+                <Avatar
+                  name={member.displayName}
+                  initials={member.avatarInitials}
+                  color={member.avatarColor}
+                  avatarConfig={member.avatarConfig}
+                  seedKey={member.uid}
+                  size="md"
+                />
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-1.5">
+                    <p className="text-sm font-extrabold text-[#20202A] truncate">
+                      {member.displayName}
+                    </p>
+                    {isMe && (
+                      <span className="rounded-full bg-[#E9DFFF] px-2 py-0.5 text-[10px] font-extrabold text-[#7651E8] shrink-0">
+                        You
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-xs text-[#777783] truncate">
+                    Lv.{lvl.level} · {member.role === 'owner' ? 'Goal Owner' : 'Study Partner'}
+                  </p>
+                  <div className="mt-1.5 flex flex-wrap items-center gap-2 text-xs tabular-nums">
+                    <span className="rounded-full bg-[#F8F5FF] px-2 py-0.5 font-extrabold text-[#7651E8]">
+                      {member.goalXp} XP
+                    </span>
+                    <span className="rounded-full bg-[#E2F5E9] px-2 py-0.5 font-bold text-[#1F874D]">
+                      ✅ {member.completedTasksCount}
+                    </span>
+                    <span className="rounded-full bg-[#FFF0C9] px-2 py-0.5 font-bold text-[#B47100]">
+                      🔥 {member.currentStreak}d
+                    </span>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* 3 Pastel Summary Pills */}
+        <div className="grid grid-cols-3 gap-3">
+          <div className="rounded-2xl bg-[#FFF0C9] px-3 py-3 text-center">
+            <p className="text-[11px] font-bold text-[#8A5A00]">Duo Streak</p>
+            <p className="mt-0.5 font-display text-lg font-black text-[#20202A] tabular-nums">
               🔥 {activeGoal.groupStreak}d
             </p>
           </div>
-          <div className="px-4 py-3 text-center">
-            <p className="text-[11px] font-medium text-[#888888]">Combined Done</p>
-            <p className="mt-0.5 text-base font-extrabold text-[#242424] tabular-nums">
+          <div className="rounded-2xl bg-[#E2F5E9] px-3 py-3 text-center">
+            <p className="text-[11px] font-bold text-[#1F874D]">Combined Done</p>
+            <p className="mt-0.5 font-display text-lg font-black text-[#20202A] tabular-nums">
               ✅ {combinedQuestsDone}
             </p>
           </div>
-          <div className="px-4 py-3 text-center">
-            <p className="text-[11px] font-medium text-[#888888]">Daily Target</p>
-            <p className="mt-0.5 text-base font-extrabold text-[#242424] tabular-nums">
+          <div className="rounded-2xl bg-[#FFE8F0] px-3 py-3 text-center">
+            <p className="text-[11px] font-bold text-[#BE3469]">Daily Target</p>
+            <p className="mt-0.5 font-display text-lg font-black text-[#20202A] tabular-nums">
               ⏱️ {activeGoal.dailyTargetMinutes}m
             </p>
           </div>
         </div>
-      </Card>
+      </div>
 
       {/* Invite Partner (if owner and slot available) */}
       {isOwner && participants.length < activeGoal.maxParticipants && (
         <Card>
           <form onSubmit={handleCreateInvite} className="space-y-3">
             <div className="flex items-center gap-2">
-              <UserPlus className="h-4 w-4 text-[#7956E8]" />
-              <h2 className="text-sm font-bold text-[#242424]">Invite a Study Partner</h2>
+              <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#E9DFFF] text-[#7651E8]">
+                <UserPlus className="h-4 w-4" />
+              </span>
+              <h2 className="font-display text-base font-black text-[#20202A]">Invite a Study Partner</h2>
             </div>
-            <p className="text-xs text-[#888888]">
+            <p className="text-xs text-[#777783]">
               Generate a shareable invite code so your friend can join this goal and track tasks alongside you.
             </p>
             <div className="flex flex-col sm:flex-row gap-2.5">
@@ -240,7 +256,7 @@ export const StudyGroupsPage: React.FC = () => {
                 value={inviteEmail}
                 onChange={(e) => setInviteEmail(e.target.value)}
                 placeholder="Partner email (optional)"
-                className="flex-1 min-h-[42px] rounded-xl border border-[#EEEEF2] bg-white px-3.5 text-sm text-[#242424] placeholder:text-[#888888] focus:border-[#7956E8] focus:outline-none"
+                className="flex-1 min-h-[44px] rounded-full border border-[#F0EDF5] bg-[#F8F5FF] px-4 text-sm text-[#20202A] placeholder:text-[#8B8A99] focus:bg-white focus:border-[#7651E8] focus:outline-none"
               />
               <Button type="submit" disabled={creatingInvite} className="shrink-0">
                 {creatingInvite ? 'Generating...' : 'Generate Invite Code'}
@@ -248,17 +264,17 @@ export const StudyGroupsPage: React.FC = () => {
             </div>
 
             {activeInvites.length > 0 && (
-              <div className="divide-y divide-[#EEEEF2] pt-2">
+              <div className="divide-y divide-[#F0EDF5] pt-2">
                 {activeInvites.map((inv) => (
                   <div
                     key={inv.id}
                     className="flex items-center justify-between gap-2 py-2.5 first:pt-1 last:pb-0"
                   >
                     <div className="min-w-0">
-                      <p className="text-sm font-bold font-mono text-[#7956E8] tracking-wide">
+                      <p className="text-sm font-bold font-mono text-[#7651E8] tracking-wide">
                         {inv.code}
                       </p>
-                      <p className="text-xs text-[#888888] truncate">
+                      <p className="text-xs text-[#777783] truncate">
                         {inv.inviteeEmail ? `For ${inv.inviteeEmail}` : 'Shareable duo invite code'}
                       </p>
                     </div>
@@ -266,7 +282,7 @@ export const StudyGroupsPage: React.FC = () => {
                       <button
                         type="button"
                         onClick={() => void copyCode(inv.code)}
-                        className="inline-flex min-h-[36px] items-center gap-1 rounded-lg bg-[#F7F8FA] px-3 text-xs font-semibold text-[#242424] border border-[#EEEEF2] hover:bg-[#F0F1F5] cursor-pointer"
+                        className="inline-flex min-h-[36px] items-center gap-1 rounded-full bg-[#F8F5FF] px-3.5 text-xs font-bold text-[#20202A] border border-[#F0EDF5] hover:bg-[#E9DFFF] cursor-pointer"
                       >
                         <Copy className="h-3.5 w-3.5" />
                         Copy
@@ -274,7 +290,7 @@ export const StudyGroupsPage: React.FC = () => {
                       <button
                         type="button"
                         onClick={() => void cancelInvitation(inv.id)}
-                        className="min-h-[36px] rounded-lg px-2.5 text-xs font-semibold text-[#DC2626] hover:bg-[#FEF2F2] cursor-pointer"
+                        className="min-h-[36px] rounded-full px-3 text-xs font-bold text-[#C82D4F] hover:bg-[#FFF0F3] cursor-pointer"
                       >
                         Revoke
                       </button>
@@ -290,11 +306,13 @@ export const StudyGroupsPage: React.FC = () => {
       {/* Goals Switcher + Recent Activity */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
         <Card className="lg:col-span-5">
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="text-base font-bold text-[#242424]">Your Study Goals</h2>
-            <span className="text-xs text-[#888888] tabular-nums">{goals.length} total</span>
+          <div className="flex items-center justify-between mb-3.5">
+            <h2 className="font-display text-base font-black text-[#20202A]">Your Study Goals</h2>
+            <span className="rounded-full bg-[#F8F5FF] px-2.5 py-0.5 text-xs font-bold text-[#7651E8] tabular-nums">
+              {goals.length} total
+            </span>
           </div>
-          <div className="divide-y divide-[#EEEEF2]">
+          <div className="space-y-2">
             {goals.map((g) => {
               const selected = g.id === activeGoal.id;
               const mine = g.ownerId === currentUser.uid;
@@ -303,24 +321,28 @@ export const StudyGroupsPage: React.FC = () => {
                   key={g.id}
                   type="button"
                   onClick={() => setSelectedGoalId(g.id)}
-                  className="w-full text-left py-3 first:pt-0 last:pb-0 flex items-center justify-between gap-3 cursor-pointer group"
+                  className={`w-full text-left rounded-2xl p-3.5 flex items-center justify-between gap-3 cursor-pointer transition-colors ${
+                    selected
+                      ? 'bg-[#E9DFFF]/70'
+                      : 'bg-[#F8F5FF]/70 hover:bg-[#F8F5FF]'
+                  }`}
                 >
                   <div className="min-w-0">
                     <p
-                      className={`text-sm font-bold truncate ${
-                        selected ? 'text-[#7956E8]' : 'text-[#242424] group-hover:text-[#7956E8]'
+                      className={`text-sm font-extrabold truncate ${
+                        selected ? 'text-[#7651E8]' : 'text-[#20202A]'
                       }`}
                     >
                       {g.title}
                     </p>
-                    <p className="text-xs text-[#888888] truncate mt-0.5">
+                    <p className="text-xs text-[#777783] truncate mt-0.5">
                       {g.groupName || g.category} · {mine ? 'Owner' : 'Partner'} · {g.participantIds.length}{' '}
                       {g.participantIds.length === 1 ? 'learner' : 'learners'}
                     </p>
                   </div>
                   {selected && (
-                    <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#7956E8] text-white">
-                      <Check className="h-3.5 w-3.5" />
+                    <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#7651E8] text-white">
+                      <Check className="h-3.5 w-3.5 stroke-[3]" />
                     </span>
                   )}
                 </button>
@@ -330,30 +352,30 @@ export const StudyGroupsPage: React.FC = () => {
         </Card>
 
         <Card className="lg:col-span-7">
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="text-base font-bold text-[#242424]">Recent Activity</h2>
-            <span className="text-xs text-[#888888]">Live duo updates</span>
+          <div className="flex items-center justify-between mb-3.5">
+            <h2 className="font-display text-base font-black text-[#20202A]">Recent Activity</h2>
+            <span className="text-xs font-semibold text-[#777783]">Live duo updates</span>
           </div>
 
           {activity.length === 0 ? (
-            <p className="text-sm text-[#888888] py-8 text-center">
+            <p className="text-sm text-[#777783] py-8 text-center">
               Partner completions, published days, and milestones appear here in real time.
             </p>
           ) : (
-            <div className="divide-y divide-[#EEEEF2]">
+            <div className="divide-y divide-[#F0EDF5]">
               {activity.slice(0, 12).map((item) => (
                 <div key={item.id} className="py-3 first:pt-0 last:pb-0">
                   <div className="flex items-start justify-between gap-3">
-                    <p className="text-sm text-[#242424] leading-snug">
-                      <span className="font-bold">{item.actorName}</span> {item.message}
+                    <p className="text-sm text-[#20202A] leading-snug">
+                      <span className="font-extrabold">{item.actorName}</span> {item.message}
                     </p>
                     {typeof item.xpDelta === 'number' && item.xpDelta > 0 && (
-                      <span className="text-xs font-bold tabular-nums text-[#3C8F00] shrink-0">
+                      <span className="rounded-full bg-[#E2F5E9] px-2.5 py-0.5 text-xs font-extrabold tabular-nums text-[#1F874D] shrink-0">
                         +{item.xpDelta} XP
                       </span>
                     )}
                   </div>
-                  <p className="mt-0.5 text-xs text-[#888888]">
+                  <p className="mt-0.5 text-xs text-[#777783]">
                     {new Date(item.createdAt).toLocaleString(undefined, {
                       month: 'short',
                       day: 'numeric',
@@ -376,7 +398,7 @@ export const StudyGroupsPage: React.FC = () => {
       >
         <form onSubmit={handleSaveGroupName} className="space-y-4">
           <div>
-            <label htmlFor="group-name-input" className="block text-sm font-semibold text-[#242424] mb-1.5">
+            <label htmlFor="group-name-input" className="block text-sm font-bold text-[#20202A] mb-1.5">
               Duo Name
             </label>
             <input
@@ -386,7 +408,7 @@ export const StudyGroupsPage: React.FC = () => {
               maxLength={80}
               value={groupNameInput}
               onChange={(e) => setGroupNameInput(e.target.value)}
-              className="w-full min-h-[42px] rounded-xl border border-[#EEEEF2] px-3.5 text-sm text-[#242424] focus:border-[#7956E8] focus:outline-none"
+              className="w-full min-h-[44px] rounded-2xl border border-[#F0EDF5] bg-[#F8F5FF] px-4 text-sm text-[#20202A] focus:bg-white focus:border-[#7651E8] focus:outline-none"
             />
           </div>
           <div className="flex justify-end gap-2 pt-2">

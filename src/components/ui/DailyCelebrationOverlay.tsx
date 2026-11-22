@@ -1,143 +1,116 @@
-import React, { useEffect } from 'react';
-import { AnimatePresence, motion } from 'motion/react';
-import { X } from 'lucide-react';
-import { useStudyDuo } from '../../context/StudyDuoContext';
+import React from 'react';
+import { motion, AnimatePresence } from 'motion/react';
 import { Button } from './Primitives';
+import { MascotImage } from './MascotArtwork';
 
-export const DailyCelebrationOverlay: React.FC = () => {
-  const { celebrationEvent, dismissCelebration, setActivePage } = useStudyDuo();
+import type { DailyCelebrationEvent } from '../../types/studyduo';
 
-  useEffect(() => {
-    if (!celebrationEvent) return;
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') dismissCelebration();
-    };
-    window.addEventListener('keydown', onKeyDown);
-    return () => window.removeEventListener('keydown', onKeyDown);
-  }, [celebrationEvent, dismissCelebration]);
+export const DailyCelebrationOverlay: React.FC<{
+  celebration: DailyCelebrationEvent | null;
+  onClose: () => void;
+  onOpenAvatarStudio?: () => void;
+}> = ({ celebration, onClose, onOpenAvatarStudio }) => {
+  const totalXp = celebration ? celebration.xpEarned + celebration.bonusXp : 0;
 
   return (
     <AnimatePresence>
-      {celebrationEvent && (
-        <motion.div
+      {celebration && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4"
           role="dialog"
           aria-modal="true"
-          aria-label="Study milestone celebration"
-          className="fixed inset-0 z-50 flex items-center justify-center bg-[#242424]/40 px-4 py-6"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.16 }}
-          onClick={dismissCelebration}
+          aria-labelledby="celebration-title"
         >
           <motion.div
-            className="relative w-full max-w-sm rounded-2xl border border-[#EEEEF2] bg-white p-6 text-center shadow-xl"
-            initial={{ opacity: 0, scale: 0.96, y: 10 }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.16 }}
+            onClick={onClose}
+            className="fixed inset-0 bg-[#20202A]/45 backdrop-blur-[2px]"
+          />
+
+          <motion.div
+            initial={{ opacity: 0, scale: 0.94, y: 14 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.96, y: 8 }}
-            transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
-            onClick={(e) => e.stopPropagation()}
+            transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
+            className="relative z-10 w-full max-w-sm overflow-hidden rounded-[32px] bg-white border border-[#F0EDF5] shadow-xl text-center"
           >
-            <button
-              type="button"
-              onClick={dismissCelebration}
-              aria-label="Close celebration"
-              className="absolute right-3.5 top-3.5 flex h-9 w-9 items-center justify-center rounded-xl text-[#888888] hover:bg-[#F7F8FA] hover:text-[#242424] cursor-pointer"
-            >
-              <X className="h-4 w-4" />
-            </button>
+            {/* Soft Pink Pastel Hero with 3D Owl Star Trophy Mascot */}
+            <div className="bg-[#FFE8F0] px-6 pt-7 pb-5 flex flex-col items-center">
+              <MascotImage
+                mascot="owl"
+                className="h-32 w-32"
+                rounded="rounded-[24px]"
+              />
+              <span className="mt-2 inline-flex items-center rounded-full bg-white px-3 py-1 text-xs font-extrabold text-[#7651E8] shadow-xs">
+                {celebration.isLevelUp && celebration.newLevel
+                  ? `Level ${celebration.newLevel} Unlocked!`
+                  : celebration.kind === 'day_completed'
+                  ? `Day ${celebration.dayNumber} Complete! 🎉`
+                  : 'Streak Lit Today! 🔥'}
+              </span>
+            </div>
 
-            <motion.div
-              initial={{ scale: 0.85 }}
-              animate={{ scale: 1 }}
-              transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
-              className="mx-auto mt-1 flex h-14 w-14 items-center justify-center rounded-2xl bg-[#F7F8FA] border border-[#EEEEF2] text-3xl"
-              aria-hidden="true"
-            >
-              {celebrationEvent.kind === 'level_up'
-                ? '👑'
-                : celebrationEvent.kind === 'day_completed'
-                ? '🎉'
-                : '🔥'}
-            </motion.div>
+            <div className="p-6">
+              <h2 id="celebration-title" className="text-2xl font-extrabold text-[#20202A]">
+                {celebration.isLevelUp
+                  ? celebration.newLevelTitle || 'You leveled up!'
+                  : celebration.kind === 'day_completed'
+                  ? 'Awesome work today!'
+                  : 'Streak kept alive!'}
+              </h2>
+              <p className="mt-1 text-sm text-[#777783]">
+                {celebration.duoFlameLitToday && celebration.partnerName ? (
+                  <>
+                    You and <strong className="font-semibold text-[#20202A]">{celebration.partnerName}</strong> lit your{' '}
+                    <strong className="font-semibold text-[#7651E8]">{celebration.duoStreakDays}-day Duo Flame</strong> in{' '}
+                    <strong className="font-semibold text-[#20202A]">{celebration.goalTitle}</strong>.
+                  </>
+                ) : (
+                  <>
+                    Great progress on Day {celebration.dayNumber} of{' '}
+                    <strong className="font-semibold text-[#20202A]">{celebration.goalTitle}</strong>.
+                  </>
+                )}
+              </p>
 
-            <p className="mt-3 text-xs font-semibold text-[#7956E8]">
-              {celebrationEvent.kind === 'level_up'
-                ? `Level ${celebrationEvent.newLevel} reached`
-                : celebrationEvent.kind === 'day_completed'
-                ? `Day ${celebrationEvent.dayNumber} complete`
-                : `Day ${celebrationEvent.dayNumber} streak`}
-            </p>
-
-            <h2 className="mt-1 text-xl font-extrabold text-[#242424]">
-              {celebrationEvent.kind === 'level_up'
-                ? `Welcome to ${celebrationEvent.newLevelTitle || `Level ${celebrationEvent.newLevel}`}!`
-                : celebrationEvent.kind === 'day_completed'
-                ? 'Nice work! All quests done'
-                : "You're building a streak!"}
-            </h2>
-
-            <p className="mt-1.5 text-sm leading-relaxed text-[#888888]">
-              {celebrationEvent.kind === 'level_up'
-                ? `Check Avatar Studio for newly unlocked styles. Keep going on "${celebrationEvent.goalTitle}".`
-                : celebrationEvent.kind === 'day_completed'
-                ? `You finished every published task on Day ${celebrationEvent.dayNumber} of "${celebrationEvent.goalTitle}".`
-                : `Your ${celebrationEvent.streakDays}-day study streak is safely locked in.`}
-            </p>
-
-            <div className="mt-5 grid grid-cols-2 divide-x divide-[#EEEEF2] rounded-xl border border-[#EEEEF2] bg-[#F7F8FA] py-3">
-              <div className="px-3">
-                <p className="text-[11px] font-medium text-[#888888]">XP earned</p>
-                <p className="mt-0.5 text-lg font-extrabold text-[#7956E8] tabular-nums">
-                  +{celebrationEvent.xpEarned + celebrationEvent.bonusXp}
-                </p>
-                {celebrationEvent.bonusXp > 0 && (
-                  <p className="text-[10px] font-semibold text-[#3C8F00]">
-                    +{celebrationEvent.bonusXp} bonus
+              <div className="mt-5 grid grid-cols-2 gap-3">
+                <div className="rounded-2xl bg-[#E2F5E9] px-3 py-3">
+                  <p className="text-[11px] font-bold text-[#1F874D]">XP Earned</p>
+                  <p className="mt-0.5 text-xl font-extrabold text-[#1F874D] tabular-nums">
+                    +{totalXp} XP
                   </p>
+                </div>
+                <div className="rounded-2xl bg-[#FFF0C9] px-3 py-3">
+                  <p className="text-[11px] font-bold text-[#B47100]">Active Streak</p>
+                  <p className="mt-0.5 text-xl font-extrabold text-[#B47100] tabular-nums">
+                    🔥 {celebration.streakDays}d
+                  </p>
+                </div>
+              </div>
+
+              <div className="mt-6 flex flex-col gap-2.5">
+                <Button fullWidth onClick={onClose} withArrowCircle>
+                  Keep Learning
+                </Button>
+                {onOpenAvatarStudio && (
+                  <Button
+                    variant="secondary"
+                    fullWidth
+                    onClick={() => {
+                      onClose();
+                      onOpenAvatarStudio();
+                    }}
+                  >
+                    Open Avatar Studio
+                  </Button>
                 )}
               </div>
-
-              <div className="px-3">
-                <p className="text-[11px] font-medium text-[#888888]">Streak</p>
-                <p className="mt-0.5 text-lg font-extrabold text-[#FF9600] tabular-nums">
-                  🔥 {celebrationEvent.streakDays}d
-                </p>
-                <p className="text-[10px] font-medium text-[#888888]">
-                  {celebrationEvent.duoStreakDays > 0
-                    ? `Duo: ${celebrationEvent.duoStreakDays}d`
-                    : 'Keep it going'}
-                </p>
-              </div>
-            </div>
-
-            {celebrationEvent.partnerName && (
-              <p className="mt-3 text-xs text-[#666666]">
-                {celebrationEvent.duoFlameLitToday
-                  ? `Both you and ${celebrationEvent.partnerName} studied today!`
-                  : `Your side is done — waiting on ${celebrationEvent.partnerName} today.`}
-              </p>
-            )}
-
-            <div className="mt-5 flex items-center gap-2.5">
-              {celebrationEvent.kind === 'level_up' && (
-                <Button
-                  variant="secondary"
-                  fullWidth
-                  onClick={() => {
-                    dismissCelebration();
-                    setActivePage('avatar');
-                  }}
-                >
-                  Avatar Studio
-                </Button>
-              )}
-              <Button fullWidth onClick={dismissCelebration}>
-                Continue
-              </Button>
             </div>
           </motion.div>
-        </motion.div>
+        </div>
       )}
     </AnimatePresence>
   );

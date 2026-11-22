@@ -54,10 +54,13 @@ const StudyDuoRouter: React.FC = () => {
 
   if (authLoading && mode === 'live') {
     return (
-      <div className="min-h-dvh bg-[#F8F7FF] flex items-center justify-center p-6">
-        <div className="w-full max-w-md space-y-4 text-center">
-          <div className="mx-auto h-12 w-12 rounded-2xl sd-gradient-primary animate-pulse" />
-          <p className="text-sm font-semibold text-[#77768C]">Loading StudyDuo...</p>
+      <div className="min-h-dvh bg-[#F8F5FF] flex items-center justify-center p-6">
+        <div className="w-full max-w-xs rounded-[28px] bg-white border border-[#F0EDF5] p-8 text-center shadow-[0_10px_28px_-12px_rgba(118,81,232,0.12)]">
+          <div className="mx-auto mb-4 h-24 w-24 rounded-3xl bg-[#E9DFFF] flex items-center justify-center animate-pulse">
+            <span className="text-4xl" aria-hidden="true">🧠</span>
+          </div>
+          <p className="text-base font-extrabold text-[#20202A]">Loading StudyDuo...</p>
+          <p className="mt-1 text-xs text-[#777783]">Preparing your learning duo space</p>
         </div>
       </div>
     );

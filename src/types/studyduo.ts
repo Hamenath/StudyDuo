@@ -308,15 +308,19 @@ export interface AiStudyPlanResponse {
 
 export interface AiQuizQuestion {
   id: string;
-  type: 'mcq' | 'true_false' | 'short_answer' | 'coding';
+  type: 'mcq' | 'true_false' | 'fill_blank' | 'short_answer' | 'coding';
   question: string;
   options?: string[];
   correctAnswer: string;
   explanation: string;
+  misconceptionHint?: string;
+  conceptTag?: string;
 }
 
 export interface AiQuizResponse {
   topic: string;
+  subject?: string;
+  difficulty?: DifficultyLevel;
   questions: AiQuizQuestion[];
 }
 

@@ -149,6 +149,57 @@ service cloud.firestore {
         && data.updatedAt is timestamp;
     }
 
+    function isValidAiMemory(data, userId) {
+      return data.keys().hasAll([
+          'uid', 'learningLevel', 'curriculum', 'preferredMode',
+          'weakTopics', 'strongTopics', 'recentQuizResults',
+          'studyPreferences', 'updatedAt'
+        ])
+        && data.keys().hasOnly([
+          'uid', 'learningLevel', 'curriculum', 'preferredMode',
+          'weakTopics', 'strongTopics', 'recentQuizResults',
+          'studyPreferences', 'updatedAt'
+        ])
+        && data.uid == userId
+        && isValidId(data.uid)
+        && data.learningLevel in ['Beginner', 'Intermediate', 'Advanced']
+        && data.curriculum is string && data.curriculum.size() <= 120
+        && data.preferredMode in ['quick_answer', 'explain_simply', 'step_by_step', 'deep_learning', 'exam_prep']
+        && data.weakTopics is list && data.weakTopics.size() <= 25 && (data.weakTopics.size() == 0 || data.weakTopics[0] is string)
+        && data.strongTopics is list && data.strongTopics.size() <= 25 && (data.strongTopics.size() == 0 || data.strongTopics[0] is string)
+        && data.recentQuizResults is list && data.recentQuizResults.size() <= 20 && (data.recentQuizResults.size() == 0 || data.recentQuizResults[0] is map)
+        && data.studyPreferences is string && data.studyPreferences.size() <= 600
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidKnowledgeDoc(data, userId, docId) {
+      return data.keys().hasAll([
+          'id', 'userId', 'title', 'subject', 'chapter', 'sourceType',
+          'charCount', 'chunkCount', 'summary', 'keyConcepts',
+          'indexedContent', 'createdAt', 'updatedAt'
+        ])
+        && data.keys().hasOnly([
+          'id', 'userId', 'title', 'subject', 'chapter', 'sourceType',
+          'charCount', 'chunkCount', 'summary', 'keyConcepts',
+          'indexedContent', 'createdAt', 'updatedAt'
+        ])
+        && data.id == docId
+        && isValidId(data.id)
+        && data.userId == userId
+        && isValidId(data.userId)
+        && isNonEmptyString(data.title, 1, 160)
+        && isNonEmptyString(data.subject, 1, 60)
+        && data.chapter is string && data.chapter.size() <= 120
+        && data.sourceType in ['pdf', 'notes', 'markdown', 'text']
+        && data.charCount is number && data.charCount >= 0 && data.charCount <= 80000
+        && data.chunkCount is number && data.chunkCount >= 0 && data.chunkCount <= 200
+        && data.summary is string && data.summary.size() <= 2000
+        && data.keyConcepts is list && data.keyConcepts.size() <= 20 && (data.keyConcepts.size() == 0 || data.keyConcepts[0] is string)
+        && isNonEmptyString(data.indexedContent, 1, 60000)
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
     function isValidGoal(data, goalId) {
       return data.keys().hasAll([
           'id', 'ownerId', 'participantIds', 'title', 'description',
@@ -526,6 +577,47 @@ service cloud.firestore {
             'email', 'notifyInvites', 'notifyPartnerActivity', 'notifyDailyWinner',
             'notifyAchievements', 'notifyWeeklySummary', 'shareProgressWithPartner',
             'allowAiJournalContext', 'updatedAt'
+          ]);
+        allow delete: if isVerified() && isValidId(userId) && isValidId(docId) && isSelf(userId);
+      }
+
+      // Bujji AI 2.0 Learning Memory Subcollection (Strictly owner-only)
+      match /aiMemory/{docId} {
+        allow get: if isSignedIn() && isValidId(userId) && isValidId(docId) && isSelf(userId);
+        allow list: if false;
+        allow create: if isVerified() && isValidId(userId) && isValidId(docId) && isSelf(userId)
+          && isValidAiMemory(incoming(), userId)
+          && incoming().updatedAt == request.time;
+        allow update: if isVerified() && isValidId(userId) && isValidId(docId) && isSelf(userId)
+          && isValidAiMemory(incoming(), userId)
+          && incoming().uid == existing().uid
+          && incoming().updatedAt == request.time
+          && incoming().diff(existing()).affectedKeys().hasOnly([
+            'learningLevel', 'curriculum', 'preferredMode',
+            'weakTopics', 'strongTopics', 'recentQuizResults',
+            'studyPreferences', 'updatedAt'
+          ]);
+        allow delete: if isVerified() && isValidId(userId) && isValidId(docId) && isSelf(userId);
+      }
+
+      // Bujji AI 2.0 Uploaded Study Knowledge Base (Strictly owner-only)
+      match /knowledgeDocs/{docId} {
+        allow get: if isSignedIn() && isValidId(userId) && isValidId(docId) && isSelf(userId);
+        allow list: if isSignedIn() && isValidId(userId) && isSelf(userId)
+          && resource.data.userId == request.auth.uid;
+        allow create: if isVerified() && isValidId(userId) && isValidId(docId) && isSelf(userId)
+          && isValidKnowledgeDoc(incoming(), userId, docId)
+          && incoming().createdAt == request.time
+          && incoming().updatedAt == request.time;
+        allow update: if isVerified() && isValidId(userId) && isValidId(docId) && isSelf(userId)
+          && isValidKnowledgeDoc(incoming(), userId, docId)
+          && incoming().id == existing().id
+          && incoming().userId == existing().userId
+          && incoming().createdAt == existing().createdAt
+          && incoming().updatedAt == request.time
+          && incoming().diff(existing()).affectedKeys().hasOnly([
+            'title', 'subject', 'chapter', 'sourceType', 'charCount', 'chunkCount',
+            'summary', 'keyConcepts', 'indexedContent', 'updatedAt'
           ]);
         allow delete: if isVerified() && isValidId(userId) && isValidId(docId) && isSelf(userId);
       }

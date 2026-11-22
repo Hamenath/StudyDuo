@@ -5,17 +5,16 @@ import {
   KeyRound,
   Mail,
   RefreshCw,
-  Sparkles,
   Target,
   Users,
 } from 'lucide-react';
 import { sendEmailVerification } from 'firebase/auth';
 import { useStudyDuo } from '../../context/StudyDuoContext';
 import { onboardingSchema, inviteCodeSchema } from '../../lib/validation';
-import { StudyDuoBrandMark } from '../layout/AppShell';
-import { ToastStack } from '../ui/Primitives';
+import { MascotImage, StudyDuoOwlMark } from '../ui/MascotArtwork';
+import { Button, ToastStack } from '../ui/Primitives';
 
-const AVATAR_COLORS = ['#7956E8', '#38B982', '#45C4D8', '#FFC857', '#A78BFA', '#2E9CA6'];
+const AVATAR_COLORS = ['#7651E8', '#2FB368', '#E59A18', '#E05288', '#6B8AFD', '#38A89D'];
 const CATEGORIES = [
   'Programming',
   'Data Science & AI',
@@ -86,117 +85,142 @@ export const AuthScreen: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#F7F8FA] flex flex-col justify-center px-5 py-10">
-      <div className="w-full max-w-5xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
-        {/* Left Brand Story Column */}
-        <div className="lg:col-span-6 space-y-6">
-          <div className="flex items-center gap-3">
-            <StudyDuoBrandMark size={40} />
-            <div>
-              <span className="text-2xl font-extrabold tracking-tight text-[#242424] block leading-none">
-                StudyDuo
-              </span>
-              <span className="text-xs font-semibold text-[#7956E8]">Level Up Together.</span>
+    <div className="min-h-dvh bg-[#F8F5FF] flex flex-col justify-center px-4 sm:px-6 py-6 sm:py-10">
+      <div className="w-full max-w-5xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-10 items-center">
+        {/* Left Reference Hero Card — Pastel Lavender Brain Mascot + Curved White Bottom Sheet */}
+        <div className="lg:col-span-6">
+          <div className="mx-auto max-w-md lg:max-w-none overflow-hidden rounded-[36px] bg-[#E9DFFF] border border-[#E4D8FF] shadow-[0_18px_40px_-20px_rgba(118,81,232,0.22)]">
+            {/* Full-Bleed Lavender Illustration Stage (matches reference Left Screen) */}
+            <div className="relative h-72 sm:h-80 w-full overflow-hidden bg-[#E9DFFF]">
+              <MascotImage
+                mascot="brain"
+                alt="StudyDuo friendly pink brain mascot wearing glasses and graduation cap sitting on colorful books"
+                className="h-full w-full object-cover object-center"
+                rounded="rounded-none"
+                seamless={false}
+              />
             </div>
-          </div>
 
-          <div className="space-y-3">
-            <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-[#242424] leading-tight [text-wrap:balance]">
-              Study smarter, together.
-            </h1>
-            <p className="text-base text-[#888888] leading-relaxed max-w-lg">
-              Build a clear learning roadmap, check off daily study tasks alongside a partner, earn XP, unlock avatar styles, and keep your streak going.
-            </p>
-          </div>
+            {/* Curved White Bottom Content Sheet */}
+            <div className="relative z-10 -mt-8 rounded-t-[36px] bg-white px-6 sm:px-8 pt-7 pb-7 text-center shadow-[0_-8px_24px_-12px_rgba(118,81,232,0.12)]">
+              <div className="inline-flex items-center justify-center gap-2 mb-3">
+                <StudyDuoOwlMark size={34} />
+                <span className="font-display text-xl font-black tracking-tight">
+                  <span className="text-[#7651E8]">Study</span>
+                  <span className="text-[#20202A]">Duo</span>
+                </span>
+              </div>
 
-          {pendingInviteCodeFromUrl && (
-            <div className="rounded-2xl bg-[#F4F0FF] border border-[#DFD6FE] p-4">
-              <p className="text-sm font-bold text-[#242424]">
-                You were invited to join a study duo!
-              </p>
-              <p className="mt-1 text-sm text-[#5C5C6E]">
-                Sign in to accept invitation code{' '}
-                <span className="font-mono font-bold text-[#7956E8]">{pendingInviteCodeFromUrl}</span>.
-              </p>
-            </div>
-          )}
+              <h1 className="font-display text-3xl sm:text-[34px] font-black tracking-tight text-[#20202A] leading-[1.15] [text-wrap:balance]">
+                Learning is more <span className="text-[#7651E8]">fun</span> together!
+              </h1>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
-            <div className="sd-card p-4">
-              <Target className="h-5 w-5 text-[#7956E8] mb-2" />
-              <p className="text-sm font-bold text-[#242424]">Shared Roadmaps</p>
-              <p className="mt-1 text-xs text-[#888888] leading-relaxed">
-                Owner publishes milestones & daily quests; partners complete them independently.
+              <p className="mt-3 text-sm sm:text-[15px] text-[#777783] leading-relaxed max-w-sm mx-auto">
+                Shared roadmaps, daily study quests, and cheerful rewards that keep you and your study partner coming back.
               </p>
-            </div>
-            <div className="sd-card p-4">
-              <Users className="h-5 w-5 text-[#3C8F00] mb-2" />
-              <p className="text-sm font-bold text-[#242424]">Duo Progress</p>
-              <p className="mt-1 text-xs text-[#888888] leading-relaxed">
-                Daily XP, fair leaderboards, achievement badges, and customizable avatars.
-              </p>
-            </div>
-            <div className="sd-card p-4">
-              <Sparkles className="h-5 w-5 text-[#7956E8] mb-2" />
-              <p className="text-sm font-bold text-[#242424]">AI Study Coach</p>
-              <p className="mt-1 text-xs text-[#888888] leading-relaxed">
-                Draft study plans, explain concepts, and generate practice quizzes.
-              </p>
+
+              {pendingInviteCodeFromUrl && (
+                <div className="mt-4 rounded-2xl bg-[#E9DFFF]/70 border border-[#D8C6FF] px-4 py-3 text-left">
+                  <p className="text-xs font-extrabold text-[#6842DE]">
+                    You were invited to join a study duo!
+                  </p>
+                  <p className="mt-0.5 text-xs text-[#20202A]">
+                    Sign in on the right to accept code{' '}
+                    <span className="font-mono font-bold text-[#7651E8]">{pendingInviteCodeFromUrl}</span>.
+                  </p>
+                </div>
+              )}
+
+              <div className="mt-6">
+                <Button
+                  type="button"
+                  size="lg"
+                  fullWidth
+                  withArrowCircle
+                  onClick={enterPreviewMode}
+                >
+                  Explore Interactive Preview
+                </Button>
+              </div>
+
+              {/* Subtle pastel feature dots */}
+              <div className="mt-5 grid grid-cols-3 gap-2 text-left">
+                <div className="rounded-2xl bg-[#E9DFFF]/65 px-3 py-2.5">
+                  <p className="text-[11px] font-extrabold text-[#6842DE]">Roadmaps</p>
+                  <p className="text-[11px] text-[#5C5C6C] mt-0.5">Clear milestones</p>
+                </div>
+                <div className="rounded-2xl bg-[#FFF0C9]/80 px-3 py-2.5">
+                  <p className="text-[11px] font-extrabold text-[#B47100]">Duo Flame</p>
+                  <p className="text-[11px] text-[#5C5C6C] mt-0.5">Daily streaks</p>
+                </div>
+                <div className="rounded-2xl bg-[#E2F5E9]/85 px-3 py-2.5">
+                  <p className="text-[11px] font-extrabold text-[#1F874D]">AI Coach</p>
+                  <p className="text-[11px] text-[#5C5C6C] mt-0.5">Smart quizzes</p>
+                </div>
+              </div>
             </div>
           </div>
         </div>
 
-        {/* Right Auth Card */}
+        {/* Right Clean Authentication Card */}
         <div className="lg:col-span-6">
-          <div className="w-full max-w-md mx-auto rounded-2xl bg-white border border-[#EEEEF2] p-6 sm:p-8 shadow-[0_2px_8px_rgba(36,36,36,0.04)]">
-            <div className="space-y-1 mb-6">
-              <h2 className="text-xl font-extrabold text-[#242424]">
+          <div className="w-full max-w-md mx-auto rounded-[32px] bg-white border border-[#F0EDF5] p-6 sm:p-8 shadow-[0_14px_34px_-18px_rgba(118,81,232,0.14)]">
+            <div className="space-y-1 mb-5">
+              <span className="inline-flex items-center rounded-full bg-[#E9DFFF] px-3 py-1 text-[11px] font-extrabold text-[#7651E8]">
+                Start Learning
+              </span>
+              <h2 className="font-display text-2xl font-black text-[#20202A] pt-1">
                 {tab === 'login'
-                  ? 'Welcome back'
+                  ? 'Welcome back!'
                   : tab === 'register'
-                  ? 'Create your StudyDuo account'
+                  ? 'Create your account'
                   : 'Reset your password'}
               </h2>
-              <p className="text-sm text-[#888888]">
+              <p className="text-sm text-[#777783]">
                 {tab === 'login'
-                  ? 'Sign in to sync your quests, avatars, and duo streak in real time.'
+                  ? 'Sign in to sync your study roadmap, avatar, and duo streak.'
                   : tab === 'register'
-                  ? 'Register with Google or email to start learning with a partner.'
+                  ? 'Join with Google or email to start leveling up with a partner.'
                   : 'Enter your email and we will send a password reset link.'}
               </p>
             </div>
 
-            {/* Primary Google Sign-In */}
+            {/* Primary Google Sign-In Pill CTA */}
             <button
               type="button"
               onClick={() => void signInWithGoogle()}
-              className="w-full min-h-[46px] flex items-center justify-center gap-3 rounded-xl bg-[#7956E8] px-4 py-3 text-sm font-semibold text-white hover:bg-[#6744D6] transition-colors cursor-pointer"
+              className="w-full min-h-[52px] flex items-center justify-between gap-3 rounded-full bg-[#7651E8] pl-5 pr-2 py-2 text-sm font-bold text-white hover:bg-[#6440D6] shadow-[0_8px_20px_-8px_rgba(118,81,232,0.55)] transition-all cursor-pointer active:scale-[0.98]"
             >
-              <svg className="h-4 w-4" viewBox="0 0 24 24" aria-hidden="true">
-                <path
-                  fill="currentColor"
-                  d="M21.35 11.1h-9.18v2.98h5.27c-.23 1.38-1.56 4.05-5.27 4.05-3.17 0-5.76-2.62-5.76-5.85s2.59-5.85 5.76-5.85c1.81 0 3.02.77 3.71 1.43l2.53-2.44C16.79 3.92 14.69 3 12.17 3 7.09 3 3 7.09 3 12.28s4.09 9.28 9.17 9.28c5.29 0 8.8-3.72 8.8-8.96 0-.6-.06-1.06-.16-1.5z"
-                />
-              </svg>
-              Continue with Google
+              <span className="flex items-center gap-2.5 pl-1">
+                <svg className="h-4 w-4 shrink-0" viewBox="0 0 24 24" aria-hidden="true">
+                  <path
+                    fill="currentColor"
+                    d="M21.35 11.1h-9.18v2.98h5.27c-.23 1.38-1.56 4.05-5.27 4.05-3.17 0-5.76-2.62-5.76-5.85s2.59-5.85 5.76-5.85c1.81 0 3.02.77 3.71 1.43l2.53-2.44C16.79 3.92 14.69 3 12.17 3 7.09 3 3 7.09 3 12.28s4.09 9.28 9.17 9.28c5.29 0 8.8-3.72 8.8-8.96 0-.6-.06-1.06-.16-1.5z"
+                  />
+                </svg>
+                <span>Continue with Google</span>
+              </span>
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white text-[#7651E8]">
+                <ArrowRight className="h-4 w-4 stroke-[2.5]" />
+              </span>
             </button>
 
             <div className="my-5 flex items-center gap-3">
-              <div className="h-px flex-1 bg-[#E9EAF0]" />
-              <span className="text-xs font-medium text-[#88899B]">or use email</span>
-              <div className="h-px flex-1 bg-[#E9EAF0]" />
+              <div className="h-px flex-1 bg-[#F0EDF5]" />
+              <span className="text-xs font-semibold text-[#9A99AA]">or use email</span>
+              <div className="h-px flex-1 bg-[#F0EDF5]" />
             </div>
 
             {/* Segmented Mode Tabs */}
-            <div className="grid grid-cols-2 gap-1 rounded-xl bg-[#F8F9FC] p-1 border border-[#E9EAF0] mb-4">
+            <div className="grid grid-cols-2 gap-1 rounded-full bg-[#F8F5FF] p-1 border border-[#F0EDF5] mb-4">
               <button
                 type="button"
                 onClick={() => {
                   setTab('login');
                   setFormError('');
                 }}
-                className={`min-h-[40px] rounded-lg text-xs font-semibold transition-colors ${
-                  tab === 'login' ? 'bg-white text-[#242337] shadow-xs' : 'text-[#66687A]'
+                className={`min-h-[38px] rounded-full text-xs font-bold transition-colors cursor-pointer ${
+                  tab === 'login' ? 'bg-white text-[#20202A] shadow-xs' : 'text-[#777783]'
                 }`}
               >
                 Sign In
@@ -207,8 +231,8 @@ export const AuthScreen: React.FC = () => {
                   setTab('register');
                   setFormError('');
                 }}
-                className={`min-h-[40px] rounded-lg text-xs font-semibold transition-colors ${
-                  tab === 'register' ? 'bg-white text-[#242337] shadow-xs' : 'text-[#66687A]'
+                className={`min-h-[38px] rounded-full text-xs font-bold transition-colors cursor-pointer ${
+                  tab === 'register' ? 'bg-white text-[#20202A] shadow-xs' : 'text-[#777783]'
                 }`}
               >
                 Create Account
@@ -218,7 +242,7 @@ export const AuthScreen: React.FC = () => {
             <form onSubmit={handleSubmit} className="space-y-3.5" noValidate>
               {tab === 'register' && (
                 <div>
-                  <label htmlFor="auth-fullname" className="block text-xs font-semibold text-[#242337] mb-1.5">
+                  <label htmlFor="auth-fullname" className="block text-xs font-bold text-[#20202A] mb-1.5">
                     Full name
                   </label>
                   <input
@@ -227,24 +251,24 @@ export const AuthScreen: React.FC = () => {
                     value={fullName}
                     onChange={(e) => setFullName(e.target.value)}
                     placeholder="Alex Chen"
-                    className="w-full min-h-[44px] rounded-xl border border-[#E9EAF0] bg-[#F8F9FC] px-3.5 text-sm text-[#242337] focus:bg-white focus:border-[#7956D8] focus:outline-none"
+                    className="w-full min-h-[44px] rounded-2xl border border-[#F0EDF5] bg-[#F8F5FF] px-4 text-sm text-[#20202A] focus:bg-white focus:border-[#7651E8] focus:outline-none"
                   />
                 </div>
               )}
 
               <div>
-                <label htmlFor="auth-email" className="block text-xs font-semibold text-[#242337] mb-1.5">
+                <label htmlFor="auth-email" className="block text-xs font-bold text-[#20202A] mb-1.5">
                   Email address
                 </label>
                 <div className="relative">
-                  <Mail className="h-4 w-4 text-[#88899B] absolute left-3.5 top-1/2 -translate-y-1/2" />
+                  <Mail className="h-4 w-4 text-[#8B8A99] absolute left-3.5 top-1/2 -translate-y-1/2" />
                   <input
                     id="auth-email"
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="you@example.com"
-                    className="w-full min-h-[44px] rounded-xl border border-[#E9EAF0] bg-[#F8F9FC] pl-10 pr-3.5 text-sm text-[#242337] focus:bg-white focus:border-[#7956D8] focus:outline-none"
+                    className="w-full min-h-[44px] rounded-2xl border border-[#F0EDF5] bg-[#F8F5FF] pl-10 pr-4 text-sm text-[#20202A] focus:bg-white focus:border-[#7651E8] focus:outline-none"
                   />
                 </div>
               </div>
@@ -252,35 +276,35 @@ export const AuthScreen: React.FC = () => {
               {tab !== 'reset' && (
                 <div>
                   <div className="flex items-center justify-between mb-1.5">
-                    <label htmlFor="auth-password" className="text-xs font-semibold text-[#242337]">
+                    <label htmlFor="auth-password" className="text-xs font-bold text-[#20202A]">
                       Password
                     </label>
                     {tab === 'login' && (
                       <button
                         type="button"
                         onClick={() => setTab('reset')}
-                        className="text-xs font-medium text-[#7956D8] hover:underline"
+                        className="text-xs font-bold text-[#7651E8] hover:underline cursor-pointer"
                       >
                         Forgot password?
                       </button>
                     )}
                   </div>
                   <div className="relative">
-                    <KeyRound className="h-4 w-4 text-[#88899B] absolute left-3.5 top-1/2 -translate-y-1/2" />
+                    <KeyRound className="h-4 w-4 text-[#8B8A99] absolute left-3.5 top-1/2 -translate-y-1/2" />
                     <input
                       id="auth-password"
                       type="password"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       placeholder="At least 6 characters"
-                      className="w-full min-h-[44px] rounded-xl border border-[#E9EAF0] bg-[#F8F9FC] pl-10 pr-3.5 text-sm text-[#242337] focus:bg-white focus:border-[#7956D8] focus:outline-none"
+                      className="w-full min-h-[44px] rounded-2xl border border-[#F0EDF5] bg-[#F8F5FF] pl-10 pr-4 text-sm text-[#20202A] focus:bg-white focus:border-[#7651E8] focus:outline-none"
                     />
                   </div>
                 </div>
               )}
 
               {formError && (
-                <p role="alert" className="text-xs font-medium text-[#E66F77]">
+                <p role="alert" className="text-xs font-semibold text-[#C82D4F]">
                   {formError}
                 </p>
               )}
@@ -288,7 +312,7 @@ export const AuthScreen: React.FC = () => {
               <button
                 type="submit"
                 disabled={submitting}
-                className="w-full min-h-[46px] rounded-xl border border-[#242337] bg-[#242337] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#35344E] disabled:opacity-60 transition-colors"
+                className="w-full min-h-[46px] rounded-full bg-[#20202A] px-5 py-2.5 text-sm font-bold text-white hover:bg-[#323244] disabled:opacity-60 transition-colors cursor-pointer"
               >
                 {submitting
                   ? 'Please wait...'
@@ -303,27 +327,12 @@ export const AuthScreen: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setTab('login')}
-                  className="w-full text-center text-xs font-medium text-[#66687A] hover:text-[#242337] py-1"
+                  className="w-full text-center text-xs font-semibold text-[#777783] hover:text-[#20202A] py-1 cursor-pointer"
                 >
                   Back to Sign In
                 </button>
               )}
             </form>
-
-            {/* Interactive Preview Access */}
-            <div className="mt-6 pt-5 border-t border-[#EEEEF2] text-center">
-              <p className="text-xs text-[#888888] mb-2.5">
-                Want to explore the full duo workflow before signing in?
-              </p>
-              <button
-                type="button"
-                onClick={enterPreviewMode}
-                className="w-full min-h-[44px] inline-flex items-center justify-center gap-2 rounded-xl bg-[#F4F0FF] px-4 py-2.5 text-sm font-semibold text-[#7956E8] hover:bg-[#EAE3FF] transition-colors cursor-pointer"
-              >
-                Explore Interactive Preview
-                <ArrowRight className="h-4 w-4" />
-              </button>
-            </div>
           </div>
         </div>
       </div>
@@ -351,36 +360,40 @@ export const EmailVerificationGate: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#F8F9FC] flex items-center justify-center p-5">
-      <div className="w-full max-w-md rounded-3xl bg-white border border-[#E9EAF0] p-7 text-center shadow-sm">
-        <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-[#F0EBFF] text-[#7956D8]">
-          <Mail className="h-6 w-6" />
+    <div className="min-h-dvh bg-[#F8F5FF] flex items-center justify-center p-5">
+      <div className="w-full max-w-md rounded-[32px] bg-white border border-[#F0EDF5] p-7 text-center shadow-[0_14px_34px_-18px_rgba(118,81,232,0.14)]">
+        <div className="mx-auto mb-4 flex justify-center">
+          <MascotImage mascot="owl" className="h-24 w-24" rounded="rounded-[24px]" />
         </div>
-        <h1 className="text-xl font-bold text-[#242337]">Verify your email</h1>
-        <p className="mt-2 text-sm text-[#66687A] leading-relaxed">
-          We sent a verification link to <strong>{firebaseUser?.email}</strong>. Click the link in your inbox, then refresh below to finish setting up your StudyDuo profile.
+        <h1 className="font-display text-2xl font-black text-[#20202A]">Verify your email</h1>
+        <p className="mt-2 text-sm text-[#777783] leading-relaxed">
+          We sent a verification link to <strong className="text-[#20202A]">{firebaseUser?.email}</strong>. Click the link in your inbox, then refresh below to finish setting up your StudyDuo profile.
         </p>
         <div className="mt-6 space-y-2.5">
-          <button
+          <Button
             type="button"
+            fullWidth
+            withArrowCircle
             onClick={() => window.location.reload()}
-            className="w-full min-h-[46px] inline-flex items-center justify-center gap-2 rounded-xl bg-[#7956D8] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#6643C7]"
           >
-            <RefreshCw className="h-4 w-4" />
-            I have verified my email
-          </button>
-          <button
+            <span className="inline-flex items-center gap-2">
+              <RefreshCw className="h-4 w-4" />
+              I have verified my email
+            </span>
+          </Button>
+          <Button
             type="button"
+            variant="secondary"
+            fullWidth
             disabled={resending}
             onClick={() => void handleResend()}
-            className="w-full min-h-[44px] rounded-xl border border-[#E9EAF0] bg-white px-4 py-2.5 text-sm font-medium text-[#242337] hover:bg-[#F8F9FC]"
           >
             {resending ? 'Sending...' : 'Resend verification email'}
-          </button>
+          </Button>
           <button
             type="button"
             onClick={() => void logout()}
-            className="w-full min-h-[40px] text-xs font-medium text-[#66687A] hover:text-[#242337]"
+            className="w-full min-h-[40px] text-xs font-semibold text-[#777783] hover:text-[#20202A] cursor-pointer"
           >
             Sign out
           </button>
@@ -399,7 +412,7 @@ export const OnboardingFlow: React.FC = () => {
   const [timezone, setTimezone] = useState(
     currentUser?.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC'
   );
-  const [avatarColor, setAvatarColor] = useState(currentUser?.avatarColor || '#7956D8');
+  const [avatarColor, setAvatarColor] = useState(currentUser?.avatarColor || '#7651E8');
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
 
@@ -434,16 +447,19 @@ export const OnboardingFlow: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#F8F9FC] flex items-center justify-center p-5">
-      <div className="w-full max-w-lg rounded-3xl bg-white border border-[#E9EAF0] p-6 sm:p-8 shadow-sm">
-        <div className="flex items-center gap-2.5 mb-5">
-          <StudyDuoBrandMark size={30} />
-          <span className="text-lg font-bold text-[#242337]">Set up your learner profile</span>
+    <div className="min-h-dvh bg-[#F8F5FF] flex items-center justify-center p-5">
+      <div className="w-full max-w-lg rounded-[32px] bg-white border border-[#F0EDF5] p-6 sm:p-8 shadow-[0_14px_34px_-18px_rgba(118,81,232,0.14)]">
+        <div className="flex items-center gap-3 mb-6">
+          <StudyDuoOwlMark size={36} />
+          <div>
+            <h1 className="font-display text-xl font-black text-[#20202A]">Set up your learner profile</h1>
+            <p className="text-xs text-[#777783]">Pick your favorite subject and color accent.</p>
+          </div>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <span className="block text-xs font-semibold text-[#242337] mb-2">Avatar Accent</span>
+            <span className="block text-xs font-bold text-[#20202A] mb-2">Avatar Accent</span>
             <div className="flex items-center gap-2.5">
               {AVATAR_COLORS.map((hex) => (
                 <button
@@ -452,8 +468,8 @@ export const OnboardingFlow: React.FC = () => {
                   onClick={() => setAvatarColor(hex)}
                   aria-label={`Choose avatar color ${hex}`}
                   style={{ backgroundColor: hex }}
-                  className={`h-9 w-9 rounded-full flex items-center justify-center text-white transition-transform ${
-                    avatarColor === hex ? 'ring-2 ring-offset-2 ring-[#7956D8] scale-105' : ''
+                  className={`h-9 w-9 rounded-full flex items-center justify-center text-white transition-transform cursor-pointer ${
+                    avatarColor === hex ? 'ring-2 ring-offset-2 ring-[#7651E8] scale-105' : ''
                   }`}
                 >
                   {avatarColor === hex && <CheckCircle2 className="h-4 w-4" />}
@@ -464,7 +480,7 @@ export const OnboardingFlow: React.FC = () => {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label htmlFor="onb-name" className="block text-xs font-semibold text-[#242337] mb-1.5">
+              <label htmlFor="onb-name" className="block text-xs font-bold text-[#20202A] mb-1.5">
                 Full name
               </label>
               <input
@@ -472,11 +488,11 @@ export const OnboardingFlow: React.FC = () => {
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
                 required
-                className="w-full min-h-[44px] rounded-xl border border-[#E9EAF0] bg-[#F8F9FC] px-3.5 text-sm text-[#242337] focus:bg-white focus:border-[#7956D8] focus:outline-none"
+                className="w-full min-h-[44px] rounded-2xl border border-[#F0EDF5] bg-[#F8F5FF] px-4 text-sm text-[#20202A] focus:bg-white focus:border-[#7651E8] focus:outline-none"
               />
             </div>
             <div>
-              <label htmlFor="onb-username" className="block text-xs font-semibold text-[#242337] mb-1.5">
+              <label htmlFor="onb-username" className="block text-xs font-bold text-[#20202A] mb-1.5">
                 Unique username
               </label>
               <input
@@ -485,13 +501,13 @@ export const OnboardingFlow: React.FC = () => {
                 onChange={(e) => setUsername(e.target.value)}
                 required
                 placeholder="alex_builds"
-                className="w-full min-h-[44px] rounded-xl border border-[#E9EAF0] bg-[#F8F9FC] px-3.5 text-sm font-mono text-[#242337] focus:bg-white focus:border-[#7956D8] focus:outline-none"
+                className="w-full min-h-[44px] rounded-2xl border border-[#F0EDF5] bg-[#F8F5FF] px-4 text-sm font-mono text-[#20202A] focus:bg-white focus:border-[#7651E8] focus:outline-none"
               />
             </div>
           </div>
 
           <div>
-            <label htmlFor="onb-bio" className="block text-xs font-semibold text-[#242337] mb-1.5">
+            <label htmlFor="onb-bio" className="block text-xs font-bold text-[#20202A] mb-1.5">
               Short bio
             </label>
             <textarea
@@ -500,20 +516,20 @@ export const OnboardingFlow: React.FC = () => {
               value={bio}
               onChange={(e) => setBio(e.target.value)}
               placeholder="What are you excited to master this quarter?"
-              className="w-full rounded-xl border border-[#E9EAF0] bg-[#F8F9FC] p-3 text-sm text-[#242337] focus:bg-white focus:border-[#7956D8] focus:outline-none"
+              className="w-full rounded-2xl border border-[#F0EDF5] bg-[#F8F5FF] p-3.5 text-sm text-[#20202A] focus:bg-white focus:border-[#7651E8] focus:outline-none"
             />
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label htmlFor="onb-cat" className="block text-xs font-semibold text-[#242337] mb-1.5">
+              <label htmlFor="onb-cat" className="block text-xs font-bold text-[#20202A] mb-1.5">
                 Preferred learning category
               </label>
               <select
                 id="onb-cat"
                 value={preferredCategory}
                 onChange={(e) => setPreferredCategory(e.target.value)}
-                className="w-full min-h-[44px] rounded-xl border border-[#E9EAF0] bg-[#F8F9FC] px-3 text-sm text-[#242337] focus:bg-white focus:border-[#7956D8] focus:outline-none"
+                className="w-full min-h-[44px] rounded-2xl border border-[#F0EDF5] bg-[#F8F5FF] px-3.5 text-sm text-[#20202A] focus:bg-white focus:border-[#7651E8] focus:outline-none"
               >
                 {CATEGORIES.map((c) => (
                   <option key={c} value={c}>
@@ -523,27 +539,23 @@ export const OnboardingFlow: React.FC = () => {
               </select>
             </div>
             <div>
-              <label htmlFor="onb-tz" className="block text-xs font-semibold text-[#242337] mb-1.5">
+              <label htmlFor="onb-tz" className="block text-xs font-bold text-[#20202A] mb-1.5">
                 Timezone
               </label>
               <input
                 id="onb-tz"
                 value={timezone}
                 onChange={(e) => setTimezone(e.target.value)}
-                className="w-full min-h-[44px] rounded-xl border border-[#E9EAF0] bg-[#F8F9FC] px-3.5 text-sm text-[#242337] focus:bg-white focus:border-[#7956D8] focus:outline-none"
+                className="w-full min-h-[44px] rounded-2xl border border-[#F0EDF5] bg-[#F8F5FF] px-4 text-sm text-[#20202A] focus:bg-white focus:border-[#7651E8] focus:outline-none"
               />
             </div>
           </div>
 
-          {error && <p role="alert" className="text-xs font-medium text-[#E66F77]">{error}</p>}
+          {error && <p role="alert" className="text-xs font-semibold text-[#C82D4F]">{error}</p>}
 
-          <button
-            type="submit"
-            disabled={saving}
-            className="w-full min-h-[48px] rounded-xl bg-[#7956D8] text-sm font-semibold text-white hover:bg-[#6643C7] disabled:opacity-60 transition-colors"
-          >
+          <Button type="submit" fullWidth size="lg" withArrowCircle disabled={saving}>
             {saving ? 'Saving profile...' : 'Continue to StudyDuo'}
-          </button>
+          </Button>
         </form>
       </div>
     </div>
@@ -582,50 +594,58 @@ export const WelcomeChoiceScreen: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#F8F9FC] flex items-center justify-center p-5">
+    <div className="min-h-dvh bg-[#F8F5FF] flex items-center justify-center p-5">
       <div className="w-full max-w-2xl space-y-6">
         <div className="text-center space-y-2">
           <div className="mx-auto flex justify-center">
-            <StudyDuoBrandMark size={40} />
+            <StudyDuoOwlMark size={44} />
           </div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-[#242337]">
-            Welcome, {currentUser?.fullName?.split(' ')[0]}!
+          <h1 className="font-display text-2xl sm:text-3xl font-black text-[#20202A]">
+            Welcome, {currentUser?.fullName?.split(' ')[0]}! 👋
           </h1>
-          <p className="text-sm sm:text-base text-[#66687A]">
+          <p className="text-sm sm:text-base text-[#777783]">
             How would you like to get started today?
           </p>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div className="rounded-3xl bg-white border border-[#E9EAF0] p-6 flex flex-col justify-between">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+          <div className="rounded-[28px] bg-[#E9DFFF] p-6 flex flex-col justify-between">
             <div>
-              <div className="h-11 w-11 rounded-2xl bg-[#F0EBFF] text-[#7956D8] flex items-center justify-center mb-4">
-                <Target className="h-5 w-5" />
+              <div className="flex items-center justify-between mb-4">
+                <div className="h-11 w-11 rounded-2xl bg-white text-[#7651E8] flex items-center justify-center">
+                  <Target className="h-5 w-5" />
+                </div>
+                <MascotImage mascot="coding" className="h-16 w-16" rounded="rounded-2xl" />
               </div>
-              <h2 className="text-lg font-bold text-[#242337]">Create a new study goal</h2>
-              <p className="mt-1.5 text-sm text-[#66687A] leading-relaxed">
-                Design your own learning roadmap, author daily checklists, and invite a partner to study alongside you.
+              <h2 className="font-display text-lg font-black text-[#20202A]">Create a new study goal</h2>
+              <p className="mt-1.5 text-sm text-[#4F4D60] leading-relaxed">
+                Design your own learning roadmap, author daily quests, and invite a partner to study alongside you.
               </p>
             </div>
-            <button
+            <Button
               type="button"
+              fullWidth
+              withArrowCircle
+              className="mt-6"
               onClick={() => {
                 dismissWelcomeChoice();
                 setActivePage('goals');
               }}
-              className="mt-6 w-full min-h-[46px] rounded-xl bg-[#7956D8] text-sm font-semibold text-white hover:bg-[#6643C7] transition-colors"
             >
               Create Study Goal
-            </button>
+            </Button>
           </div>
 
-          <div className="rounded-3xl bg-white border border-[#E9EAF0] p-6 flex flex-col justify-between">
+          <div className="rounded-[28px] bg-[#E2F5E9] p-6 flex flex-col justify-between">
             <div>
-              <div className="h-11 w-11 rounded-2xl bg-[#E7F6EE] text-[#38A879] flex items-center justify-center mb-4">
-                <Users className="h-5 w-5" />
+              <div className="flex items-center justify-between mb-4">
+                <div className="h-11 w-11 rounded-2xl bg-white text-[#1F874D] flex items-center justify-center">
+                  <Users className="h-5 w-5" />
+                </div>
+                <MascotImage mascot="language" className="h-16 w-16" rounded="rounded-2xl" />
               </div>
-              <h2 className="text-lg font-bold text-[#242337]">Join with an invite code</h2>
-              <p className="mt-1.5 text-sm text-[#66687A] leading-relaxed">
+              <h2 className="font-display text-lg font-black text-[#20202A]">Join with an invite code</h2>
+              <p className="mt-1.5 text-sm text-[#4A5E53] leading-relaxed">
                 Have an invitation link or code from a study partner? Paste it below to join their shared goal.
               </p>
             </div>
@@ -636,16 +656,17 @@ export const WelcomeChoiceScreen: React.FC = () => {
                 onChange={(e) => setInviteCode(e.target.value.toUpperCase())}
                 placeholder="DUO-XXXXXX"
                 aria-label="Invitation code"
-                className="w-full min-h-[44px] rounded-xl border border-[#E9EAF0] bg-[#F8F9FC] px-3.5 text-sm font-mono uppercase tracking-wider text-[#242337] focus:bg-white focus:border-[#7956D8] focus:outline-none"
+                className="w-full min-h-[44px] rounded-2xl border border-[#CBEBD7] bg-white px-4 text-sm font-mono uppercase tracking-wider text-[#20202A] focus:border-[#2FB368] focus:outline-none"
               />
-              {codeError && <p className="text-xs text-[#E66F77]">{codeError}</p>}
-              <button
+              {codeError && <p className="text-xs font-semibold text-[#C82D4F]">{codeError}</p>}
+              <Button
                 type="submit"
+                variant="success"
+                fullWidth
                 disabled={joining}
-                className="w-full min-h-[46px] rounded-xl bg-[#58CC02] text-sm font-semibold text-white hover:bg-[#4BB300] disabled:opacity-60 transition-colors cursor-pointer"
               >
                 {joining ? 'Joining...' : 'Join Study Goal'}
-              </button>
+              </Button>
             </form>
           </div>
         </div>
@@ -654,7 +675,7 @@ export const WelcomeChoiceScreen: React.FC = () => {
           <button
             type="button"
             onClick={dismissWelcomeChoice}
-            className="min-h-[44px] px-4 text-sm font-medium text-[#77768C] hover:text-[#25243A]"
+            className="min-h-[44px] px-4 text-sm font-bold text-[#777783] hover:text-[#20202A] cursor-pointer"
           >
             Skip for now and go to Dashboard
           </button>
@@ -682,4 +703,3 @@ export const AuthOnboardingFlow: React.FC = () => {
   }
   return <AuthScreen />;
 };
-

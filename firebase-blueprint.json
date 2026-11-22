@@ -384,6 +384,71 @@
         "unlockedAt": { "type": "string", "format": "date-time" }
       },
       "required": ["id", "userId", "achievementKey", "unlockedAt"]
+    },
+    "BujjiLearningMemory": {
+      "title": "BujjiLearningMemory",
+      "description": "Private per-user AI learning profile, preferences, weak/strong topics, and recent quiz history for Bujji AI 2.0.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "learningLevel": { "type": "string", "enum": ["Beginner", "Intermediate", "Advanced"] },
+        "curriculum": { "type": "string", "maxLength": 120 },
+        "preferredMode": {
+          "type": "string",
+          "enum": ["quick_answer", "explain_simply", "step_by_step", "deep_learning", "exam_prep"]
+        },
+        "weakTopics": { "type": "array", "description": "Up to 25 weak topic strings tracked from quizzes and study." },
+        "strongTopics": { "type": "array", "description": "Up to 25 strong topic strings mastered by the learner." },
+        "recentQuizResults": { "type": "array", "description": "Up to 20 recent quiz performance summary records." },
+        "studyPreferences": { "type": "string", "maxLength": 600 },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": [
+        "uid",
+        "learningLevel",
+        "curriculum",
+        "preferredMode",
+        "weakTopics",
+        "strongTopics",
+        "recentQuizResults",
+        "studyPreferences",
+        "updatedAt"
+      ]
+    },
+    "KnowledgeDocument": {
+      "title": "KnowledgeDocument",
+      "description": "Private user-uploaded study document (PDF, notes, markdown) indexed for curriculum-aware RAG in Bujji AI 2.0.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "userId": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "title": { "type": "string", "minLength": 1, "maxLength": 160 },
+        "subject": { "type": "string", "minLength": 1, "maxLength": 60 },
+        "chapter": { "type": "string", "maxLength": 120 },
+        "sourceType": { "type": "string", "enum": ["pdf", "notes", "markdown", "text"] },
+        "charCount": { "type": "number" },
+        "chunkCount": { "type": "number" },
+        "summary": { "type": "string", "maxLength": 2000 },
+        "keyConcepts": { "type": "array", "description": "Up to 20 extracted key concept tags." },
+        "indexedContent": { "type": "string", "minLength": 1, "maxLength": 60000 },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": [
+        "id",
+        "userId",
+        "title",
+        "subject",
+        "chapter",
+        "sourceType",
+        "charCount",
+        "chunkCount",
+        "summary",
+        "keyConcepts",
+        "indexedContent",
+        "createdAt",
+        "updatedAt"
+      ]
     }
   },
   "firestore": {
@@ -394,6 +459,14 @@
     "/users/{userId}/private/{docId}": {
       "schema": { "$ref": "#/entities/UserPrivateSettings" },
       "description": "Private PII (email) and notification/privacy preferences readable only by the owner."
+    },
+    "/users/{userId}/aiMemory/{docId}": {
+      "schema": { "$ref": "#/entities/BujjiLearningMemory" },
+      "description": "Private per-user Bujji AI 2.0 learning memory, weak/strong topics, and recent quiz analytics."
+    },
+    "/users/{userId}/knowledgeDocs/{docId}": {
+      "schema": { "$ref": "#/entities/KnowledgeDocument" },
+      "description": "Private per-user uploaded study documents indexed for Bujji AI 2.0 curriculum-aware RAG."
     },
     "/goals/{goalId}": {
       "schema": { "$ref": "#/entities/Goal" },

@@ -24,15 +24,10 @@ import { getLevelInfo } from '../../lib/gamification';
 import type { NavPage } from '../../types/studyduo';
 import { Avatar } from '../ui/Primitives';
 import { DailyCelebrationOverlay } from '../ui/DailyCelebrationOverlay';
+import { StudyDuoOwlMark } from '../ui/MascotArtwork';
 
-export const StudyDuoBrandMark: React.FC<{ size?: number }> = ({ size = 32 }) => (
-  <span
-    style={{ width: size, height: size }}
-    className="inline-flex shrink-0 items-center justify-center rounded-xl bg-[#7956E8] text-white"
-    aria-hidden="true"
-  >
-    <Sparkles style={{ width: Math.round(size * 0.52), height: Math.round(size * 0.52) }} />
-  </span>
+export const StudyDuoBrandMark: React.FC<{ size?: number }> = ({ size = 34 }) => (
+  <StudyDuoOwlMark size={size} />
 );
 
 interface NavItem {
@@ -52,7 +47,7 @@ const DESKTOP_MAIN_NAV: NavItem[] = [
 
 const DESKTOP_STUDIO_NAV: NavItem[] = [
   { id: 'avatar', label: 'Avatar Studio', icon: <Palette className="h-4 w-4" /> },
-  { id: 'ai', label: 'AI Coach', icon: <Sparkles className="h-4 w-4" /> },
+  { id: 'ai', label: 'Bujji AI', icon: <Sparkles className="h-4 w-4" /> },
   { id: 'journal', label: 'Journal', icon: <BookOpen className="h-4 w-4" /> },
   { id: 'analytics', label: 'Analytics', icon: <BarChart3 className="h-4 w-4" /> },
 ];
@@ -84,6 +79,8 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) 
     logout,
     toasts,
     dismissToast,
+    celebrationEvent,
+    dismissCelebration,
   } = useStudyDuo();
 
   const [isOffline, setIsOffline] = useState<boolean>(
@@ -110,18 +107,18 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) 
         key={item.id}
         type="button"
         onClick={() => setActivePage(item.id)}
-        className={`flex w-full items-center justify-between gap-2.5 rounded-xl px-3 py-2 text-sm font-medium transition-colors duration-150 cursor-pointer whitespace-nowrap ${
+        className={`flex w-full items-center justify-between gap-2.5 rounded-2xl px-3.5 py-2.5 text-sm font-semibold transition-colors duration-150 cursor-pointer whitespace-nowrap ${
           active
-            ? 'bg-[#F3F0FF] text-[#7956E8] font-semibold'
-            : 'text-[#555555] hover:bg-[#F7F8FA] hover:text-[#242424]'
+            ? 'bg-[#E9DFFF] text-[#7651E8] font-bold'
+            : 'text-[#5C5C6C] hover:bg-[#F8F5FF] hover:text-[#20202A]'
         }`}
       >
         <span className="flex items-center gap-2.5">
-          <span className={active ? 'text-[#7956E8]' : 'text-[#888888]'}>{item.icon}</span>
+          <span className={active ? 'text-[#7651E8]' : 'text-[#8B8A99]'}>{item.icon}</span>
           <span>{item.label}</span>
         </span>
         {item.id === 'notifications' && unreadNotificationCount > 0 && (
-          <span className="text-xs font-bold text-[#7956E8] tabular-nums">
+          <span className="inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-[#7651E8] px-1.5 text-[11px] font-bold text-white tabular-nums">
             {unreadNotificationCount}
           </span>
         )}
@@ -130,51 +127,59 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) 
   };
 
   return (
-    <div className="min-h-dvh bg-[#F7F8FA] text-[#242424] flex">
-      {/* Clean Minimalist Desktop Sidebar */}
-      <aside className="hidden lg:flex lg:w-60 lg:flex-col lg:fixed lg:inset-y-0 lg:left-0 border-r border-[#EEEEF2] bg-white z-30">
-        {/* Brand */}
-        <div className="flex items-center gap-2.5 px-5 py-4 border-b border-[#EEEEF2]">
+    <div className="min-h-dvh bg-[#F8F5FF] text-[#20202A] flex">
+      {/* Friendly Soft-Pastel Desktop Sidebar */}
+      <aside className="hidden lg:flex lg:w-64 lg:flex-col lg:fixed lg:inset-y-0 lg:left-0 border-r border-[#F0EDF5] bg-white z-30">
+        {/* Brand Lockup */}
+        <div className="flex items-center gap-2.5 px-5 py-4 border-b border-[#F0EDF5]">
           <button
             type="button"
             onClick={() => setActivePage('dashboard')}
             className="flex items-center gap-2.5 text-left cursor-pointer"
           >
-            <StudyDuoBrandMark size={32} />
-            <span className="text-base font-extrabold tracking-tight text-[#242424] whitespace-nowrap">
-              StudyDuo
+            <StudyDuoOwlMark size={36} />
+            <span className="font-display text-xl font-black tracking-tight whitespace-nowrap">
+              <span className="text-[#7651E8]">Study</span>
+              <span className="text-[#20202A]">Duo</span>
             </span>
           </button>
         </div>
 
         {/* Navigation Links */}
-        <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-5" aria-label="Primary navigation">
-          <div className="space-y-0.5">
-            <p className="px-3 pb-1 text-[11px] font-semibold text-[#888888]">Learning</p>
+        <nav className="flex-1 overflow-y-auto px-3.5 py-4 space-y-5" aria-label="Primary navigation">
+          <div className="space-y-1">
+            <p className="px-3.5 pb-1 text-[11px] font-bold uppercase tracking-wider text-[#9A99AA]">
+              Learning
+            </p>
             {DESKTOP_MAIN_NAV.map(renderDesktopButton)}
           </div>
 
-          <div className="space-y-0.5">
-            <p className="px-3 pb-1 text-[11px] font-semibold text-[#888888]">Tools</p>
+          <div className="space-y-1">
+            <p className="px-3.5 pb-1 text-[11px] font-bold uppercase tracking-wider text-[#9A99AA]">
+              Studio & Tools
+            </p>
             {DESKTOP_STUDIO_NAV.map(renderDesktopButton)}
           </div>
 
-          <div className="space-y-0.5">
-            <p className="px-3 pb-1 text-[11px] font-semibold text-[#888888]">Account</p>
+          <div className="space-y-1">
+            <p className="px-3.5 pb-1 text-[11px] font-bold uppercase tracking-wider text-[#9A99AA]">
+              Account
+            </p>
             {DESKTOP_ACCOUNT_NAV.map(renderDesktopButton)}
           </div>
         </nav>
 
         {/* User Footer */}
         {currentUser && (
-          <div className="border-t border-[#EEEEF2] p-3 space-y-2 bg-white">
+          <div className="border-t border-[#F0EDF5] p-3.5 space-y-2 bg-white">
             <button
               type="button"
               onClick={() => setActivePage('avatar')}
-              className="flex w-full items-center gap-2.5 rounded-xl p-2 text-left hover:bg-[#F7F8FA] transition-colors cursor-pointer"
+              className="flex w-full items-center gap-2.5 rounded-2xl bg-[#F8F5FF] p-2.5 text-left hover:bg-[#E9DFFF]/70 transition-colors cursor-pointer"
               title="Customize your avatar"
             >
               <Avatar
+                name={currentUser.fullName}
                 initials={currentUser.avatarInitials}
                 color={currentUser.avatarColor}
                 avatarConfig={currentUser.avatarConfig}
@@ -182,12 +187,12 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) 
                 size="sm"
               />
               <div className="min-w-0 flex-1">
-                <p className="truncate text-xs font-bold text-[#242424]">{currentUser.fullName}</p>
-                <p className="text-[11px] text-[#888888] tabular-nums">
+                <p className="truncate text-xs font-extrabold text-[#20202A]">{currentUser.fullName}</p>
+                <p className="text-[11px] font-medium text-[#777783] tabular-nums">
                   Lv.{levelInfo.level} · {currentUser.totalXp.toLocaleString()} XP
                 </p>
               </div>
-              <span className="text-xs font-bold text-[#FF9600] tabular-nums shrink-0">
+              <span className="inline-flex items-center gap-0.5 rounded-full bg-[#FFF0C9] px-2 py-0.5 text-[11px] font-extrabold text-[#B47100] tabular-nums shrink-0">
                 🔥 {currentUser.currentStreak}
               </span>
             </button>
@@ -195,7 +200,7 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) 
             <button
               type="button"
               onClick={mode === 'preview' ? exitPreviewMode : logout}
-              className="flex w-full items-center justify-center gap-1.5 rounded-xl py-1.5 text-xs font-medium text-[#888888] hover:bg-[#F7F8FA] hover:text-[#242424] transition-colors cursor-pointer"
+              className="flex w-full items-center justify-center gap-1.5 rounded-full py-2 text-xs font-semibold text-[#777783] hover:bg-[#F8F5FF] hover:text-[#20202A] transition-colors cursor-pointer"
             >
               <LogOut className="h-3.5 w-3.5" />
               {mode === 'preview' ? 'Sign In' : 'Sign Out'}
@@ -205,10 +210,10 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) 
       </aside>
 
       {/* Main Content Area */}
-      <div className="flex-1 lg:pl-60 flex flex-col min-w-0">
+      <div className="flex-1 lg:pl-64 flex flex-col min-w-0">
         {/* Offline Warning Banner */}
         {isOffline && (
-          <div className="bg-[#FFF8E6] border-b border-[#F2DFAA] px-4 py-2 text-xs font-medium text-[#8A5A00] flex items-center justify-center gap-2">
+          <div className="bg-[#FFF0C9] border-b border-[#F3D998] px-4 py-2 text-xs font-semibold text-[#8A5A00] flex items-center justify-center gap-2">
             <WifiOff className="h-3.5 w-3.5 shrink-0" />
             <span>You are offline. Changes will sync once reconnected.</span>
           </div>
@@ -216,23 +221,25 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) 
 
         {/* Interactive Preview Mode Switcher */}
         {mode === 'preview' && (
-          <div className="bg-white border-b border-[#EEEEF2] px-3 sm:px-5 py-2 text-xs text-[#242424]">
+          <div className="bg-white/95 border-b border-[#F0EDF5] px-3 sm:px-5 py-2 text-xs text-[#20202A]">
             <div className="mx-auto max-w-5xl flex flex-wrap items-center justify-between gap-2">
               <div className="flex items-center gap-2 min-w-0">
-                <span className="font-semibold text-[#7956E8]">Preview mode</span>
-                <span className="hidden md:inline text-[#888888]">
+                <span className="inline-flex items-center rounded-full bg-[#E9DFFF] px-2.5 py-0.5 text-[11px] font-extrabold text-[#7651E8]">
+                  Preview Mode
+                </span>
+                <span className="hidden md:inline text-[#777783]">
                   Switch between Owner and Partner accounts to test independent quests and permissions.
                 </span>
               </div>
               <div className="flex items-center gap-1.5">
-                <div className="inline-flex rounded-lg bg-[#F7F8FA] p-0.5 border border-[#EEEEF2]">
+                <div className="inline-flex rounded-full bg-[#F8F5FF] p-0.5 border border-[#F0EDF5]">
                   <button
                     type="button"
                     onClick={() => switchPreviewPersona('owner')}
-                    className={`px-2.5 py-1 rounded-md text-[11px] font-semibold transition-colors cursor-pointer whitespace-nowrap ${
+                    className={`px-3 py-1 rounded-full text-[11px] font-bold transition-colors cursor-pointer whitespace-nowrap ${
                       previewPersona === 'owner'
-                        ? 'bg-[#7956E8] text-white'
-                        : 'text-[#666666] hover:text-[#242424]'
+                        ? 'bg-[#7651E8] text-white'
+                        : 'text-[#777783] hover:text-[#20202A]'
                     }`}
                   >
                     Alex (Owner)
@@ -240,10 +247,10 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) 
                   <button
                     type="button"
                     onClick={() => switchPreviewPersona('partner')}
-                    className={`px-2.5 py-1 rounded-md text-[11px] font-semibold transition-colors cursor-pointer whitespace-nowrap ${
+                    className={`px-3 py-1 rounded-full text-[11px] font-bold transition-colors cursor-pointer whitespace-nowrap ${
                       previewPersona === 'partner'
-                        ? 'bg-[#58CC02] text-white'
-                        : 'text-[#666666] hover:text-[#242424]'
+                        ? 'bg-[#2FB368] text-white'
+                        : 'text-[#777783] hover:text-[#20202A]'
                     }`}
                   >
                     Maya (Partner)
@@ -252,7 +259,7 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) 
                 <button
                   type="button"
                   onClick={exitPreviewMode}
-                  className="rounded-lg bg-white px-2.5 py-1 text-[11px] font-semibold text-[#7956E8] border border-[#E4E4EC] hover:bg-[#F7F8FA] cursor-pointer whitespace-nowrap"
+                  className="rounded-full bg-white px-3 py-1 text-[11px] font-bold text-[#7651E8] border border-[#E9DFFF] hover:bg-[#F8F5FF] cursor-pointer whitespace-nowrap"
                 >
                   Sign In
                 </button>
@@ -261,25 +268,26 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) 
           </div>
         )}
 
-        {/* Compact Mobile Top Header (50px) */}
-        <header className="lg:hidden sticky top-0 z-20 flex items-center justify-between gap-2 border-b border-[#EEEEF2] bg-white px-3.5 h-[50px]">
+        {/* Compact Mobile Top Header (52px) */}
+        <header className="lg:hidden sticky top-0 z-20 flex items-center justify-between gap-2 border-b border-[#F0EDF5] bg-white/95 backdrop-blur-sm px-4 h-[52px]">
           <button
             type="button"
             onClick={() => setActivePage('dashboard')}
             className="flex items-center gap-2 cursor-pointer min-w-0"
           >
-            <StudyDuoBrandMark size={28} />
-            <span className="text-sm font-extrabold tracking-tight text-[#242424] whitespace-nowrap">
-              StudyDuo
+            <StudyDuoOwlMark size={30} />
+            <span className="font-display text-base font-black tracking-tight whitespace-nowrap">
+              <span className="text-[#7651E8]">Study</span>
+              <span className="text-[#20202A]">Duo</span>
             </span>
           </button>
 
-          <div className="flex items-center gap-1 shrink-0">
+          <div className="flex items-center gap-1.5 shrink-0">
             {currentUser && (
               <button
                 type="button"
                 onClick={() => setActivePage('checklist')}
-                className="flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-bold text-[#FF9600] hover:bg-[#FFF4E5] cursor-pointer tabular-nums min-h-[36px]"
+                className="flex items-center gap-1 rounded-full bg-[#FFF0C9] px-2.5 py-1 text-xs font-extrabold text-[#B47100] cursor-pointer tabular-nums min-h-[34px]"
                 aria-label={`${currentUser.currentStreak} day study streak`}
               >
                 <span aria-hidden="true">🔥</span>
@@ -289,33 +297,47 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) 
 
             <button
               type="button"
+              onClick={() => setActivePage('ai')}
+              className={`flex h-9 w-9 items-center justify-center rounded-full transition-colors cursor-pointer ${
+                activePage === 'ai'
+                  ? 'bg-[#7651E8] text-white'
+                  : 'bg-[#E9DFFF] text-[#7651E8] hover:bg-[#DDD0FF]'
+              }`}
+              aria-label="Open Bujji AI"
+              title="Bujji AI"
+            >
+              <Sparkles className="h-4 w-4" />
+            </button>
+
+            <button
+              type="button"
               onClick={() => setActivePage('checklist')}
-              className={`flex h-9 w-9 items-center justify-center rounded-xl transition-colors cursor-pointer ${
+              className={`flex h-9 w-9 items-center justify-center rounded-full transition-colors cursor-pointer ${
                 activePage === 'checklist'
-                  ? 'bg-[#F3F0FF] text-[#7956E8]'
-                  : 'text-[#666666] hover:bg-[#F7F8FA]'
+                  ? 'bg-[#E9DFFF] text-[#7651E8]'
+                  : 'bg-[#F8F5FF] text-[#5C5C6C] hover:bg-[#E9DFFF]'
               }`}
               aria-label="Open Quest Center"
               title="Quest Center"
             >
-              <CheckSquare className="h-[18px] w-[18px]" />
+              <CheckSquare className="h-4 w-4" />
             </button>
 
             <button
               type="button"
               onClick={() => setActivePage('notifications')}
-              className="relative flex h-9 w-9 items-center justify-center rounded-xl text-[#666666] hover:bg-[#F7F8FA] hover:text-[#242424] cursor-pointer"
+              className="relative flex h-9 w-9 items-center justify-center rounded-full bg-[#F8F5FF] text-[#5C5C6C] hover:bg-[#E9DFFF] hover:text-[#20202A] cursor-pointer"
               aria-label="Notifications"
             >
-              <Bell className="h-[18px] w-[18px]" />
+              <Bell className="h-4 w-4" />
               {unreadNotificationCount > 0 && (
-                <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-[#7956E8] ring-2 ring-white" />
+                <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-[#7651E8] ring-2 ring-white" />
               )}
             </button>
           </div>
         </header>
 
-        {/* Page Container with Subtle Transition */}
+        {/* Page Container */}
         <main className="flex-1 w-full max-w-5xl mx-auto px-4 sm:px-6 py-5 pb-24 lg:pb-10 min-w-0">
           <motion.div
             key={activePage}
@@ -328,10 +350,10 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) 
         </main>
       </div>
 
-      {/* Clean Fixed Mobile Bottom Navigation */}
+      {/* Friendly Rounded Mobile Bottom Navigation */}
       <nav
         aria-label="Mobile navigation"
-        className="lg:hidden fixed bottom-0 inset-x-0 z-30 border-t border-[#EEEEF2] bg-white pb-safe"
+        className="lg:hidden fixed bottom-0 inset-x-0 z-30 border-t border-[#F0EDF5] bg-white/95 backdrop-blur-sm pb-safe shadow-[0_-6px_20px_-10px_rgba(118,81,232,0.12)]"
       >
         <div className="mx-auto max-w-md grid grid-cols-5">
           {MOBILE_TABS.map((tab) => {
@@ -346,18 +368,18 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) 
                 type="button"
                 onClick={() => setActivePage(tab.id)}
                 className={`relative flex flex-col items-center justify-center gap-0.5 py-2 min-h-[54px] transition-colors duration-150 cursor-pointer ${
-                  active ? 'text-[#7956E8]' : 'text-[#888888] hover:text-[#242424]'
+                  active ? 'text-[#7651E8]' : 'text-[#8B8A99] hover:text-[#20202A]'
                 }`}
                 aria-current={active ? 'page' : undefined}
               >
                 {active && (
                   <span
                     aria-hidden="true"
-                    className="absolute top-0 h-[2.5px] w-7 rounded-full bg-[#7956E8]"
+                    className="absolute top-0 h-[3px] w-8 rounded-full bg-[#7651E8]"
                   />
                 )}
                 <span>{tab.icon}</span>
-                <span className={`text-[10px] leading-none ${active ? 'font-bold' : 'font-medium'}`}>
+                <span className={`text-[10px] leading-none ${active ? 'font-extrabold' : 'font-semibold'}`}>
                   {tab.label}
                 </span>
               </button>
@@ -367,7 +389,14 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) 
       </nav>
 
       {/* Celebration Modal Overlay */}
-      <DailyCelebrationOverlay />
+      <DailyCelebrationOverlay
+        celebration={celebrationEvent}
+        onClose={dismissCelebration}
+        onOpenAvatarStudio={() => {
+          dismissCelebration();
+          setActivePage('avatar');
+        }}
+      />
 
       {/* Clean Bottom-Right Toast Stack */}
       <div
@@ -381,22 +410,22 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) 
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 4 }}
             transition={{ duration: 0.16 }}
-            className={`pointer-events-auto flex items-start gap-2.5 rounded-xl border px-3.5 py-2.5 shadow-md text-xs font-medium ${
+            className={`pointer-events-auto flex items-start gap-2.5 rounded-2xl border px-4 py-3 shadow-md text-xs font-semibold ${
               t.tone === 'error'
-                ? 'bg-[#FFF5F5] border-[#F5C6C8] text-[#A6282E]'
+                ? 'bg-[#FFF0F3] border-[#FFD6DF] text-[#B82547]'
                 : t.tone === 'info'
-                ? 'bg-white border-[#EEEEF2] text-[#242424]'
-                : 'bg-white border-[#CDEFA9] text-[#242424]'
+                ? 'bg-[#F8F5FF] border-[#E9DFFF] text-[#20202A]'
+                : 'bg-white border-[#D6F2E1] text-[#20202A]'
             }`}
           >
             {t.tone === 'success' && (
-              <CheckCircle2 className="h-4 w-4 text-[#58CC02] shrink-0 mt-0.5" />
+              <CheckCircle2 className="h-4 w-4 text-[#2FB368] shrink-0 mt-0.5" />
             )}
             <span className="flex-1 leading-snug">{t.message}</span>
             <button
               type="button"
               onClick={() => dismissToast(t.id)}
-              className="text-[#888888] hover:text-[#242424] cursor-pointer"
+              className="text-[#777783] hover:text-[#20202A] cursor-pointer"
               aria-label="Dismiss notification"
             >
               <X className="h-3.5 w-3.5" />
