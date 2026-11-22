@@ -1,7 +1,21 @@
 import { initializeApp, getApps, getApp } from 'firebase/app';
 import { getAuth, GoogleAuthProvider } from 'firebase/auth';
 import { doc, getDocFromServer, getFirestore } from 'firebase/firestore';
-import firebaseConfig from '../../firebase-applet-config.json';
+import rawFirebaseConfig from '../../firebase-applet-config.json';
+
+const envMeta = (import.meta as unknown as { env?: Record<string, string | undefined> }).env || {};
+
+const firebaseConfig = {
+  ...rawFirebaseConfig,
+  apiKey: envMeta.VITE_FIREBASE_API_KEY || rawFirebaseConfig.apiKey,
+  authDomain: envMeta.VITE_FIREBASE_AUTH_DOMAIN || rawFirebaseConfig.authDomain,
+  projectId: envMeta.VITE_FIREBASE_PROJECT_ID || rawFirebaseConfig.projectId,
+  storageBucket: envMeta.VITE_FIREBASE_STORAGE_BUCKET || rawFirebaseConfig.storageBucket,
+  messagingSenderId: envMeta.VITE_FIREBASE_MESSAGING_SENDER_ID || rawFirebaseConfig.messagingSenderId,
+  appId: envMeta.VITE_FIREBASE_APP_ID || rawFirebaseConfig.appId,
+  firestoreDatabaseId:
+    envMeta.VITE_FIREBASE_FIRESTORE_DATABASE_ID || rawFirebaseConfig.firestoreDatabaseId,
+};
 
 export const isFirebaseConfigured = Boolean(
   firebaseConfig?.projectId &&

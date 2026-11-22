@@ -15,11 +15,12 @@ export default defineConfig(() => {
         includeAssets: ['icon.svg', 'apple-touch-icon.png', 'pwa-192x192.png', 'pwa-512x512.png'],
         manifest: {
           id: '/',
-          name: 'StudyDuo — Collaborative Study Tracker',
+          name: 'StudyDuo',
           short_name: 'StudyDuo',
-          description: 'Learn Together. Grow Together. Shared study goals, daily checklists, XP, streaks, and AI coaching.',
-          theme_color: '#7956D8',
-          background_color: '#F8F9FC',
+          description:
+            'StudyDuo is a free AI-powered study planner and gamified study tracker. Create study roadmaps, manage daily goals, track streaks, earn XP, take quizzes, and learn together with a study partner.',
+          theme_color: '#7651E8',
+          background_color: '#F8F5FF',
           display: 'standalone',
           start_url: '/',
           scope: '/',
@@ -79,8 +80,7 @@ export default defineConfig(() => {
           ],
         },
         devOptions: {
-          enabled: true,
-          type: 'module',
+          enabled: false,
         },
       }),
       // Copies src/assets into dist/ so root-relative URLs like
@@ -110,6 +110,11 @@ export default defineConfig(() => {
     },
     optimizeDeps: {
       include: ['react', 'react-dom', 'react/jsx-runtime', 'motion/react'],
+    },
+    build: {
+      target: 'es2022',
+      sourcemap: false,
+      chunkSizeWarningLimit: 1500,
     },
     server: {
       // HMR is disabled in AI Studio via DISABLE_HMR env var.

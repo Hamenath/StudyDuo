@@ -238,8 +238,8 @@ export const AnalyticsPage: React.FC = () => {
             <p className="mt-0.5 text-xs text-[#777783]">
               Tracks your earned XP progression across the selected window.
             </p>
-            <div className="mt-5 h-64 w-full">
-              <ResponsiveContainer width="100%" height="100%">
+            <div className="mt-5 h-64 w-full min-w-0">
+              <ResponsiveContainer width="100%" height={256} minWidth={1}>
                 <AreaChart data={chartData} margin={{ top: 8, right: 12, left: -18, bottom: 0 }}>
                   <defs>
                     <linearGradient id="xpPurpleGrad" x1="0" y1="0" x2="0" y2="1">
@@ -277,8 +277,8 @@ export const AnalyticsPage: React.FC = () => {
             <p className="mt-0.5 text-xs text-[#777783]">
               {partner ? `You vs ${partner.displayName.split(' ')[0]} per day` : 'Tasks completed per day'}
             </p>
-            <div className="mt-5 h-64 w-full">
-              <ResponsiveContainer width="100%" height="100%">
+            <div className="mt-5 h-64 w-full min-w-0">
+              <ResponsiveContainer width="100%" height={256} minWidth={1}>
                 <BarChart data={chartData} margin={{ top: 8, right: 12, left: -20, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#F0EDF5" vertical={false} />
                   <XAxis dataKey="label" tick={{ fontSize: 11, fill: '#777783' }} axisLine={false} tickLine={false} />
@@ -313,8 +313,8 @@ export const AnalyticsPage: React.FC = () => {
             <p className="mt-0.5 text-xs text-[#777783]">
               Side-by-side daily XP pace to keep both partners motivated.
             </p>
-            <div className="mt-5 h-64 w-full">
-              <ResponsiveContainer width="100%" height="100%">
+            <div className="mt-5 h-64 w-full min-w-0">
+              <ResponsiveContainer width="100%" height={256} minWidth={1}>
                 <BarChart data={chartData} margin={{ top: 8, right: 12, left: -16, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#F0EDF5" vertical={false} />
                   <XAxis dataKey="label" tick={{ fontSize: 11, fill: '#777783' }} axisLine={false} tickLine={false} />
