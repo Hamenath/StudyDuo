@@ -824,6 +824,64 @@ export const ChecklistPage: React.FC = () => {
               </div>
             )}
 
+            {/* One Quest Roadmap & Step-by-Step Breakdown */}
+            <div className="rounded-2xl bg-[#F8F5FF] border border-[#E9DFFF] p-4 space-y-2.5">
+              <div className="flex items-center gap-2">
+                <Sparkles className="h-4 w-4 text-[#7651E8]" />
+                <h3 className="text-xs font-black text-[#7651E8] uppercase tracking-wider">
+                  Quest Study Roadmap
+                </h3>
+              </div>
+              <div className="space-y-2">
+                {buildQuestSpecificRoadmap(detailTask.title, activeGoal?.category).map((step) => (
+                  <div key={step.step} className="flex items-start gap-2.5 text-xs text-[#20202A]">
+                    <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[#7651E8] text-[10px] font-bold text-white">
+                      {step.step}
+                    </span>
+                    <div>
+                      <p className="font-bold text-[#20202A]">{step.title}</p>
+                      <p className="text-[#777783] mt-0.5">{step.objective}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Recommended YouTube Channels for this Quest */}
+            <div className="rounded-2xl bg-white border border-[#F0EDF5] p-4 space-y-2.5">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Youtube className="h-4 w-4 text-[#E5484D]" />
+                  <h3 className="text-xs font-black text-[#20202A] uppercase tracking-wider">
+                    Recommended YouTube Channels
+                  </h3>
+                </div>
+                <span className="text-[11px] font-bold text-[#777783]">Handpicked for this topic</span>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                {getRecommendedChannelsForTopic(detailTask.title).map((channel, i) => (
+                  <a
+                    key={i}
+                    href={channel.searchUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="p-3 rounded-xl border border-[#F0EDF5] bg-[#F8F5FF] hover:bg-[#E9DFFF]/60 transition-colors flex flex-col justify-between group"
+                  >
+                    <div>
+                      <div className="flex items-center justify-between gap-1">
+                        <p className="text-xs font-black text-[#20202A] group-hover:text-[#7651E8]">
+                          {channel.name}
+                        </p>
+                        <ExternalLink className="h-3 w-3 text-[#777783] group-hover:text-[#7651E8]" />
+                      </div>
+                      <p className="text-[10px] font-mono text-[#7651E8]">{channel.handle}</p>
+                      <p className="text-[11px] text-[#777783] mt-1 line-clamp-2">{channel.description}</p>
+                    </div>
+                  </a>
+                ))}
+              </div>
+            </div>
+
             <div>
               <h3 className="text-xs font-bold text-[#888888] mb-2">Study Resources</h3>
               <div className="space-y-2">
