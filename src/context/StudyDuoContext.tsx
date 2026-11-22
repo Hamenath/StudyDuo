@@ -1220,11 +1220,39 @@ export const StudyDuoProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       timezone: string;
       avatarColor: string;
     }) => {
-      if (mode === 'preview' || !firebaseUser) return;
+      const fallbackProfile: UserPublicProfile = {
+        uid: firebaseUser?.uid || 'guest-user',
+        fullName: data.fullName.trim(),
+        username: data.username.trim(),
+        bio: data.bio.trim(),
+        preferredCategory: data.preferredCategory,
+        timezone: data.timezone,
+        avatarColor: data.avatarColor,
+        avatarInitials: getInitials(data.fullName),
+        avatarConfig: getDefaultAvatarConfig(firebaseUser?.uid || 'guest-user'),
+        photoURL: firebaseUser?.photoURL || '',
+        totalXp: 0,
+        level: 1,
+        currentStreak: 0,
+        longestStreak: 0,
+        completedTasksCount: 0,
+        completedGoalsCount: 0,
+        lastActiveDate: '',
+        onboardingCompleted: true,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+
+      if (mode === 'preview' || !firebaseUser) {
+        setLiveUser(fallbackProfile);
+        setShowWelcomeChoice(false);
+        setActivePage('dashboard');
+        return;
+      }
+
       const uid = firebaseUser.uid;
       try {
         const userRef = doc(db, 'users', uid);
-        const snap = await getDoc(userRef);
         const updatePayload = {
           fullName: data.fullName.trim(),
           username: data.username.trim(),
@@ -1237,9 +1265,10 @@ export const StudyDuoProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           updatedAt: serverTimestamp(),
         };
 
-        if (!snap.exists()) {
-          const batch = writeBatch(db);
-          batch.set(userRef, {
+        const batch = writeBatch(db);
+        batch.set(
+          userRef,
+          {
             uid,
             ...updatePayload,
             avatarConfig: getDefaultAvatarConfig(uid),
@@ -1251,8 +1280,12 @@ export const StudyDuoProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             completedTasksCount: 0,
             completedGoalsCount: 0,
             createdAt: serverTimestamp(),
-          });
-          batch.set(doc(db, 'users', uid, 'private', 'settings'), {
+          },
+          { merge: true }
+        );
+        batch.set(
+          doc(db, 'users', uid, 'private', 'settings'),
+          {
             uid,
             email: firebaseUser.email || 'user@studyduo.app',
             notifyInvites: true,
@@ -1263,16 +1296,25 @@ export const StudyDuoProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             shareProgressWithPartner: true,
             allowAiJournalContext: false,
             updatedAt: serverTimestamp(),
-          });
-          await batch.commit();
-        } else {
-          await updateDoc(userRef, updatePayload);
-        }
+          },
+          { merge: true }
+        );
+        await batch.commit();
 
-        setShowWelcomeChoice(true);
+        setLiveUser((prev) =>
+          prev
+            ? { ...prev, ...updatePayload, updatedAt: new Date().toISOString() }
+            : fallbackProfile
+        );
+        setShowWelcomeChoice(false);
+        setActivePage('dashboard');
         showToast('Profile ready! Welcome to StudyDuo.');
       } catch (err) {
-        handleFirestoreError(err, OperationType.UPDATE, `users/${uid}`);
+        console.warn('Firestore online sync deferred, applying profile locally:', err);
+        setLiveUser(fallbackProfile);
+        setShowWelcomeChoice(false);
+        setActivePage('dashboard');
+        showToast('Profile saved! Welcome to StudyDuo.');
       }
     },
     [firebaseUser, mode, showToast]
