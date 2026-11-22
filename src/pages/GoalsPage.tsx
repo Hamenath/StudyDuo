@@ -233,10 +233,8 @@ export const GoalsPage: React.FC = () => {
         setEditingGoal(null);
       } else {
         const createdId = await createGoal(parsed.data);
-        if (createdId) {
-          setShowCreateGoal(false);
-          setGoalForm({ ...goalForm, title: '', description: '', groupName: '' });
-        }
+        setShowCreateGoal(false);
+        setGoalForm({ ...goalForm, title: '', description: '', groupName: '' });
       }
     } finally {
       setSavingGoal(false);

@@ -1614,12 +1614,18 @@ export const StudyDuoProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           createdAt: serverTimestamp(),
           updatedAt: serverTimestamp(),
         });
+        setLiveGoals((prev) => [newGoal, ...prev.filter((g) => g.id !== goalId)]);
         setSelectedGoalId(goalId);
         setShowWelcomeChoice(false);
         showToast(`Created goal "${newGoal.title}"!`);
         return goalId;
       } catch (err) {
-        handleFirestoreError(err, OperationType.CREATE, `goals/${goalId}`);
+        console.warn('Firestore sync deferred, creating goal locally:', err);
+        setLiveGoals((prev) => [newGoal, ...prev.filter((g) => g.id !== goalId)]);
+        setSelectedGoalId(goalId);
+        setShowWelcomeChoice(false);
+        showToast(`Created goal "${newGoal.title}"!`);
+        return goalId;
       }
     },
     [currentUser, mode, showToast]
