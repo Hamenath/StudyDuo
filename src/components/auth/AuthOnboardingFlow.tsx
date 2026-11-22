@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import { sendEmailVerification } from 'firebase/auth';
 import { useStudyDuo } from '../../context/StudyDuoContext';
+import { extractInviteCode } from '../../lib/inviteShare';
 import { onboardingSchema, inviteCodeSchema } from '../../lib/validation';
 import { MascotImage, StudyDuoOwlMark } from '../ui/MascotArtwork';
 import { Button, ToastStack } from '../ui/Primitives';
@@ -577,9 +578,10 @@ export const WelcomeChoiceScreen: React.FC = () => {
   const handleJoin = async (e: React.FormEvent) => {
     e.preventDefault();
     setCodeError('');
-    const parsed = inviteCodeSchema.safeParse({ code: inviteCode });
+    const extracted = extractInviteCode(inviteCode);
+    const parsed = inviteCodeSchema.safeParse({ code: extracted });
     if (!parsed.success) {
-      setCodeError(parsed.error.issues[0]?.message || 'Invalid code');
+      setCodeError('Paste a valid Duo invite link or code (e.g. DUO-XXXXXX)');
       return;
     }
     setJoining(true);
@@ -653,10 +655,10 @@ export const WelcomeChoiceScreen: React.FC = () => {
               <input
                 type="text"
                 value={inviteCode}
-                onChange={(e) => setInviteCode(e.target.value.toUpperCase())}
-                placeholder="DUO-XXXXXX"
-                aria-label="Invitation code"
-                className="w-full min-h-[44px] rounded-2xl border border-[#CBEBD7] bg-white px-4 text-sm font-mono uppercase tracking-wider text-[#20202A] focus:border-[#2FB368] focus:outline-none"
+                onChange={(e) => setInviteCode(e.target.value)}
+                placeholder="Paste invite link or DUO-XXXXXX"
+                aria-label="Invitation link or code"
+                className="w-full min-h-[44px] rounded-2xl border border-[#CBEBD7] bg-white px-4 text-sm text-[#20202A] focus:border-[#2FB368] focus:outline-none"
               />
               {codeError && <p className="text-xs font-semibold text-[#C82D4F]">{codeError}</p>}
               <Button

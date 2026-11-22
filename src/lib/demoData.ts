@@ -743,6 +743,20 @@ export function createPreviewSeedState(): PreviewSeedState {
 
   const invitations: Invitation[] = [
     {
+      id: 'DUO-JOIN26',
+      code: 'DUO-JOIN26',
+      goalId,
+      goalTitle: goal.title,
+      inviterId: ownerUid,
+      inviterName: ownerUser.fullName,
+      inviteeEmail: '',
+      acceptedBy: '',
+      status: 'pending',
+      expiresAt: addDaysToDateKey(today, 7) + 'T23:59:59.000Z',
+      createdAt: nowIso,
+      updatedAt: nowIso,
+    },
+    {
       id: 'DUO-PY6026',
       code: 'DUO-PY6026',
       goalId,

@@ -81,6 +81,8 @@ export const ChecklistPage: React.FC = () => {
     completions,
     personalNotes,
     createStudyDay,
+    updateStudyDay,
+    deleteStudyDay,
     toggleDayPublished,
     toggleRestDay,
     saveTask,
@@ -99,6 +101,9 @@ export const ChecklistPage: React.FC = () => {
   const [selectedDayId, setSelectedDayId] = useState<string>('');
   const [showAddDayModal, setShowAddDayModal] = useState(false);
   const [newDayTitle, setNewDayTitle] = useState('');
+  const [showRenameDayModal, setShowRenameDayModal] = useState(false);
+  const [renameDayInput, setRenameDayInput] = useState('');
+  const [showDeleteDayConfirm, setShowDeleteDayConfirm] = useState(false);
   const [justCompleted, setJustCompleted] = useState<{ id: string; xp: number; message: string } | null>(null);
 
   const [detailTask, setDetailTask] = useState<Task | null>(null);
@@ -281,6 +286,19 @@ export const ChecklistPage: React.FC = () => {
     }
   };
 
+  const openRenameDayModal = () => {
+    if (!activeDay) return;
+    setRenameDayInput(activeDay.title);
+    setShowRenameDayModal(true);
+  };
+
+  const handleRenameDay = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!activeGoal || !activeDay || !renameDayInput.trim()) return;
+    await updateStudyDay(activeGoal.id, activeDay.id, renameDayInput.trim());
+    setShowRenameDayModal(false);
+  };
+
   if (!activeGoal) {
     return (
       <EmptyState
@@ -442,6 +460,26 @@ export const ChecklistPage: React.FC = () => {
             <div className="flex items-center gap-2 flex-wrap z-10">
               {isOwner && (
                 <>
+                  <button
+                    type="button"
+                    onClick={openRenameDayModal}
+                    aria-label="Rename Study Day"
+                    className="min-h-[36px] inline-flex items-center gap-1.5 rounded-full bg-white px-3.5 text-xs font-bold text-[#7651E8] hover:bg-[#F8F5FF] transition-colors cursor-pointer"
+                  >
+                    <Edit3 className="h-3.5 w-3.5" />
+                    Rename Day
+                  </button>
+                  {days.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={() => setShowDeleteDayConfirm(true)}
+                      aria-label="Delete Study Day"
+                      className="min-h-[36px] inline-flex items-center gap-1.5 rounded-full bg-white px-3.5 text-xs font-bold text-[#C82D4F] hover:bg-[#FFF0F3] transition-colors cursor-pointer"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                      Delete Day
+                    </button>
+                  )}
                   <button
                     type="button"
                     onClick={() => void toggleRestDay(activeGoal.id, activeDay.date)}
@@ -685,7 +723,7 @@ export const ChecklistPage: React.FC = () => {
                       </div>
 
                       {isOwner && (
-                        <div className="flex items-center gap-0.5">
+                        <div className="flex items-center gap-1 flex-wrap">
                           <button
                             type="button"
                             disabled={idx === 0}
@@ -708,9 +746,10 @@ export const ChecklistPage: React.FC = () => {
                             type="button"
                             onClick={() => openEditTaskEditor(task)}
                             aria-label={`Edit "${task.title}"`}
-                            className="min-h-[34px] min-w-[34px] flex items-center justify-center rounded-full text-[#777783] hover:bg-[#F8F5FF] hover:text-[#20202A] cursor-pointer"
+                            className="min-h-[34px] inline-flex items-center gap-1 rounded-full bg-[#F8F5FF] px-3 text-xs font-extrabold text-[#7651E8] hover:bg-[#E9DFFF] transition-colors cursor-pointer"
                           >
                             <Edit3 className="h-3.5 w-3.5" />
+                            <span>Rename</span>
                           </button>
                           <button
                             type="button"
@@ -732,9 +771,10 @@ export const ChecklistPage: React.FC = () => {
                             type="button"
                             onClick={() => setTaskToDelete(task)}
                             aria-label={`Delete "${task.title}"`}
-                            className="min-h-[34px] min-w-[34px] flex items-center justify-center rounded-full text-[#C82D4F] hover:bg-[#FFF0F3] cursor-pointer"
+                            className="min-h-[34px] inline-flex items-center gap-1 rounded-full bg-[#FFF0F3] px-3 text-xs font-extrabold text-[#C82D4F] hover:bg-[#FFE3E9] transition-colors cursor-pointer"
                           >
                             <Trash2 className="h-3.5 w-3.5" />
+                            <span>Delete</span>
                           </button>
                         </div>
                       )}
@@ -850,12 +890,40 @@ export const ChecklistPage: React.FC = () => {
                 className="w-full rounded-xl border border-[#EEEEF2] bg-[#F7F8FA] p-3 text-sm text-[#242424] focus:bg-white focus:border-[#7956E8] focus:outline-none"
               />
               <div className="mt-3 flex flex-wrap items-center justify-between gap-2.5">
-                <Button
-                  variant="secondary"
-                  onClick={() => void savePersonalNote(activeGoal.id, detailTask.id, personalNoteDraft)}
-                >
-                  Save Note
-                </Button>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <Button
+                    variant="secondary"
+                    onClick={() => void savePersonalNote(activeGoal.id, detailTask.id, personalNoteDraft)}
+                  >
+                    Save Note
+                  </Button>
+                  {isOwner && (
+                    <>
+                      <Button
+                        variant="secondary"
+                        onClick={() => {
+                          const target = detailTask;
+                          setDetailTask(null);
+                          openEditTaskEditor(target);
+                        }}
+                      >
+                        <Edit3 className="h-3.5 w-3.5 text-[#7651E8]" />
+                        Rename / Edit
+                      </Button>
+                      <Button
+                        variant="danger"
+                        onClick={() => {
+                          const target = detailTask;
+                          setDetailTask(null);
+                          setTaskToDelete(target);
+                        }}
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                        Delete Quest
+                      </Button>
+                    </>
+                  )}
+                </div>
                 <Button
                   variant="success"
                   onClick={() => {
@@ -1094,6 +1162,54 @@ export const ChecklistPage: React.FC = () => {
           </div>
         </form>
       </ModalSheet>
+
+      {/* Rename Study Day Modal */}
+      <ModalSheet
+        open={showRenameDayModal}
+        onClose={() => setShowRenameDayModal(false)}
+        title={activeDay ? `Rename Day ${activeDay.dayNumber}` : 'Rename Study Day'}
+        subtitle="Update the theme or title for this study day."
+      >
+        <form onSubmit={handleRenameDay} className="space-y-4">
+          <div>
+            <label htmlFor="rename-day-title" className="block text-xs font-semibold text-[#242424] mb-1.5">
+              Day theme / focus title
+            </label>
+            <input
+              id="rename-day-title"
+              value={renameDayInput}
+              onChange={(e) => setRenameDayInput(e.target.value)}
+              placeholder="Functions, Scope & Error Handling"
+              required
+              className="w-full min-h-[42px] rounded-xl border border-[#EEEEF2] bg-[#F7F8FA] px-3.5 text-sm text-[#242424]"
+            />
+          </div>
+          <div className="flex justify-end gap-2.5">
+            <Button variant="secondary" type="button" onClick={() => setShowRenameDayModal(false)}>
+              Cancel
+            </Button>
+            <Button type="submit">Save Day Title</Button>
+          </div>
+        </form>
+      </ModalSheet>
+
+      <ConfirmDialog
+        open={showDeleteDayConfirm}
+        title="Delete study day?"
+        description={
+          activeDay
+            ? `Delete Day ${activeDay.dayNumber} ("${activeDay.title}") and all quests scheduled for this day?`
+            : 'Delete this study day?'
+        }
+        confirmLabel="Delete Day"
+        onCancel={() => setShowDeleteDayConfirm(false)}
+        onConfirm={() => {
+          if (activeGoal && activeDay) {
+            void deleteStudyDay(activeGoal.id, activeDay.id);
+          }
+          setShowDeleteDayConfirm(false);
+        }}
+      />
 
       <ConfirmDialog
         open={Boolean(taskToDelete)}

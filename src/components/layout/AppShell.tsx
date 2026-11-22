@@ -81,7 +81,12 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) 
     dismissToast,
     celebrationEvent,
     dismissCelebration,
+    pendingInviteCodeFromUrl,
+    clearPendingInviteCodeFromUrl,
+    acceptInvitationByCode,
   } = useStudyDuo();
+
+  const [joiningFromUrlBanner, setJoiningFromUrlBanner] = useState(false);
 
   const [isOffline, setIsOffline] = useState<boolean>(
     typeof navigator !== 'undefined' ? !navigator.onLine : false

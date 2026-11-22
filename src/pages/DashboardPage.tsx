@@ -6,10 +6,12 @@ import {
   Calendar,
   Check,
   ChevronRight,
+  Edit3,
   Plus,
   Search,
   Send,
   Star,
+  Trash2,
   UserPlus,
   X,
 } from 'lucide-react';
@@ -22,13 +24,17 @@ import {
   getDateKeyInTimezone,
   getLevelInfo,
 } from '../lib/gamification';
+import type { Task, TaskPriority } from '../types/studyduo';
 import {
   Avatar,
   Button,
   Card,
+  ConfirmDialog,
   EmptyState,
+  ModalSheet,
   ProgressBar,
 } from '../components/ui/Primitives';
+import { SocialShareComponent } from '../components/groups/SocialShareComponent';
 import {
   getSubjectTheme,
   MascotImage,
@@ -85,16 +91,32 @@ export const DashboardPage: React.FC = () => {
     dailyResults,
     xpTransactions,
     achievements,
+    invitations,
+    createInvitation,
+    cancelInvitation,
     unreadNotificationCount,
+    saveTask,
+    deleteTask,
     completeTask,
     nudgePartnerStreak,
     nudgedTodayGoalIds,
     setActivePage,
+    showToast,
   } = useStudyDuo();
 
   const [completedBanner, setCompletedBanner] = useState<{ taskId: string; xp: number; cheer: string } | null>(null);
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [inviteModalOpen, setInviteModalOpen] = useState(false);
+
+  const [quickTaskModalOpen, setQuickTaskModalOpen] = useState(false);
+  const [editingQuickTask, setEditingQuickTask] = useState<Task | null>(null);
+  const [quickTaskTitle, setQuickTaskTitle] = useState('');
+  const [quickTaskDesc, setQuickTaskDesc] = useState('');
+  const [quickTaskMinutes, setQuickTaskMinutes] = useState(20);
+  const [quickTaskXp, setQuickTaskXp] = useState(20);
+  const [quickTaskPriority, setQuickTaskPriority] = useState<TaskPriority>('medium');
+  const [quickTaskToDelete, setQuickTaskToDelete] = useState<Task | null>(null);
 
   const tz = activeGoal?.timezone || currentUser?.timezone || 'UTC';
   const todayKey = getDateKeyInTimezone(new Date(), tz);
@@ -360,6 +382,18 @@ export const DashboardPage: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-2 shrink-0">
+          {activeGoal && (
+            <button
+              type="button"
+              onClick={() => setInviteModalOpen(true)}
+              aria-label="Invite friend to StudyDuo"
+              className="inline-flex min-h-[42px] items-center gap-1.5 rounded-full bg-[#7651E8] px-3.5 sm:px-4 py-2 text-xs font-extrabold text-white hover:bg-[#6540D6] shadow-[0_6px_16px_-6px_rgba(118,81,232,0.45)] transition-colors cursor-pointer whitespace-nowrap shrink-0"
+            >
+              <UserPlus className="h-3.5 w-3.5" />
+              <span>Invite Friend</span>
+            </button>
+          )}
+
           {goals.length > 1 && (
             <select
               aria-label="Switch active learning goal"
@@ -658,13 +692,32 @@ export const DashboardPage: React.FC = () => {
                     {activeDay ? `Day ${activeDay.dayNumber} · ${activeDay.title}` : 'Daily study checklist'}
                   </p>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => setActivePage('checklist')}
-                  className="inline-flex items-center gap-1 rounded-full bg-[#E9DFFF] px-3 py-1.5 text-xs font-extrabold text-[#7651E8] hover:bg-[#DFD2FF] cursor-pointer shrink-0 whitespace-nowrap transition-colors"
-                >
-                  Open All <ChevronRight className="h-3.5 w-3.5" />
-                </button>
+                <div className="flex items-center gap-1.5 shrink-0">
+                  {isOwner && activeDay && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setEditingQuickTask(null);
+                        setQuickTaskTitle('');
+                        setQuickTaskDesc('');
+                        setQuickTaskMinutes(20);
+                        setQuickTaskXp(20);
+                        setQuickTaskPriority('medium');
+                        setQuickTaskModalOpen(true);
+                      }}
+                      className="inline-flex items-center gap-1 rounded-full bg-[#7651E8] px-3 py-1.5 text-xs font-extrabold text-white hover:bg-[#6540D6] cursor-pointer whitespace-nowrap transition-colors"
+                    >
+                      <Plus className="h-3.5 w-3.5" /> Add Task
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => setActivePage('checklist')}
+                    className="inline-flex items-center gap-1 rounded-full bg-[#E9DFFF] px-3 py-1.5 text-xs font-extrabold text-[#7651E8] hover:bg-[#DFD2FF] cursor-pointer whitespace-nowrap transition-colors"
+                  >
+                    Open All <ChevronRight className="h-3.5 w-3.5" />
+                  </button>
+                </div>
               </div>
 
               <AnimatePresence>
@@ -757,15 +810,47 @@ export const DashboardPage: React.FC = () => {
                           </p>
                         </button>
 
-                        <span
-                          className={`hidden sm:inline-flex shrink-0 rounded-full px-2.5 py-1 text-[11px] font-extrabold ${
-                            done
-                              ? 'bg-[#E2F5E9] text-[#1F874D]'
-                              : 'bg-[#E9DFFF] text-[#6842DE]'
-                          }`}
-                        >
-                          {done ? 'Done' : 'To Do'}
-                        </span>
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          {isOwner && (
+                            <>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setEditingQuickTask(task);
+                                  setQuickTaskTitle(task.title);
+                                  setQuickTaskDesc(task.shortDescription);
+                                  setQuickTaskMinutes(task.estimatedMinutes);
+                                  setQuickTaskXp(task.xpReward);
+                                  setQuickTaskPriority(task.priority);
+                                  setQuickTaskModalOpen(true);
+                                }}
+                                aria-label={`Rename ${task.title}`}
+                                className="inline-flex items-center gap-1 rounded-full bg-[#F8F5FF] px-2.5 py-1 text-[11px] font-extrabold text-[#7651E8] hover:bg-[#E9DFFF] transition-colors cursor-pointer"
+                              >
+                                <Edit3 className="h-3 w-3" />
+                                <span className="hidden sm:inline">Rename</span>
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setQuickTaskToDelete(task)}
+                                aria-label={`Delete ${task.title}`}
+                                className="inline-flex items-center gap-1 rounded-full bg-[#FFF0F3] px-2.5 py-1 text-[11px] font-extrabold text-[#C82D4F] hover:bg-[#FFE3E9] transition-colors cursor-pointer"
+                              >
+                                <Trash2 className="h-3 w-3" />
+                                <span className="hidden sm:inline">Delete</span>
+                              </button>
+                            </>
+                          )}
+                          <span
+                            className={`hidden sm:inline-flex shrink-0 rounded-full px-2.5 py-1 text-[11px] font-extrabold ${
+                              done
+                                ? 'bg-[#E2F5E9] text-[#1F874D]'
+                                : 'bg-[#E9DFFF] text-[#6842DE]'
+                            }`}
+                          >
+                            {done ? 'Done' : 'To Do'}
+                          </span>
+                        </div>
                       </div>
                     );
                   })}
@@ -874,6 +959,24 @@ export const DashboardPage: React.FC = () => {
                   )}
                 </div>
               )}
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => setInviteModalOpen(true)}
+                  className="w-full inline-flex min-h-[40px] items-center justify-center gap-2 rounded-full bg-[#7651E8] px-4 py-2 text-xs font-extrabold text-white hover:bg-[#6540D6] transition-colors cursor-pointer whitespace-nowrap"
+                >
+                  <UserPlus className="h-3.5 w-3.5" />
+                  <span>Share Invite Link</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActivePage('groups')}
+                  className="w-full inline-flex min-h-[40px] items-center justify-center gap-2 rounded-full border border-[#D8C6FF] bg-[#F8F5FF] px-4 py-2 text-xs font-extrabold text-[#7651E8] hover:bg-[#E9DFFF]/70 transition-colors cursor-pointer whitespace-nowrap"
+                >
+                  <span>Open Duo Room</span>
+                </button>
+              </div>
             </Card>
           </div>
 
@@ -978,6 +1081,159 @@ export const DashboardPage: React.FC = () => {
               )}
             </div>
           </div>
+
+          <ModalSheet
+            open={inviteModalOpen}
+            onClose={() => setInviteModalOpen(false)}
+            title="Invite Your Friend to StudyDuo"
+            subtitle="Copy your dynamic invite link or code so your study partner can join your duo."
+            size="lg"
+          >
+            <SocialShareComponent
+              goal={activeGoal}
+              inviterName={currentUser.fullName}
+              invitations={invitations}
+              isOwner={isOwner}
+              onCreateInvitation={createInvitation}
+              onCancelInvitation={cancelInvitation}
+              onToast={showToast}
+              compact
+            />
+          </ModalSheet>
+
+          <ModalSheet
+            open={quickTaskModalOpen}
+            onClose={() => {
+              setQuickTaskModalOpen(false);
+              setEditingQuickTask(null);
+            }}
+            title={editingQuickTask ? 'Rename & Edit Task' : 'Add Task to Today'}
+            subtitle={activeDay ? `Day ${activeDay.dayNumber} · ${activeDay.title}` : undefined}
+          >
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                if (!activeGoal || !activeDay || !quickTaskTitle.trim()) return;
+                void saveTask(activeGoal.id, {
+                  id: editingQuickTask?.id,
+                  dayId: editingQuickTask?.dayId || activeDay.id,
+                  dayNumber: editingQuickTask?.dayNumber || activeDay.dayNumber,
+                  title: quickTaskTitle.trim(),
+                  shortDescription: quickTaskDesc.trim(),
+                  detailedInstructions: editingQuickTask?.detailedInstructions || '',
+                  learningNotes: editingQuickTask?.learningNotes || '',
+                  youtubeUrl: editingQuickTask?.youtubeUrl || '',
+                  chatgptUrl: editingQuickTask?.chatgptUrl || '',
+                  resourceLinks: editingQuickTask?.resourceLinks || [],
+                  estimatedMinutes: quickTaskMinutes,
+                  xpReward: quickTaskXp,
+                  priority: quickTaskPriority,
+                  isPublished: true,
+                });
+                setQuickTaskModalOpen(false);
+                setEditingQuickTask(null);
+              }}
+              className="space-y-4"
+            >
+              <div>
+                <label htmlFor="quick-task-title" className="block text-xs font-semibold text-[#242424] mb-1.5">
+                  Task title
+                </label>
+                <input
+                  id="quick-task-title"
+                  value={quickTaskTitle}
+                  onChange={(e) => setQuickTaskTitle(e.target.value)}
+                  placeholder="Practice 5 Python List Comprehensions"
+                  required
+                  className="w-full min-h-[42px] rounded-xl border border-[#EEEEF2] bg-[#F7F8FA] px-3.5 text-sm text-[#242424] focus:bg-white focus:border-[#7956E8] focus:outline-none"
+                />
+              </div>
+              <div>
+                <label htmlFor="quick-task-desc" className="block text-xs font-semibold text-[#242424] mb-1.5">
+                  Short description (optional)
+                </label>
+                <input
+                  id="quick-task-desc"
+                  value={quickTaskDesc}
+                  onChange={(e) => setQuickTaskDesc(e.target.value)}
+                  placeholder="Complete exercises and test edge cases"
+                  className="w-full min-h-[42px] rounded-xl border border-[#EEEEF2] bg-[#F7F8FA] px-3.5 text-sm text-[#242424] focus:bg-white focus:border-[#7956E8] focus:outline-none"
+                />
+              </div>
+              <div className="grid grid-cols-3 gap-3">
+                <div>
+                  <label htmlFor="quick-task-min" className="block text-xs font-semibold text-[#242424] mb-1.5">
+                    Est. min
+                  </label>
+                  <input
+                    id="quick-task-min"
+                    type="number"
+                    min={5}
+                    max={360}
+                    value={quickTaskMinutes}
+                    onChange={(e) => setQuickTaskMinutes(Number(e.target.value))}
+                    className="w-full min-h-[42px] rounded-xl border border-[#EEEEF2] bg-[#F7F8FA] px-3 text-sm font-mono text-[#242424]"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="quick-task-xp" className="block text-xs font-semibold text-[#242424] mb-1.5">
+                    XP reward
+                  </label>
+                  <input
+                    id="quick-task-xp"
+                    type="number"
+                    min={5}
+                    max={200}
+                    value={quickTaskXp}
+                    onChange={(e) => setQuickTaskXp(Number(e.target.value))}
+                    className="w-full min-h-[42px] rounded-xl border border-[#EEEEF2] bg-[#F7F8FA] px-3 text-sm font-mono text-[#242424]"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="quick-task-prio" className="block text-xs font-semibold text-[#242424] mb-1.5">
+                    Difficulty
+                  </label>
+                  <select
+                    id="quick-task-prio"
+                    value={quickTaskPriority}
+                    onChange={(e) => setQuickTaskPriority(e.target.value as TaskPriority)}
+                    className="w-full min-h-[42px] rounded-xl border border-[#EEEEF2] bg-[#F7F8FA] px-2.5 text-sm text-[#242424]"
+                  >
+                    <option value="low">Easy</option>
+                    <option value="medium">Medium</option>
+                    <option value="high">Hard</option>
+                  </select>
+                </div>
+              </div>
+              <div className="flex justify-end gap-2.5 pt-2">
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={() => {
+                    setQuickTaskModalOpen(false);
+                    setEditingQuickTask(null);
+                  }}
+                >
+                  Cancel
+                </Button>
+                <Button type="submit">{editingQuickTask ? 'Save Task' : 'Add Task'}</Button>
+              </div>
+            </form>
+          </ModalSheet>
+
+          <ConfirmDialog
+            open={Boolean(quickTaskToDelete)}
+            title="Delete task?"
+            description={`Delete "${quickTaskToDelete?.title}" from today's checklist?`}
+            confirmLabel="Delete Task"
+            onCancel={() => setQuickTaskToDelete(null)}
+            onConfirm={() => {
+              if (activeGoal && quickTaskToDelete) {
+                void deleteTask(activeGoal.id, quickTaskToDelete.dayId, quickTaskToDelete.id);
+              }
+              setQuickTaskToDelete(null);
+            }}
+          />
         </>
       )}
     </div>

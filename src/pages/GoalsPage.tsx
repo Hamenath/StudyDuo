@@ -20,7 +20,7 @@ import {
 import { useStudyDuo } from '../context/StudyDuoContext';
 import { addDaysToDateKey, canManageGoal, getDateKeyInTimezone } from '../lib/gamification';
 import { goalSchema, inviteCodeSchema, phaseSchema } from '../lib/validation';
-import type { DifficultyLevel, Phase } from '../types/studyduo';
+import type { DifficultyLevel, Goal, Phase } from '../types/studyduo';
 import {
   Avatar,
   Button,
@@ -31,6 +31,8 @@ import {
   ProgressBar,
 } from '../components/ui/Primitives';
 import { getSubjectTheme, MascotImage, SubjectCardMotif } from '../components/ui/MascotArtwork';
+import { SocialShareComponent } from '../components/groups/SocialShareComponent';
+import { extractInviteCodeFromInput } from '../lib/socialShare';
 
 const CATEGORIES = [
   'Programming',
@@ -58,6 +60,8 @@ export const GoalsPage: React.FC = () => {
     completions,
     invitations,
     createGoal,
+    updateGoal,
+    deleteGoal,
     savePhase,
     deletePhase,
     reorderPhase,
@@ -70,8 +74,10 @@ export const GoalsPage: React.FC = () => {
   const isOwner = canManageGoal(activeGoal || undefined, currentUser?.uid);
   const todayStr = getDateKeyInTimezone(new Date(), currentUser?.timezone || 'UTC');
 
-  // Create Goal modal state
+  // Create / Edit Goal modal state
   const [showCreateGoal, setShowCreateGoal] = useState(false);
+  const [editingGoal, setEditingGoal] = useState<Goal | null>(null);
+  const [goalToDelete, setGoalToDelete] = useState<Goal | null>(null);
   const [goalForm, setGoalForm] = useState({
     title: '',
     description: '',
@@ -162,6 +168,42 @@ export const GoalsPage: React.FC = () => {
     });
   }, [activeGoal?.startDate, isOwner, myCompletedTaskIds, phases, tasks]);
 
+  const openCreateGoalModal = () => {
+    setEditingGoal(null);
+    setGoalForm({
+      title: '',
+      description: '',
+      category: 'Programming',
+      icon: 'code',
+      startDate: todayStr,
+      durationDays: 60,
+      difficulty: 'Intermediate',
+      timezone: currentUser?.timezone || 'UTC',
+      dailyTargetMinutes: 60,
+      groupName: '',
+    });
+    setGoalError('');
+    setShowCreateGoal(true);
+  };
+
+  const openEditGoalModal = (g: Goal) => {
+    setEditingGoal(g);
+    setGoalForm({
+      title: g.title,
+      description: g.description,
+      category: g.category,
+      icon: g.icon || 'code',
+      startDate: g.startDate,
+      durationDays: g.durationDays,
+      difficulty: g.difficulty,
+      timezone: g.timezone,
+      dailyTargetMinutes: g.dailyTargetMinutes,
+      groupName: g.groupName || '',
+    });
+    setGoalError('');
+    setShowCreateGoal(true);
+  };
+
   const handleCreateGoal = async (e: React.FormEvent) => {
     e.preventDefault();
     setGoalError('');
@@ -172,10 +214,29 @@ export const GoalsPage: React.FC = () => {
     }
     setSavingGoal(true);
     try {
-      const createdId = await createGoal(parsed.data);
-      if (createdId) {
+      if (editingGoal) {
+        const targetDate = addDaysToDateKey(parsed.data.startDate, Math.max(0, parsed.data.durationDays - 1));
+        await updateGoal(editingGoal.id, {
+          title: parsed.data.title.trim(),
+          description: parsed.data.description.trim(),
+          category: parsed.data.category,
+          icon: parsed.data.icon || 'code',
+          startDate: parsed.data.startDate,
+          durationDays: parsed.data.durationDays,
+          targetDate,
+          difficulty: parsed.data.difficulty,
+          timezone: parsed.data.timezone,
+          dailyTargetMinutes: parsed.data.dailyTargetMinutes,
+          groupName: parsed.data.groupName.trim() || `${parsed.data.title.trim()} Duo`,
+        });
         setShowCreateGoal(false);
-        setGoalForm({ ...goalForm, title: '', description: '', groupName: '' });
+        setEditingGoal(null);
+      } else {
+        const createdId = await createGoal(parsed.data);
+        if (createdId) {
+          setShowCreateGoal(false);
+          setGoalForm({ ...goalForm, title: '', description: '', groupName: '' });
+        }
       }
     } finally {
       setSavingGoal(false);
@@ -185,7 +246,8 @@ export const GoalsPage: React.FC = () => {
   const handleJoinByCode = async (e: React.FormEvent) => {
     e.preventDefault();
     setJoinError('');
-    const parsed = inviteCodeSchema.safeParse({ code: joinCode });
+    const extracted = extractInviteCodeFromInput(joinCode);
+    const parsed = inviteCodeSchema.safeParse({ code: extracted });
     if (!parsed.success) {
       setJoinError(parsed.error.issues[0]?.message || 'Enter a valid invitation code.');
       return;
@@ -299,11 +361,29 @@ export const GoalsPage: React.FC = () => {
           </p>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
+          {activeGoal && isOwner && (
+            <>
+              <Button variant="secondary" size="sm" onClick={() => openEditGoalModal(activeGoal)}>
+                <Edit3 className="h-3.5 w-3.5 text-[#7651E8]" />
+                Rename Roadmap
+              </Button>
+              <Button variant="danger" size="sm" onClick={() => setGoalToDelete(activeGoal)}>
+                <Trash2 className="h-3.5 w-3.5" />
+                Delete Roadmap
+              </Button>
+            </>
+          )}
+          {activeGoal && (
+            <Button variant="secondary" size="sm" onClick={() => setShowInviteModal(true)}>
+              <UserPlus className="h-4 w-4 text-[#7651E8]" />
+              Invite Friend
+            </Button>
+          )}
           <Button variant="secondary" size="sm" onClick={() => setShowJoinModal(true)}>
             <Link2 className="h-4 w-4 text-[#7651E8]" />
             Join with Code
           </Button>
-          <Button size="sm" onClick={() => setShowCreateGoal(true)}>
+          <Button size="sm" onClick={openCreateGoalModal}>
             <Plus className="h-4 w-4" />
             New Goal
           </Button>
@@ -316,7 +396,7 @@ export const GoalsPage: React.FC = () => {
           title="Start your first learning goal"
           description="Define your subject, duration, and daily study target — then invite a partner to stay accountable together."
           actionLabel="Create Study Goal"
-          onAction={() => setShowCreateGoal(true)}
+          onAction={openCreateGoalModal}
         />
       ) : (
         <>
@@ -327,10 +407,17 @@ export const GoalsPage: React.FC = () => {
               const ownedByMe = g.ownerId === currentUser?.uid;
               const theme = getSubjectTheme(g.category, idx);
               return (
-                <button
+                <div
                   key={g.id}
-                  type="button"
                   onClick={() => setSelectedGoalId(g.id)}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      setSelectedGoalId(g.id);
+                    }
+                  }}
                   style={{ backgroundColor: theme.cardBg }}
                   className={`sd-pastel-card text-left p-5 transition-all cursor-pointer relative overflow-hidden ${
                     selected
@@ -345,13 +432,43 @@ export const GoalsPage: React.FC = () => {
                     >
                       {g.category} · {g.difficulty}
                     </span>
-                    <span
-                      className={`inline-flex items-center rounded-full bg-white px-2.5 py-0.5 text-[11px] font-extrabold shrink-0 ${
-                        ownedByMe ? 'text-[#7651E8]' : 'text-[#1F874D]'
-                      }`}
-                    >
-                      {ownedByMe ? 'Owner' : 'Partner'}
-                    </span>
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <span
+                        className={`inline-flex items-center rounded-full bg-white px-2.5 py-0.5 text-[11px] font-extrabold ${
+                          ownedByMe ? 'text-[#7651E8]' : 'text-[#1F874D]'
+                        }`}
+                      >
+                        {ownedByMe ? 'Owner' : 'Partner'}
+                      </span>
+                      {ownedByMe && (
+                        <>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              openEditGoalModal(g);
+                            }}
+                            aria-label={`Rename ${g.title}`}
+                            className="inline-flex items-center gap-1 rounded-full bg-white px-2.5 py-0.5 text-[11px] font-extrabold text-[#7651E8] hover:bg-[#E9DFFF] transition-colors cursor-pointer"
+                          >
+                            <Edit3 className="h-3 w-3" />
+                            Rename
+                          </button>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setGoalToDelete(g);
+                            }}
+                            aria-label={`Delete ${g.title}`}
+                            className="inline-flex items-center gap-1 rounded-full bg-white px-2.5 py-0.5 text-[11px] font-extrabold text-[#C82D4F] hover:bg-[#FFF0F3] transition-colors cursor-pointer"
+                          >
+                            <Trash2 className="h-3 w-3" />
+                            Delete
+                          </button>
+                        </>
+                      )}
+                    </div>
                   </div>
 
                   <div className="mt-3.5 flex items-center gap-3.5">
@@ -379,7 +496,7 @@ export const GoalsPage: React.FC = () => {
                       {g.participantIds.length}/{g.maxParticipants} learners
                     </span>
                   </div>
-                </button>
+                </div>
               );
             })}
           </div>
@@ -660,19 +777,14 @@ export const GoalsPage: React.FC = () => {
                     ))}
                   </div>
 
-                  {isOwner && (
-                    <Button
-                      variant="primary"
-                      fullWidth
-                      disabled={activeGoal.participantIds.length >= activeGoal.maxParticipants}
-                      onClick={() => setShowInviteModal(true)}
-                    >
-                      <UserPlus className="h-4 w-4" />
-                      {activeGoal.participantIds.length >= activeGoal.maxParticipants
-                        ? 'Duo Roster Full (2/2)'
-                        : 'Invite Study Partner'}
-                    </Button>
-                  )}
+                  <Button
+                    variant="primary"
+                    fullWidth
+                    onClick={() => setShowInviteModal(true)}
+                  >
+                    <UserPlus className="h-4 w-4" />
+                    Share &amp; Invite Study Partner
+                  </Button>
                 </Card>
 
                 {isOwner && goalInvitations.length > 0 && (
@@ -736,12 +848,19 @@ export const GoalsPage: React.FC = () => {
         </>
       )}
 
-      {/* Create Goal Modal */}
+      {/* Create / Edit Goal Modal */}
       <ModalSheet
         open={showCreateGoal}
-        onClose={() => setShowCreateGoal(false)}
-        title="Create Study Goal"
-        subtitle="Only you can edit the official roadmap and daily quests for this goal."
+        onClose={() => {
+          setShowCreateGoal(false);
+          setEditingGoal(null);
+        }}
+        title={editingGoal ? 'Rename & Edit Roadmap' : 'Create Study Goal'}
+        subtitle={
+          editingGoal
+            ? 'Update the title, description, duo name, or target duration for this roadmap.'
+            : 'Only you can edit the official roadmap and daily quests for this goal.'
+        }
         size="lg"
       >
         <form onSubmit={handleCreateGoal} className="space-y-4">
@@ -880,11 +999,18 @@ export const GoalsPage: React.FC = () => {
           {goalError && <p role="alert" className="text-xs font-semibold text-[#E66F77]">{goalError}</p>}
 
           <div className="flex justify-end gap-2.5 pt-2">
-            <Button variant="secondary" type="button" onClick={() => setShowCreateGoal(false)}>
+            <Button
+              variant="secondary"
+              type="button"
+              onClick={() => {
+                setShowCreateGoal(false);
+                setEditingGoal(null);
+              }}
+            >
               Cancel
             </Button>
             <Button type="submit" disabled={savingGoal}>
-              {savingGoal ? 'Creating...' : 'Create Goal'}
+              {savingGoal ? 'Saving...' : editingGoal ? 'Save Roadmap' : 'Create Goal'}
             </Button>
           </div>
         </form>
@@ -1032,27 +1158,40 @@ export const GoalsPage: React.FC = () => {
         open={showInviteModal}
         onClose={() => setShowInviteModal(false)}
         title="Invite Study Partner"
-        subtitle="Generate a unique invitation code and shareable URL valid for 7 days."
+        subtitle="Copy your dynamic duo invite link or code valid for 7 days."
       >
-        <form onSubmit={handleGenerateInvite} className="space-y-4">
-          <div>
-            <label htmlFor="invite-email" className="block text-xs font-semibold text-[#25243A] mb-1.5">
-              Partner&apos;s email (optional note)
-            </label>
-            <input
-              id="invite-email"
-              type="email"
-              value={inviteeEmail}
-              onChange={(e) => setInviteeEmail(e.target.value)}
-              placeholder="partner@example.com"
-              className="w-full min-h-[44px] rounded-xl border border-[#EAE7F8] bg-[#F8F7FF] px-3.5 text-sm text-[#25243A]"
-            />
-          </div>
-          <Button type="submit" fullWidth>
-            <Users className="h-4 w-4" />
-            Generate Invite Code &amp; Link
-          </Button>
-        </form>
+        {activeGoal ? (
+          <SocialShareComponent
+            goal={activeGoal}
+            inviterName={currentUser?.fullName}
+            invitations={invitations}
+            isOwner={isOwner}
+            onCreateInvitation={createInvitation}
+            onCancelInvitation={cancelInvitation}
+            onToast={showToast}
+            compact
+          />
+        ) : (
+          <form onSubmit={handleGenerateInvite} className="space-y-4">
+            <div>
+              <label htmlFor="invite-email" className="block text-xs font-semibold text-[#25243A] mb-1.5">
+                Partner&apos;s email (optional note)
+              </label>
+              <input
+                id="invite-email"
+                type="email"
+                value={inviteeEmail}
+                onChange={(e) => setInviteeEmail(e.target.value)}
+                placeholder="partner@example.com"
+                className="w-full min-h-[44px] rounded-xl border border-[#EAE7F8] bg-[#F8F7FF] px-3.5 text-sm text-[#25243A]"
+              />
+            </div>
+            <Button type="submit" fullWidth>
+              <Users className="h-4 w-4" />
+              Generate Invite Code &amp; Link
+            </Button>
+          </form>
+        )}
       </ModalSheet>
 
       <ConfirmDialog
@@ -1066,6 +1205,20 @@ export const GoalsPage: React.FC = () => {
             void deletePhase(activeGoal.id, phaseToDelete.id);
           }
           setPhaseToDelete(null);
+        }}
+      />
+
+      <ConfirmDialog
+        open={Boolean(goalToDelete)}
+        title="Delete roadmap permanently?"
+        description={`Are you sure you want to delete "${goalToDelete?.title}" and all of its milestones, study days, and quests? This action cannot be undone.`}
+        confirmLabel="Delete Roadmap"
+        onCancel={() => setGoalToDelete(null)}
+        onConfirm={() => {
+          if (goalToDelete) {
+            void deleteGoal(goalToDelete.id);
+          }
+          setGoalToDelete(null);
         }}
       />
     </div>

@@ -199,6 +199,7 @@ interface StudyDuoContextValue {
   // Goal & Roadmap actions
   createGoal: (input: CreateGoalInput) => Promise<string | null>;
   updateGoal: (goalId: string, patch: Partial<Goal>) => Promise<void>;
+  deleteGoal: (goalId: string) => Promise<void>;
   savePhase: (goalId: string, input: SavePhaseInput) => Promise<void>;
   deletePhase: (goalId: string, phaseId: string) => Promise<void>;
   reorderPhase: (goalId: string, phaseId: string, direction: 'up' | 'down') => Promise<void>;
@@ -206,6 +207,8 @@ interface StudyDuoContextValue {
 
   // Days & Tasks actions
   createStudyDay: (goalId: string, dayNumber: number, title: string, isPublished?: boolean) => Promise<string | null>;
+  updateStudyDay: (goalId: string, dayId: string, title: string) => Promise<void>;
+  deleteStudyDay: (goalId: string, dayId: string) => Promise<void>;
   toggleDayPublished: (goalId: string, dayId: string, nextPublished: boolean) => Promise<void>;
   toggleRestDay: (goalId: string, dateKey: string) => Promise<void>;
   saveTask: (goalId: string, input: SaveTaskInput) => Promise<void>;
@@ -278,7 +281,9 @@ export const StudyDuoProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const [livePrivate, setLivePrivate] = useState<UserPrivateSettings | null>(null);
   const [showWelcomeChoice, setShowWelcomeChoice] = useState(false);
 
-  const [activePage, setActivePage] = useState<NavPage>('dashboard');
+  const [activePage, setActivePage] = useState<NavPage>(
+    initialParams.inviteCode ? 'groups' : 'dashboard'
+  );
   const [selectedGoalId, setSelectedGoalId] = useState<string | null>(
     initialParams.autostart ? 'goal_python_60' : null
   );
@@ -1567,6 +1572,97 @@ export const StudyDuoProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     [currentUser, goals, mode, showToast]
   );
 
+  const deleteGoal = useCallback(
+    async (goalId: string) => {
+      const target = goals.find((g) => g.id === goalId);
+      if (!target || !currentUser || target.ownerId !== currentUser.uid) {
+        showToast('Only the goal owner can delete this roadmap.', 'error');
+        return;
+      }
+      const nextRemainingGoalId = goals.find((g) => g.id !== goalId)?.id ?? null;
+
+      if (mode === 'preview') {
+        setPreviewState((prev) => {
+          const nextGoals = prev.goals.filter((g) => g.id !== goalId);
+          const nextParticipants = { ...prev.participantsByGoal };
+          delete nextParticipants[goalId];
+          const nextPhases = { ...prev.phasesByGoal };
+          delete nextPhases[goalId];
+          const nextDays = { ...prev.daysByGoal };
+          delete nextDays[goalId];
+          const nextTasks = { ...prev.tasksByGoal };
+          delete nextTasks[goalId];
+          const nextCompletions = { ...prev.completionsByGoal };
+          delete nextCompletions[goalId];
+          const nextDailyResults = { ...prev.dailyResultsByGoal };
+          delete nextDailyResults[goalId];
+          const nextActivity = { ...prev.activityByGoal };
+          delete nextActivity[goalId];
+          return {
+            ...prev,
+            goals: nextGoals,
+            participantsByGoal: nextParticipants,
+            phasesByGoal: nextPhases,
+            daysByGoal: nextDays,
+            tasksByGoal: nextTasks,
+            completionsByGoal: nextCompletions,
+            dailyResultsByGoal: nextDailyResults,
+            activityByGoal: nextActivity,
+            invitations: prev.invitations.filter((inv) => inv.goalId !== goalId),
+          };
+        });
+        if (selectedGoalId === goalId) {
+          setSelectedGoalId(nextRemainingGoalId);
+        }
+        showToast(`Deleted "${target.title}".`, 'info');
+        return;
+      }
+
+      try {
+        // Delete child tasks, days, phases, participants, and invitations where permitted
+        const isSelected = selectedGoalId === goalId;
+        if (isSelected) {
+          for (const d of liveDays) {
+            const dTasks = liveTasksByDay[d.id] || [];
+            for (const t of dTasks) {
+              await deleteDoc(doc(db, 'goals', goalId, 'days', d.id, 'tasks', t.id)).catch(() => {});
+            }
+            await deleteDoc(doc(db, 'goals', goalId, 'days', d.id)).catch(() => {});
+          }
+          for (const ph of livePhases) {
+            await deleteDoc(doc(db, 'goals', goalId, 'phases', ph.id)).catch(() => {});
+          }
+          for (const pt of liveParticipants) {
+            await deleteDoc(doc(db, 'goals', goalId, 'participants', pt.uid)).catch(() => {});
+          }
+        }
+        const goalInvites = invitations.filter((inv) => inv.goalId === goalId && inv.inviterId === currentUser.uid);
+        for (const inv of goalInvites) {
+          await deleteDoc(doc(db, 'invitations', inv.id)).catch(() => {});
+        }
+        await deleteDoc(doc(db, 'goals', goalId));
+        if (selectedGoalId === goalId) {
+          setSelectedGoalId(nextRemainingGoalId);
+        }
+        showToast(`Deleted "${target.title}".`, 'info');
+      } catch (err) {
+        handleFirestoreError(err, OperationType.DELETE, `goals/${goalId}`);
+      }
+    },
+    [
+      currentUser,
+      goals,
+      invitations,
+      liveDays,
+      liveParticipants,
+      livePhases,
+      liveTasksByDay,
+      mode,
+      selectedGoalId,
+      showToast,
+    ]
+  );
+
   const savePhase = useCallback(
     async (goalId: string, input: SavePhaseInput) => {
       const target = goals.find((g) => g.id === goalId);
@@ -1783,6 +1879,80 @@ export const StudyDuoProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       }
     },
     [currentUser, goals, mode, showToast]
+  );
+
+  const updateStudyDay = useCallback(
+    async (goalId: string, dayId: string, title: string) => {
+      const target = goals.find((g) => g.id === goalId);
+      if (!target || !currentUser || target.ownerId !== currentUser.uid) {
+        showToast('Only the goal owner can rename study days.', 'error');
+        return;
+      }
+      const cleanTitle = title.trim();
+      if (!cleanTitle) {
+        showToast('Study day title cannot be empty.', 'error');
+        return;
+      }
+      if (mode === 'preview') {
+        setPreviewState((prev) => ({
+          ...prev,
+          daysByGoal: {
+            ...prev.daysByGoal,
+            [goalId]: (prev.daysByGoal[goalId] || []).map((d) =>
+              d.id === dayId ? { ...d, title: cleanTitle, updatedAt: new Date().toISOString() } : d
+            ),
+          },
+        }));
+        showToast('Study day renamed.');
+        return;
+      }
+      try {
+        await updateDoc(doc(db, 'goals', goalId, 'days', dayId), {
+          title: cleanTitle,
+          updatedAt: serverTimestamp(),
+        });
+        showToast('Study day renamed.');
+      } catch (err) {
+        handleFirestoreError(err, OperationType.UPDATE, `goals/${goalId}/days/${dayId}`);
+      }
+    },
+    [currentUser, goals, mode, showToast]
+  );
+
+  const deleteStudyDay = useCallback(
+    async (goalId: string, dayId: string) => {
+      const target = goals.find((g) => g.id === goalId);
+      if (!target || !currentUser || target.ownerId !== currentUser.uid) {
+        showToast('Only the goal owner can delete study days.', 'error');
+        return;
+      }
+      if (mode === 'preview') {
+        setPreviewState((prev) => ({
+          ...prev,
+          daysByGoal: {
+            ...prev.daysByGoal,
+            [goalId]: (prev.daysByGoal[goalId] || []).filter((d) => d.id !== dayId),
+          },
+          tasksByGoal: {
+            ...prev.tasksByGoal,
+            [goalId]: (prev.tasksByGoal[goalId] || []).filter((t) => t.dayId !== dayId),
+          },
+        }));
+        showToast('Study day and its quests deleted.', 'info');
+        return;
+      }
+      try {
+        const dayTasks = liveTasksByDay[dayId] || [];
+        for (const t of dayTasks) {
+          await deleteDoc(doc(db, 'goals', goalId, 'days', dayId, 'tasks', t.id)).catch(() => {});
+        }
+        await deleteDoc(doc(db, 'goals', goalId, 'days', dayId));
+        showToast('Study day deleted.', 'info');
+      } catch (err) {
+        handleFirestoreError(err, OperationType.DELETE, `goals/${goalId}/days/${dayId}`);
+      }
+    },
+    [currentUser, goals, liveTasksByDay, mode, showToast]
   );
 
   const toggleDayPublished = useCallback(
@@ -2596,7 +2766,7 @@ export const StudyDuoProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         showToast('Only the goal owner can generate invitations.', 'error');
         return null;
       }
-      if (target.participantIds.length >= target.maxParticipants) {
+      if (mode !== 'preview' && target.participantIds.length >= target.maxParticipants) {
         showToast(`This goal already has its maximum of ${target.maxParticipants} participants.`, 'error');
         return null;
       }
@@ -3216,11 +3386,14 @@ export const StudyDuoProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     deleteAccount,
     createGoal,
     updateGoal,
+    deleteGoal,
     savePhase,
     deletePhase,
     reorderPhase,
     approveAiPlanToRoadmap,
     createStudyDay,
+    updateStudyDay,
+    deleteStudyDay,
     toggleDayPublished,
     toggleRestDay,
     saveTask,
