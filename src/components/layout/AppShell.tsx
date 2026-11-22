@@ -7,6 +7,7 @@ import {
   BookOpen,
   CheckCircle2,
   CheckSquare,
+  Download,
   Home,
   LogOut,
   Map as MapIcon,
@@ -201,6 +202,15 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) 
                 🔥 {currentUser.currentStreak}
               </span>
             </button>
+
+            <a
+              href="/StudyDuo-v1.0.0-release.apk"
+              download="StudyDuo-v1.0.0-release.apk"
+              className="flex w-full items-center justify-center gap-1.5 rounded-full py-1.5 text-xs font-semibold bg-[#E9DFFF] text-[#7651E8] hover:bg-[#d8c6ff] transition-colors"
+            >
+              <Download className="h-3.5 w-3.5" />
+              Download APK
+            </a>
 
             <button
               type="button"
