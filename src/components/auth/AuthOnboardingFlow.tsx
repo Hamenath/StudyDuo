@@ -1,13 +1,19 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   ArrowRight,
   CheckCircle2,
+  Eye,
+  EyeOff,
+  Flame,
   KeyRound,
   Mail,
+  Map,
   RefreshCw,
+  Sparkles,
   Target,
   Users,
 } from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
 import { sendEmailVerification } from 'firebase/auth';
 import { useStudyDuo } from '../../context/StudyDuoContext';
 import { extractInviteCode } from '../../lib/inviteShare';
@@ -27,24 +33,102 @@ const CATEGORIES = [
   'Mathematics',
 ];
 
+interface OnboardingStep {
+  title: string;
+  subtitle: string;
+  badge: string;
+  badgeColor: string;
+  icon: React.ReactNode;
+  accentBg: string;
+  illustration: string;
+}
+
+const ONBOARDING_STEPS: OnboardingStep[] = [
+  {
+    badge: 'Step 1 of 3',
+    badgeColor: '#7651E8',
+    title: 'Shared Study Roadmaps',
+    subtitle: 'Break any dream subject into daily milestone quests with actionable step-by-step checklists.',
+    accentBg: '#E9DFFF',
+    icon: <Map className="h-6 w-6 text-[#7651E8]" />,
+    illustration: '🎨',
+  },
+  {
+    badge: 'Step 2 of 3',
+    badgeColor: '#E59A18',
+    title: 'Duo Flame & Streaks',
+    subtitle: 'Team up with a partner. Build unstoppable streaks, earn XP multipliers, and level up your custom avatars.',
+    accentBg: '#FFF0C9',
+    icon: <Flame className="h-6 w-6 text-[#E59A18]" />,
+    illustration: '🔥',
+  },
+  {
+    badge: 'Step 3 of 3',
+    badgeColor: '#1F874D',
+    title: 'Bujji AI Tutor & Quizzes',
+    subtitle: 'Get 1-line instant answers, tailored micro-roadmaps, and curated YouTube channels for every topic.',
+    accentBg: '#E2F5E9',
+    icon: <Sparkles className="h-6 w-6 text-[#1F874D]" />,
+    illustration: '🦉',
+  },
+];
+
 export const AuthScreen: React.FC = () => {
   const {
     signInWithGoogle,
     signInWithEmail,
     registerWithEmail,
     sendPasswordReset,
-    enterPreviewMode,
-    pendingInviteCodeFromUrl,
     toasts,
     dismissToast,
   } = useStudyDuo();
 
+  // Intro states: 'splash' -> 'walkthrough' -> 'auth'
+  const [introState, setIntroState] = useState<'splash' | 'walkthrough' | 'auth'>(() => {
+    try {
+      const seen = localStorage.getItem('studyduo_intro_completed_v1');
+      return seen ? 'auth' : 'splash';
+    } catch {
+      return 'splash';
+    }
+  });
+
+  const [walkthroughIndex, setWalkthroughIndex] = useState(0);
   const [tab, setTab] = useState<'login' | 'register' | 'reset'>('login');
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [keepSignedIn, setKeepSignedIn] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState('');
+
+  // Handle splash timeout: show paired owl animation then proceed
+  useEffect(() => {
+    if (introState === 'splash') {
+      const timer = setTimeout(() => {
+        setIntroState('walkthrough');
+      }, 1600);
+      return () => clearTimeout(timer);
+    }
+  }, [introState]);
+
+  const handleFinishWalkthrough = () => {
+    try {
+      localStorage.setItem('studyduo_intro_completed_v1', 'true');
+    } catch {
+      // ignore storage errors
+    }
+    setIntroState('auth');
+  };
+
+  const handleNextStep = () => {
+    if (walkthroughIndex < ONBOARDING_STEPS.length - 1) {
+      setWalkthroughIndex((prev) => prev + 1);
+    } else {
+      handleFinishWalkthrough();
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -85,244 +169,367 @@ export const AuthScreen: React.FC = () => {
     }
   };
 
-  return (
-    <div className="min-h-dvh bg-[#F8F5FF] flex flex-col justify-center px-4 sm:px-6 py-6 sm:py-10">
-      <div className="w-full max-w-5xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-10 items-center">
-        {/* Left Reference Hero Card — Pastel Lavender Brain Mascot + Curved White Bottom Sheet */}
-        <div className="lg:col-span-6">
-          <div className="mx-auto max-w-md lg:max-w-none overflow-hidden rounded-[36px] bg-[#E9DFFF] border border-[#E4D8FF] shadow-[0_18px_40px_-20px_rgba(118,81,232,0.22)]">
-            {/* Full-Bleed Lavender Illustration Stage (matches brand paired owl duo) */}
-            <div className="relative h-72 sm:h-80 w-full overflow-hidden bg-[#E9DFFF] flex items-center justify-center p-4">
+  // 1. LOGO INTRO ANIMATION SCREEN
+  if (introState === 'splash') {
+    return (
+      <div className="fixed inset-0 z-50 bg-[#FBF9FD] flex flex-col items-center justify-center p-6 select-none overflow-hidden">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.7, y: 20 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+          className="flex flex-col items-center text-center"
+        >
+          <div className="relative mb-6">
+            <motion.div
+              animate={{ rotate: [0, -4, 4, 0] }}
+              transition={{ repeat: Infinity, duration: 4, ease: 'easeInOut' }}
+              className="h-28 w-28 sm:h-32 sm:w-32 rounded-[32px] bg-gradient-to-tr from-[#7651E8] to-[#9D78FF] p-3 shadow-[0_20px_40px_-15px_rgba(118,81,232,0.4)] flex items-center justify-center"
+            >
               <img
                 src={owlDuoMasterImg}
-                alt="StudyDuo paired owl mascots with open book and gold achievement star"
-                className="h-full w-full object-contain max-h-72 drop-shadow-md select-none"
+                alt="StudyDuo paired owl mascot logo"
+                className="h-full w-full object-contain filter drop-shadow-sm"
               />
-            </div>
-
-            {/* Curved White Bottom Content Sheet */}
-            <div className="relative z-10 -mt-8 rounded-t-[36px] bg-white px-6 sm:px-8 pt-7 pb-7 text-center shadow-[0_-8px_24px_-12px_rgba(118,81,232,0.12)]">
-              <div className="inline-flex items-center justify-center gap-2 mb-3">
-                <StudyDuoOwlMark size={34} />
-                <span className="font-display text-xl font-black tracking-tight">
-                  <span className="text-[#7651E8]">Study</span>
-                  <span className="text-[#20202A]">Duo</span>
-                </span>
-              </div>
-
-              <h1 className="font-display text-3xl sm:text-[34px] font-black tracking-tight text-[#20202A] leading-[1.15] [text-wrap:balance]">
-                Learning is more <span className="text-[#7651E8]">fun</span> together!
-              </h1>
-
-              <p className="mt-3 text-sm sm:text-[15px] text-[#777783] leading-relaxed max-w-sm mx-auto">
-                Shared roadmaps, daily study quests, and cheerful rewards that keep you and your study partner coming back.
-              </p>
-
-              {pendingInviteCodeFromUrl && (
-                <div className="mt-4 rounded-2xl bg-[#E9DFFF]/70 border border-[#D8C6FF] px-4 py-3 text-left">
-                  <p className="text-xs font-extrabold text-[#6842DE]">
-                    You were invited to join a study duo!
-                  </p>
-                  <p className="mt-0.5 text-xs text-[#20202A]">
-                    Sign in on the right to accept code{' '}
-                    <span className="font-mono font-bold text-[#7651E8]">{pendingInviteCodeFromUrl}</span>.
-                  </p>
-                </div>
-              )}
-
-              {/* Feature pillars */}
-              <div className="mt-6 grid grid-cols-3 gap-2 text-left">
-                <div className="rounded-2xl bg-[#E9DFFF]/65 px-3 py-2.5">
-                  <p className="text-[11px] font-extrabold text-[#6842DE]">Roadmaps</p>
-                  <p className="text-[11px] text-[#5C5C6C] mt-0.5">Clear milestones</p>
-                </div>
-                <div className="rounded-2xl bg-[#FFF0C9]/80 px-3 py-2.5">
-                  <p className="text-[11px] font-extrabold text-[#B47100]">Duo Flame</p>
-                  <p className="text-[11px] text-[#5C5C6C] mt-0.5">Daily streaks</p>
-                </div>
-                <div className="rounded-2xl bg-[#E2F5E9]/85 px-3 py-2.5">
-                  <p className="text-[11px] font-extrabold text-[#1F874D]">AI Coach</p>
-                  <p className="text-[11px] text-[#5C5C6C] mt-0.5">Smart quizzes</p>
-                </div>
-              </div>
-            </div>
+            </motion.div>
+            <motion.span
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              transition={{ delay: 0.3, type: 'spring' }}
+              className="absolute -top-1.5 -right-1.5 flex h-7 w-7 items-center justify-center rounded-full bg-[#FFB800] text-sm shadow-md"
+            >
+              ✨
+            </motion.span>
           </div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.25, duration: 0.5 }}
+            className="flex items-center gap-2 mb-2"
+          >
+            <span className="font-display text-3xl sm:text-4xl font-black tracking-tight text-[#111827]">
+              Study<span className="text-[#7651E8]">Duo</span>
+            </span>
+          </motion.div>
+
+          <motion.p
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.4, duration: 0.5 }}
+            className="text-xs sm:text-sm font-semibold text-[#8B8A99] tracking-wider uppercase"
+          >
+            Learn &bull; Connect &bull; Level Up Together
+          </motion.p>
+        </motion.div>
+      </div>
+    );
+  }
+
+  // 2. 3-STEP GET STARTED WALKTHROUGH ANIMATION
+  if (introState === 'walkthrough') {
+    const currentStep = ONBOARDING_STEPS[walkthroughIndex];
+    return (
+      <div className="fixed inset-0 z-50 bg-[#FBF9FD] flex flex-col justify-between p-6 sm:p-10 select-none overflow-hidden max-w-lg mx-auto">
+        {/* Top bar with Skip button */}
+        <div className="flex items-center justify-between pt-2">
+          <div className="flex items-center gap-2">
+            <StudyDuoOwlMark size={28} />
+            <span className="font-display font-black text-[#111827] text-lg">StudyDuo</span>
+          </div>
+          <button
+            type="button"
+            onClick={handleFinishWalkthrough}
+            className="text-xs font-bold text-[#8B8A99] hover:text-[#111827] px-3 py-1.5 rounded-full transition-colors cursor-pointer"
+          >
+            Skip to Sign In
+          </button>
         </div>
 
-        {/* Right Clean Authentication Card */}
-        <div className="lg:col-span-6">
-          <div className="w-full max-w-md mx-auto rounded-[32px] bg-white border border-[#F0EDF5] p-6 sm:p-8 shadow-[0_14px_34px_-18px_rgba(118,81,232,0.14)]">
-            <div className="space-y-1 mb-5">
-              <span className="inline-flex items-center rounded-full bg-[#E9DFFF] px-3 py-1 text-[11px] font-extrabold text-[#7651E8]">
-                Start Learning
-              </span>
-              <h2 className="font-display text-2xl font-black text-[#20202A] pt-1">
-                {tab === 'login'
-                  ? 'Welcome back!'
-                  : tab === 'register'
-                  ? 'Create your account'
-                  : 'Reset your password'}
-              </h2>
-              <p className="text-sm text-[#777783]">
-                {tab === 'login'
-                  ? 'Sign in to sync your study roadmap, avatar, and duo streak.'
-                  : tab === 'register'
-                  ? 'Join with Google or email to start leveling up with a partner.'
-                  : 'Enter your email and we will send a password reset link.'}
-              </p>
-            </div>
-
-            {/* Primary Google Sign-In Pill CTA */}
-            <button
-              type="button"
-              onClick={() => void signInWithGoogle()}
-              className="w-full min-h-[52px] flex items-center justify-between gap-3 rounded-full bg-[#7651E8] pl-5 pr-2 py-2 text-sm font-bold text-white hover:bg-[#6440D6] shadow-[0_8px_20px_-8px_rgba(118,81,232,0.55)] transition-all cursor-pointer active:scale-[0.98]"
+        {/* Carousel Content */}
+        <div className="my-auto py-8">
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={walkthroughIndex}
+              initial={{ opacity: 0, x: 30 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -30 }}
+              transition={{ duration: 0.35, ease: 'easeOut' }}
+              className="flex flex-col items-center text-center px-2"
             >
-              <span className="flex items-center gap-2.5 pl-1">
-                <svg className="h-4 w-4 shrink-0" viewBox="0 0 24 24" aria-hidden="true">
-                  <path
-                    fill="currentColor"
-                    d="M21.35 11.1h-9.18v2.98h5.27c-.23 1.38-1.56 4.05-5.27 4.05-3.17 0-5.76-2.62-5.76-5.85s2.59-5.85 5.76-5.85c1.81 0 3.02.77 3.71 1.43l2.53-2.44C16.79 3.92 14.69 3 12.17 3 7.09 3 3 7.09 3 12.28s4.09 9.28 9.17 9.28c5.29 0 8.8-3.72 8.8-8.96 0-.6-.06-1.06-.16-1.5z"
-                  />
-                </svg>
-                <span>Continue with Google</span>
-              </span>
-              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white text-[#7651E8]">
-                <ArrowRight className="h-4 w-4 stroke-[2.5]" />
-              </span>
-            </button>
+              {/* Illustration Circle */}
+              <div
+                className="h-44 w-44 sm:h-52 sm:w-52 rounded-[40px] flex items-center justify-center mb-8 relative shadow-[0_18px_36px_-16px_rgba(118,81,232,0.18)]"
+                style={{ backgroundColor: currentStep.accentBg }}
+              >
+                <div className="text-6xl sm:text-7xl drop-shadow-sm select-none">
+                  {currentStep.illustration}
+                </div>
+                <div className="absolute -bottom-3 right-4 h-12 w-12 rounded-2xl bg-white shadow-md border border-[#F0EDF5] flex items-center justify-center">
+                  {currentStep.icon}
+                </div>
+              </div>
 
-            <div className="my-5 flex items-center gap-3">
-              <div className="h-px flex-1 bg-[#F0EDF5]" />
-              <span className="text-xs font-semibold text-[#9A99AA]">or use email</span>
-              <div className="h-px flex-1 bg-[#F0EDF5]" />
+              {/* Step Badge */}
+              <span
+                className="px-3.5 py-1 rounded-full text-xs font-black tracking-wide uppercase mb-3"
+                style={{
+                  backgroundColor: `${currentStep.badgeColor}15`,
+                  color: currentStep.badgeColor,
+                }}
+              >
+                {currentStep.badge}
+              </span>
+
+              {/* Title & Subtitle */}
+              <h2 className="font-display text-2xl sm:text-3xl font-black text-[#111827] tracking-tight mb-3">
+                {currentStep.title}
+              </h2>
+              <p className="text-sm sm:text-[15px] text-[#6B7280] leading-relaxed max-w-sm">
+                {currentStep.subtitle}
+              </p>
+            </motion.div>
+          </AnimatePresence>
+        </div>
+
+        {/* Bottom Actions & Step Dots */}
+        <div className="space-y-6 pb-4">
+          {/* Animated 3 Dots Indicator */}
+          <div className="flex items-center justify-center gap-2">
+            {ONBOARDING_STEPS.map((_, idx) => (
+              <button
+                key={idx}
+                type="button"
+                onClick={() => setWalkthroughIndex(idx)}
+                aria-label={`Go to step ${idx + 1}`}
+                className={`h-2 rounded-full transition-all duration-300 cursor-pointer ${
+                  idx === walkthroughIndex ? 'w-8 bg-[#111827]' : 'w-2 bg-[#E5E7EB]'
+                }`}
+              />
+            ))}
+          </div>
+
+          {/* Next / Get Started Action Button */}
+          <button
+            type="button"
+            onClick={handleNextStep}
+            className="w-full min-h-[52px] rounded-2xl bg-[#111827] text-white font-bold text-base hover:bg-black active:scale-[0.98] transition-all flex items-center justify-center gap-2 shadow-[0_12px_24px_-10px_rgba(0,0,0,0.3)] cursor-pointer"
+          >
+            <span>{walkthroughIndex === ONBOARDING_STEPS.length - 1 ? 'Get Started' : 'Continue'}</span>
+            <ArrowRight className="h-4 w-4" />
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // 3. CLEAN AUTH SCREEN (MATCHING USER'S SCREENSHOT PIXEL-PERFECT)
+  return (
+    <div className="min-h-dvh bg-[#FAFAFC] flex flex-col items-center justify-center px-4 py-8 sm:py-12 select-none">
+      <motion.div
+        initial={{ opacity: 0, y: 16 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4 }}
+        className="w-full max-w-[420px] bg-white rounded-[28px] p-7 sm:p-9 shadow-[0_10px_30px_-15px_rgba(0,0,0,0.06)] border border-[#F3F4F6]"
+      >
+        {/* Header matching screenshot */}
+        <div className="mb-8">
+          <h1 className="text-[34px] sm:text-[38px] font-extrabold tracking-tight text-[#111827] leading-none mb-2.5">
+            {tab === 'login' ? 'Welcome' : tab === 'register' ? 'Create Account' : 'Reset Password'}
+          </h1>
+          <p className="text-[14px] text-[#6B7280] leading-snug">
+            {tab === 'login'
+              ? 'Access your account and continue your journey with us'
+              : tab === 'register'
+              ? 'Join StudyDuo to learn, track habits, and level up with a partner'
+              : 'Enter your email to receive a password reset link'}
+          </p>
+        </div>
+
+        {/* Auth Form */}
+        <form onSubmit={handleSubmit} className="space-y-4" noValidate>
+          {tab === 'register' && (
+            <div>
+              <label htmlFor="auth-fullname" className="block text-[13px] font-semibold text-[#374151] mb-1.5">
+                Full Name
+              </label>
+              <input
+                id="auth-fullname"
+                type="text"
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
+                placeholder="Enter your full name"
+                className="w-full h-12 rounded-xl bg-[#F3F4F6] px-4 text-[14px] text-[#111827] placeholder-[#9CA3AF] border-none focus:outline-none focus:ring-2 focus:ring-[#7651E8]/40 transition-all"
+              />
             </div>
+          )}
 
-            {/* Segmented Mode Tabs */}
-            <div className="grid grid-cols-2 gap-1 rounded-full bg-[#F8F5FF] p-1 border border-[#F0EDF5] mb-4">
+          <div>
+            <label htmlFor="auth-email" className="block text-[13px] font-semibold text-[#374151] mb-1.5">
+              Email Address
+            </label>
+            <input
+              id="auth-email"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="Enter your email address"
+              className="w-full h-12 rounded-xl bg-[#F3F4F6] px-4 text-[14px] text-[#111827] placeholder-[#9CA3AF] border-none focus:outline-none focus:ring-2 focus:ring-[#7651E8]/40 transition-all"
+            />
+          </div>
+
+          {tab !== 'reset' && (
+            <div>
+              <label htmlFor="auth-password" className="block text-[13px] font-semibold text-[#374151] mb-1.5">
+                Password
+              </label>
+              <div className="relative">
+                <input
+                  id="auth-password"
+                  type={showPassword ? 'text' : 'password'}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Enter your password"
+                  className="w-full h-12 rounded-xl bg-[#F3F4F6] pl-4 pr-11 text-[14px] text-[#111827] placeholder-[#9CA3AF] border-none focus:outline-none focus:ring-2 focus:ring-[#7651E8]/40 transition-all"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[#9CA3AF] hover:text-[#4B5563] p-1 cursor-pointer transition-colors"
+                >
+                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* "Keep me signed in" & "Reset password" Row matching screenshot */}
+          {tab === 'login' && (
+            <div className="flex items-center justify-between pt-1">
+              <label className="flex items-center gap-2 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={keepSignedIn}
+                  onChange={(e) => setKeepSignedIn(e.target.checked)}
+                  className="hidden"
+                />
+                <div
+                  className={`h-4 w-4 rounded-full border flex items-center justify-center transition-all ${
+                    keepSignedIn ? 'border-[#7651E8] bg-[#7651E8]' : 'border-[#D1D5DB] bg-white'
+                  }`}
+                >
+                  {keepSignedIn && <div className="h-1.5 w-1.5 rounded-full bg-white" />}
+                </div>
+                <span className="text-[13px] text-[#4B5563]">Keep me signed in</span>
+              </label>
+
               <button
                 type="button"
                 onClick={() => {
-                  setTab('login');
+                  setTab('reset');
                   setFormError('');
                 }}
-                className={`min-h-[38px] rounded-full text-xs font-bold transition-colors cursor-pointer ${
-                  tab === 'login' ? 'bg-white text-[#20202A] shadow-xs' : 'text-[#777783]'
-                }`}
+                className="text-[13px] font-medium text-[#9333EA] hover:text-[#7E22CE] cursor-pointer transition-colors"
               >
-                Sign In
+                Reset password
               </button>
+            </div>
+          )}
+
+          {formError && (
+            <p role="alert" className="text-xs font-semibold text-[#DC2626] pt-1">
+              {formError}
+            </p>
+          )}
+
+          {/* Solid Dark Sign In Button */}
+          <div className="pt-2">
+            <button
+              type="submit"
+              disabled={submitting}
+              className="w-full h-12 rounded-xl bg-[#111827] text-white font-bold text-[15px] hover:bg-black active:scale-[0.99] disabled:opacity-60 transition-all cursor-pointer flex items-center justify-center shadow-xs"
+            >
+              {submitting
+                ? 'Please wait...'
+                : tab === 'login'
+                ? 'Sign In'
+                : tab === 'register'
+                ? 'Create Account'
+                : 'Send Reset Link'}
+            </button>
+          </div>
+
+          {/* Divider: "Or continue with" */}
+          <div className="relative my-5 flex items-center justify-center">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-[#E5E7EB]" />
+            </div>
+            <span className="relative bg-white px-3 text-[12px] text-[#9CA3AF]">
+              Or continue with
+            </span>
+          </div>
+
+          {/* Clean Google Button matching screenshot */}
+          <button
+            type="button"
+            onClick={() => void signInWithGoogle()}
+            className="w-full h-12 rounded-xl bg-white border border-[#E5E7EB] hover:bg-[#F9FAFB] active:scale-[0.99] text-[#111827] font-semibold text-[14px] flex items-center justify-center gap-2.5 transition-all cursor-pointer shadow-xs"
+          >
+            <svg className="h-4 w-4" viewBox="0 0 24 24" aria-hidden="true">
+              <path
+                fill="#4285F4"
+                d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.665-5.17 3.665-9.17z"
+              />
+              <path
+                fill="#34A853"
+                d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.15C3.26 21.36 7.34 24 12 24z"
+              />
+              <path
+                fill="#FBBC05"
+                d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.25C.45 8.18 0 9.99 0 12s.45 3.82 1.25 5.42l4.03-3.15z"
+              />
+              <path
+                fill="#EA4335"
+                d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.34 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z"
+              />
+            </svg>
+            <span>Continue with Google</span>
+          </button>
+        </form>
+
+        {/* Footer Link matching screenshot */}
+        <div className="mt-7 text-center">
+          {tab === 'login' ? (
+            <p className="text-[13px] text-[#6B7280]">
+              New to our platform?{' '}
               <button
                 type="button"
                 onClick={() => {
                   setTab('register');
                   setFormError('');
                 }}
-                className={`min-h-[38px] rounded-full text-xs font-bold transition-colors cursor-pointer ${
-                  tab === 'register' ? 'bg-white text-[#20202A] shadow-xs' : 'text-[#777783]'
-                }`}
+                className="font-semibold text-[#9333EA] hover:text-[#7E22CE] cursor-pointer"
               >
                 Create Account
               </button>
-            </div>
-
-            <form onSubmit={handleSubmit} className="space-y-3.5" noValidate>
-              {tab === 'register' && (
-                <div>
-                  <label htmlFor="auth-fullname" className="block text-xs font-bold text-[#20202A] mb-1.5">
-                    Full name
-                  </label>
-                  <input
-                    id="auth-fullname"
-                    type="text"
-                    value={fullName}
-                    onChange={(e) => setFullName(e.target.value)}
-                    placeholder="Alex Chen"
-                    className="w-full min-h-[44px] rounded-2xl border border-[#F0EDF5] bg-[#F8F5FF] px-4 text-sm text-[#20202A] focus:bg-white focus:border-[#7651E8] focus:outline-none"
-                  />
-                </div>
-              )}
-
-              <div>
-                <label htmlFor="auth-email" className="block text-xs font-bold text-[#20202A] mb-1.5">
-                  Email address
-                </label>
-                <div className="relative">
-                  <Mail className="h-4 w-4 text-[#8B8A99] absolute left-3.5 top-1/2 -translate-y-1/2" />
-                  <input
-                    id="auth-email"
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="you@example.com"
-                    className="w-full min-h-[44px] rounded-2xl border border-[#F0EDF5] bg-[#F8F5FF] pl-10 pr-4 text-sm text-[#20202A] focus:bg-white focus:border-[#7651E8] focus:outline-none"
-                  />
-                </div>
-              </div>
-
-              {tab !== 'reset' && (
-                <div>
-                  <div className="flex items-center justify-between mb-1.5">
-                    <label htmlFor="auth-password" className="text-xs font-bold text-[#20202A]">
-                      Password
-                    </label>
-                    {tab === 'login' && (
-                      <button
-                        type="button"
-                        onClick={() => setTab('reset')}
-                        className="text-xs font-bold text-[#7651E8] hover:underline cursor-pointer"
-                      >
-                        Forgot password?
-                      </button>
-                    )}
-                  </div>
-                  <div className="relative">
-                    <KeyRound className="h-4 w-4 text-[#8B8A99] absolute left-3.5 top-1/2 -translate-y-1/2" />
-                    <input
-                      id="auth-password"
-                      type="password"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      placeholder="At least 6 characters"
-                      className="w-full min-h-[44px] rounded-2xl border border-[#F0EDF5] bg-[#F8F5FF] pl-10 pr-4 text-sm text-[#20202A] focus:bg-white focus:border-[#7651E8] focus:outline-none"
-                    />
-                  </div>
-                </div>
-              )}
-
-              {formError && (
-                <p role="alert" className="text-xs font-semibold text-[#C82D4F]">
-                  {formError}
-                </p>
-              )}
-
+            </p>
+          ) : (
+            <p className="text-[13px] text-[#6B7280]">
+              Already have an account?{' '}
               <button
-                type="submit"
-                disabled={submitting}
-                className="w-full min-h-[46px] rounded-full bg-[#20202A] px-5 py-2.5 text-sm font-bold text-white hover:bg-[#323244] disabled:opacity-60 transition-colors cursor-pointer"
+                type="button"
+                onClick={() => {
+                  setTab('login');
+                  setFormError('');
+                }}
+                className="font-semibold text-[#9333EA] hover:text-[#7E22CE] cursor-pointer"
               >
-                {submitting
-                  ? 'Please wait...'
-                  : tab === 'login'
-                  ? 'Sign In with Email'
-                  : tab === 'register'
-                  ? 'Create Account'
-                  : 'Send Reset Link'}
+                Sign In
               </button>
-
-              {tab === 'reset' && (
-                <button
-                  type="button"
-                  onClick={() => setTab('login')}
-                  className="w-full text-center text-xs font-semibold text-[#777783] hover:text-[#20202A] py-1 cursor-pointer"
-                >
-                  Back to Sign In
-                </button>
-              )}
-            </form>
-          </div>
+            </p>
+          )}
         </div>
-      </div>
+      </motion.div>
 
       <ToastStack toasts={toasts} onDismiss={dismissToast} />
     </div>
