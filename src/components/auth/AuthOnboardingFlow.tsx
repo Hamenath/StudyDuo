@@ -130,20 +130,8 @@ export const AuthScreen: React.FC = () => {
                 </div>
               )}
 
-              <div className="mt-6">
-                <Button
-                  type="button"
-                  size="lg"
-                  fullWidth
-                  withArrowCircle
-                  onClick={enterPreviewMode}
-                >
-                  Explore Interactive Preview
-                </Button>
-              </div>
-
-              {/* Subtle pastel feature dots */}
-              <div className="mt-5 grid grid-cols-3 gap-2 text-left">
+              {/* Feature pillars */}
+              <div className="mt-6 grid grid-cols-3 gap-2 text-left">
                 <div className="rounded-2xl bg-[#E9DFFF]/65 px-3 py-2.5">
                   <p className="text-[11px] font-extrabold text-[#6842DE]">Roadmaps</p>
                   <p className="text-[11px] text-[#5C5C6C] mt-0.5">Clear milestones</p>
